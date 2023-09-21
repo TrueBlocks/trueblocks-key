@@ -8,6 +8,12 @@ import (
 	"trueblocks.io/searcher/pkg/query"
 )
 
+var runEnv *CmdRunEnv
+
+func init() {
+	runEnv = &CmdRunEnv{}
+}
+
 func main() {
 	chain := "mainnet"
 	address := os.Args[1]
@@ -15,7 +21,7 @@ func main() {
 		log.Fatalln("Address required")
 	}
 
-	if err := query.Find(chain, base.HexToAddress(address)); err != nil {
+	if err := query.Find(chain, base.HexToAddress(address), runEnv); err != nil {
 		log.Fatalln("find error:", err)
 	}
 }

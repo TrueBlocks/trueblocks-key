@@ -3,23 +3,20 @@ package query
 import (
 	"fmt"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/config"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/walk"
 	"trueblocks.io/searcher/pkg/query/bloom"
 	"trueblocks.io/searcher/pkg/query/chunk"
 )
 
-func Find(chain string, address base.Address) error {
+func Find(chain string, address base.Address, runEnv RunEnv) error {
 	foundRangesCh := make(chan string, 100)
 	results := make(chan index.AppearanceRecord, 100)
 
 	go func() {
-		if err := QueryBlooms(chain, address, foundRangesCh); err != nil {
+		if err := QueryBlooms(chain, address, foundRangesCh, runEnv); err != nil {
 			panic(fmt.Errorf("querying bloom filters: %w", err))
 		}
 	}()
@@ -27,7 +24,7 @@ func Find(chain string, address base.Address) error {
 	go func() {
 		defer close(results)
 		for fileRange := range foundRangesCh {
-			apps, err := Extract(chain, fileRange, address)
+			apps, err := Extract(chain, fileRange, address, runEnv)
 			if err != nil {
 				panic(err)
 			}
@@ -44,25 +41,15 @@ func Find(chain string, address base.Address) error {
 	return nil
 }
 
-func QueryBlooms(chain string, address base.Address, foundRangesCh chan string) error {
-	bloomPath := config.GetPathToIndex(chain) + "blooms/"
-	files, err := os.ReadDir(bloomPath)
+func QueryBlooms(chain string, address base.Address, foundRangesCh chan string, runEnv RunEnv) error {
+	blooms, err := runEnv.Blooms(chain)
 	if err != nil {
 		return err
 	}
 
 	var wg sync.WaitGroup
 
-	for _, info := range files {
-		if info.IsDir() {
-			continue
-		}
-
-		rawFileName := info.Name()
-		fileName := bloomPath + "/" + rawFileName
-		if !walk.IsCacheType(fileName, walk.Index_Bloom, true /* checkExt */) {
-			continue // sometimes there are .gz files in this folder, for example
-		}
+	for rawFileName, fileName := range blooms {
 		fileRange, err := base.RangeFromFilenameE(fileName)
 		if err != nil {
 			// don't respond further -- there may be foreign files in the folder
@@ -72,8 +59,10 @@ func QueryBlooms(chain string, address base.Address, foundRangesCh chan string) 
 
 		// Run a go routine for each index file
 		wg.Add(1)
+		fn := fileName
+		rfn := rawFileName
 		go func() {
-			f, err := os.Open(fileName)
+			f, err := runEnv.ReadBloom(fn)
 			if err != nil {
 				panic(err)
 			}
@@ -90,8 +79,8 @@ func QueryBlooms(chain string, address base.Address, foundRangesCh chan string) 
 			}
 
 			if v {
-				foundRangesCh <- rawFileName
-				log.Println("Bloom match:", rawFileName)
+				foundRangesCh <- rfn
+				log.Println("Bloom match:", rfn)
 			}
 		}()
 
@@ -103,11 +92,17 @@ func QueryBlooms(chain string, address base.Address, foundRangesCh chan string) 
 	return nil
 }
 
-func Extract(chain string, fileName string, address base.Address) (result []index.AppearanceRecord, err error) {
-	indexFilename := config.GetPathToIndex(chain) + "finalized/" + index.ToIndexPath(fileName)
-	f, err := os.Open(indexFilename)
+func Extract(chain string, fileName string, address base.Address, runEnv RunEnv) (result []index.AppearanceRecord, err error) {
+	// indexFilename := config.GetPathToIndex(chain) + "finalized/" + index.ToIndexPath(fileName)
+	// f, err := os.Open(indexFilename)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer f.Close()
+
+	f, err := runEnv.ReadChunk(chain, fileName)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer f.Close()
 
