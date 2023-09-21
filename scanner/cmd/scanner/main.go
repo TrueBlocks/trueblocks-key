@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
-	"trueblocks.io/searcher/query"
+	"trueblocks.io/searcher/pkg/query"
 )
 
 func main() {

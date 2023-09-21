@@ -10,8 +10,8 @@ import (
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/config"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/walk"
-	"trueblocks.io/searcher/bloom"
-	"trueblocks.io/searcher/chunk"
+	"trueblocks.io/searcher/pkg/query/bloom"
+	"trueblocks.io/searcher/pkg/query/chunk"
 )
 
 func Find(chain string, address base.Address) error {
