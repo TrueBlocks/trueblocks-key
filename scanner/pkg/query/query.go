@@ -11,9 +11,9 @@ import (
 	"trueblocks.io/searcher/pkg/query/chunk"
 )
 
-func Find(chain string, address base.Address, runEnv RunEnv) error {
+func Find(chain string, address base.Address, runEnv RunEnv, results chan index.AppearanceRecord) (err error) {
+	defer close(results)
 	foundRangesCh := make(chan string, 100)
-	results := make(chan index.AppearanceRecord, 100)
 
 	go func() {
 		if err := QueryBlooms(chain, address, foundRangesCh, runEnv); err != nil {
@@ -21,24 +21,17 @@ func Find(chain string, address base.Address, runEnv RunEnv) error {
 		}
 	}()
 
-	go func() {
-		defer close(results)
-		for fileRange := range foundRangesCh {
-			apps, err := Extract(chain, fileRange, address, runEnv)
-			if err != nil {
-				panic(err)
-			}
-			for _, app := range apps {
-				results <- app
-			}
+	for fileRange := range foundRangesCh {
+		apps, err := Extract(chain, fileRange, address, runEnv)
+		if err != nil {
+			panic(err)
 		}
-	}()
-
-	for app := range results {
-		log.Println(app.BlockNumber, app.TransactionId)
+		for _, app := range apps {
+			results <- app
+		}
 	}
 
-	return nil
+	return
 }
 
 func QueryBlooms(chain string, address base.Address, foundRangesCh chan string, runEnv RunEnv) error {
@@ -93,13 +86,6 @@ func QueryBlooms(chain string, address base.Address, foundRangesCh chan string, 
 }
 
 func Extract(chain string, fileName string, address base.Address, runEnv RunEnv) (result []index.AppearanceRecord, err error) {
-	// indexFilename := config.GetPathToIndex(chain) + "finalized/" + index.ToIndexPath(fileName)
-	// f, err := os.Open(indexFilename)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer f.Close()
-
 	f, err := runEnv.ReadChunk(chain, fileName)
 	if err != nil {
 		return nil, err

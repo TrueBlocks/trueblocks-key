@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
+	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"trueblocks.io/searcher/pkg/query"
 )
 
@@ -21,7 +22,14 @@ func main() {
 		log.Fatalln("Address required")
 	}
 
-	if err := query.Find(chain, base.HexToAddress(address), runEnv); err != nil {
-		log.Fatalln("find error:", err)
+	results := make(chan index.AppearanceRecord, 100)
+	go func() {
+		if err := query.Find(chain, base.HexToAddress(address), runEnv, results); err != nil {
+			log.Fatalln("find error:", err)
+		}
+	}()
+
+	for app := range results {
+		log.Println(app.BlockNumber, app.TransactionId)
 	}
 }

@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM template with a simple API definition
+
+# Global values that are applied to all applicable resources in this template
+Globals:
+  Function:
+    MemorySize: 128
+    Architectures: ["x86_64"]
+    Timeout: 60
+    Environment:
+      Variables:
+        SCNR_BUCKET_NAME: trueblocks-qn-index #!Ref IndexBucket
+
+Resources:
+  # API
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+  # Adds a GET api endpoint at "/index" to the ApiGatewayApi via an Api event
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: scanner
+      CodeUri: scanner/lambda
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /index
+            Method: get
+            RequestParameters:
+              - method.request.querystring.address:
+                  Required: true
+                  Caching: false
+            Auth:
+              ApiKeyRequired: true
+            RestApiId:
+              Ref: ApiGatewayApi
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref IndexBucket
+  IndexBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: trueblocks-qn-index
