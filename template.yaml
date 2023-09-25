@@ -5,7 +5,7 @@ Description: AWS SAM template with a simple API definition
 # Global values that are applied to all applicable resources in this template
 Globals:
   Function:
-    MemorySize: 128
+    MemorySize: 256
     Architectures: ["x86_64"]
     Timeout: 60
     Environment:
@@ -25,6 +25,9 @@ Resources:
       Runtime: go1.x
       Handler: scanner
       CodeUri: scanner/lambda
+      Layers:
+        # move to Globals to enable for all functions
+      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
       Events:
         ApiEvent:
           Type: Api
@@ -42,6 +45,7 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref IndexBucket
+        - CloudWatchLambdaInsightsExecutionRolePolicy
   IndexBucket:
     Type: AWS::S3::Bucket
     Properties:
