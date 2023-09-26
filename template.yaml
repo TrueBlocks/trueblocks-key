@@ -38,6 +38,7 @@ Resources:
               - method.request.querystring.address:
                   Required: true
                   Caching: false
+            TimeoutInMillis: 29000
             Auth:
               ApiKeyRequired: true
             RestApiId:
