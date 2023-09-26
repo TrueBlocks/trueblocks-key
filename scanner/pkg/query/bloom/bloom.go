@@ -2,13 +2,13 @@ package bloom
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"unsafe"
 
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index/bloom"
+	"trueblocks.io/searcher/pkg/blkrange"
 )
 
 const (
@@ -29,15 +29,27 @@ type bitChecker struct {
 
 type Bloom struct {
 	Reader     io.ReadSeeker
-	Range      base.FileRange
-	Header     bloom.BloomHeader
+	Range      [2]uint64
+	Header     BloomHeader
 	HeaderSize int64
 	Count      int32
-	Blooms     []bloom.BloomBytes
+	Blooms     []BloomBytes
 }
 
+type BloomBytes struct {
+	NInserted uint32 // Do not change the size of this field, it's stored on disc
+	Bytes     []byte
+}
+
+type BloomHeader struct {
+	Magic uint16 `json:"magic"`
+	Hash  Hash   `json:"hash"`
+}
+
+type Hash [32]byte
+
 func NewBloom(reader io.ReadSeeker, bloomName string) (b *Bloom, err error) {
-	r, err := base.RangeFromFilenameE(bloomName)
+	r, err := blkrange.FromFilename(bloomName)
 	if err != nil {
 		return
 	}
@@ -57,13 +69,16 @@ func NewBloom(reader io.ReadSeeker, bloomName string) (b *Bloom, err error) {
 	}
 	b.HeaderSize = int64(unsafe.Sizeof(b.Header))
 	_, _ = b.Reader.Seek(int64(b.HeaderSize), io.SeekStart) // Point to the start of Count
-	b.Blooms = make([]bloom.BloomBytes, 0, b.Count)
+	b.Blooms = make([]BloomBytes, 0, b.Count)
 
 	return
 }
 
-func (bl *Bloom) WhichBits(addr base.Address) (bits [5]uint32, err error) {
-	slice := addr.Bytes()
+func (bl *Bloom) WhichBits(addr string) (bits [5]uint32, err error) {
+	slice, err := hex.DecodeString(addr[2:]) // addr.Bytes()
+	if err != nil {
+		return
+	}
 	if len(slice) != 20 {
 		err = errors.New("address is not 20 bytes long - should not happen")
 		return
@@ -79,7 +94,7 @@ func (bl *Bloom) WhichBits(addr base.Address) (bits [5]uint32, err error) {
 	return
 }
 
-func (b *Bloom) IsMember(addr base.Address) (bool, error) {
+func (b *Bloom) IsMember(addr string) (bool, error) {
 	whichBits, err := b.WhichBits(addr)
 	if err != nil {
 		return false, err

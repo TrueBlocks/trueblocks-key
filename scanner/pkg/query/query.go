@@ -3,15 +3,15 @@ package query
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
+	"trueblocks.io/searcher/pkg/blkrange"
 	"trueblocks.io/searcher/pkg/query/bloom"
 	"trueblocks.io/searcher/pkg/query/chunk"
 )
 
-func Find(chain string, address base.Address, runEnv RunEnv, results chan index.AppearanceRecord) (err error) {
+func Find(chain string, address string, runEnv RunEnv, results chan chunk.AppearanceRecord) (err error) {
 	defer close(results)
 	foundRangesCh := make(chan string, 100)
 
@@ -34,7 +34,7 @@ func Find(chain string, address base.Address, runEnv RunEnv, results chan index.
 	return
 }
 
-func QueryBlooms(chain string, address base.Address, foundRangesCh chan string, runEnv RunEnv) error {
+func QueryBlooms(chain string, address string, foundRangesCh chan string, runEnv RunEnv) error {
 	blooms, err := runEnv.Blooms(chain)
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func QueryBlooms(chain string, address base.Address, foundRangesCh chan string, 
 	var wg sync.WaitGroup
 
 	for rawFileName, fileName := range blooms {
-		fileRange, err := base.RangeFromFilenameE(fileName)
+		fileRange, err := blkrange.FromFilename(fileName)
 		if err != nil {
 			// don't respond further -- there may be foreign files in the folder
 			fmt.Println(err)
@@ -61,7 +61,7 @@ func QueryBlooms(chain string, address base.Address, foundRangesCh chan string, 
 			}
 			defer f.Close()
 			defer wg.Done()
-			b, err := bloom.NewBloom(f, fileRange.String())
+			b, err := bloom.NewBloom(f, fmt.Sprintf("%d-%d", fileRange[0], fileRange[1]))
 			if err != nil {
 				panic(err)
 			}
@@ -72,7 +72,8 @@ func QueryBlooms(chain string, address base.Address, foundRangesCh chan string, 
 			}
 
 			if v {
-				foundRangesCh <- rfn
+				nfn := strings.Replace(rfn, ".bloom", "", 1)
+				foundRangesCh <- nfn
 				log.Println("Bloom match:", rfn)
 			}
 		}()
@@ -85,7 +86,7 @@ func QueryBlooms(chain string, address base.Address, foundRangesCh chan string, 
 	return nil
 }
 
-func Extract(chain string, fileName string, address base.Address, runEnv RunEnv) (result []index.AppearanceRecord, err error) {
+func Extract(chain string, fileName string, address string, runEnv RunEnv) (result []chunk.AppearanceRecord, err error) {
 	f, err := runEnv.ReadChunk(chain, fileName)
 	if err != nil {
 		return nil, err
@@ -96,16 +97,13 @@ func Extract(chain string, fileName string, address base.Address, runEnv RunEnv)
 	if err != nil {
 		return
 	}
-	found := chunk.GetAppearanceRecords(address)
+	found, err := chunk.GetAppearanceRecords(address)
+	if err != nil {
+		return nil, err
+	}
 	if found == nil {
 		return
 	}
-	if found.AppRecords == nil {
-		return
-	}
-	if found.Err != nil {
-		return nil, found.Err
-	}
-	result = *found.AppRecords
+	result = found
 	return
 }

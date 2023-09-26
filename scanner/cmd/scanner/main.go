@@ -4,9 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"trueblocks.io/searcher/pkg/query"
+	"trueblocks.io/searcher/pkg/query/chunk"
 )
 
 var runEnv *CmdRunEnv
@@ -21,10 +20,15 @@ func main() {
 	if address == "" {
 		log.Fatalln("Address required")
 	}
+	indexPath := os.Args[2]
+	if indexPath == "" {
+		log.Fatalln("indexPath required")
+	}
+	runEnv.IndexPath = indexPath
 
-	results := make(chan index.AppearanceRecord, 100)
+	results := make(chan chunk.AppearanceRecord, 100)
 	go func() {
-		if err := query.Find(chain, base.HexToAddress(address), runEnv, results); err != nil {
+		if err := query.Find(chain, address, runEnv, results); err != nil {
 			log.Fatalln("find error:", err)
 		}
 	}()

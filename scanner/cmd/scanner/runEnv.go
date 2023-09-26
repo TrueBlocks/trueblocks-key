@@ -3,16 +3,16 @@ package main
 import (
 	"io"
 	"os"
-
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/config"
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/walk"
+	"path"
+	"strings"
 )
 
-type CmdRunEnv struct{}
+type CmdRunEnv struct {
+	IndexPath string
+}
 
 func (c *CmdRunEnv) Blooms(chain string) (map[string]string, error) {
-	bloomPath := config.GetPathToIndex(chain) + "blooms/"
+	bloomPath := path.Join(c.IndexPath, "blooms/")
 	files, err := os.ReadDir(bloomPath)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func (c *CmdRunEnv) Blooms(chain string) (map[string]string, error) {
 		rawFileName := info.Name()
 		fileName := bloomPath + "/" + rawFileName
 
-		if !walk.IsCacheType(fileName, walk.Index_Bloom, true /* checkExt */) {
+		if !strings.Contains(fileName, ".bloom") {
 			continue // sometimes there are .gz files in this folder, for example
 		}
 
@@ -47,7 +47,8 @@ func (c *CmdRunEnv) ReadBloom(fileName string) (io.ReadSeekCloser, error) {
 }
 
 func (c *CmdRunEnv) ReadChunk(chain string, blockRange string) (io.ReadSeekCloser, error) {
-	indexFilename := config.GetPathToIndex(chain) + "finalized/" + index.ToIndexPath(blockRange)
+	indexFilename := path.Join(c.IndexPath, "finalized/", blockRange+".bin")
+	// indexFilename := config.GetPathToIndex(chain) + "finalized/" + index.ToIndexPath(blockRange)
 	f, err := os.Open(indexFilename)
 	if err != nil {
 		return nil, err

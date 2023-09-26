@@ -5,15 +5,14 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
-	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"trueblocks.io/searcher/pkg/query"
+	"trueblocks.io/searcher/pkg/query/chunk"
 )
 
 type Response struct {
-	Txs []index.AppearanceRecord `json:"txs"`
+	Txs []chunk.AppearanceRecord `json:"txs"`
 }
 
 var runEnv *LambdaRunEnv
@@ -24,15 +23,15 @@ func init() {
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	address := request.QueryStringParameters["address"]
-	results := make(chan index.AppearanceRecord, 100)
+	results := make(chan chunk.AppearanceRecord, 100)
 
 	go func() {
-		if err := query.Find("mainnet", base.HexToAddress(address), runEnv, results); err != nil {
+		if err := query.Find("mainnet", address, runEnv, results); err != nil {
 			log.Println("find error: %w", err)
 		}
 	}()
 
-	var records []index.AppearanceRecord
+	var records []chunk.AppearanceRecord
 	for app := range results {
 		records = append(records, app)
 	}
