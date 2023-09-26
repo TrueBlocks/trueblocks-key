@@ -9,8 +9,6 @@ import (
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"trueblocks.io/searcher/pkg/query"
 )
 
@@ -19,7 +17,6 @@ type Response struct {
 }
 
 var runEnv *LambdaRunEnv
-var s3Client *s3.Client
 
 func init() {
 	runEnv = &LambdaRunEnv{}
@@ -62,12 +59,5 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func main() {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-west-2"))
-	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
-	}
-
-	s3Client = s3.NewFromConfig(cfg)
-
 	lambda.Start(HandleRequest)
 }

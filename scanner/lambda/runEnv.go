@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"os"
+	"path"
 )
 
 type LambdaRunEnv struct{}
@@ -68,16 +66,12 @@ func (c *LambdaRunEnv) ReadChunk(chain string, blockRange string) (io.ReadSeekCl
 }
 
 func (c *LambdaRunEnv) readObject(filePath string) (io.ReadSeekCloser, error) {
-	bucket := aws.String(BUCKET_NAME)
-	key := aws.String(filePath)
-	result, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
-		Bucket: bucket,
-		Key:    key,
-	})
+	p := path.Join("/mnt/efs", filePath)
+
+	f, err := os.Open(p)
 	if err != nil {
-		return nil, fmt.Errorf("get %s/%s: %w", *bucket, *key, err)
+		return nil, fmt.Errorf("get %s: %w", p, err)
 	}
 
-	obj, err := NewS3Object(result)
-	return obj, err
+	return f, nil
 }
