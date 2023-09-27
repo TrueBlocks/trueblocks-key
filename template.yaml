@@ -5,7 +5,7 @@ Description: AWS SAM template with a simple API definition
 # Global values that are applied to all applicable resources in this template
 Globals:
   Function:
-    MemorySize: 256
+    MemorySize: 1024
     Architectures: ["x86_64"]
     Timeout: 60
     Environment:
