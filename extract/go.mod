@@ -3,8 +3,13 @@ module trueblocks.io/uploader
 go 1.20
 
 require (
+	github.com/TrueBlocks/trueblocks-core/src/apps/chifra v0.0.0-20230905152807-4575013c381d
+	gorm.io/driver/postgres v1.5.2
+	gorm.io/gorm v1.25.4
+)
+
+require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/TrueBlocks/trueblocks-core/src/apps/chifra v0.0.0-20230905152807-4575013c381d // indirect
 	github.com/alecthomas/participle/v2 v2.0.0 // indirect
 	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
@@ -27,6 +32,9 @@ require (
 	github.com/ipfs/go-cid v0.1.0 // indirect
 	github.com/ipfs/go-ipfs-api v0.3.0 // indirect
 	github.com/ipfs/go-ipfs-files v0.0.9 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgx/v5 v5.3.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.11 // indirect
@@ -35,7 +43,6 @@ require (
 	github.com/libp2p/go-libp2p-core v0.6.1 // indirect
 	github.com/libp2p/go-openssl v0.0.7 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
-	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -67,18 +74,16 @@ require (
 	github.com/whyrusleeping/tar-utils v0.0.0-20201201191210-20a61371de5b // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/crypto v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/term v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/grpc v1.54.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gorm.io/driver/sqlite v1.5.3 // indirect
-	gorm.io/gorm v1.25.4 // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
