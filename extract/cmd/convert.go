@@ -16,14 +16,14 @@ var convertCmd = &cobra.Command{
 	Use:   "convert path/to/index",
 	Short: "Converts Unchained Index chunks to SQL",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runE,
+	RunE:  runConvert,
 }
 
 func init() {
 	rootCmd.AddCommand(convertCmd)
 }
 
-func runE(cmd *cobra.Command, args []string) error {
+func runConvert(cmd *cobra.Command, args []string) error {
 	configPath, err := cmd.Flags().GetString("config_path")
 	if err != nil {
 		return err
@@ -35,7 +35,5 @@ func runE(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Println(conn)
-	convert.Convert(conn, cmd.Flags().Arg(0))
-
-	return nil
+	return convert.Convert(conn, args[0])
 }
