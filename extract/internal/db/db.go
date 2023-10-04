@@ -2,12 +2,12 @@ package db
 
 import (
 	extractConfig "trueblocks.io/config/pkg"
-	"trueblocks.io/uploader/pkg/db"
+	database "trueblocks.io/database/pkg"
 )
 
-var connection *db.Connection
+var connection *database.Connection
 
-func Connection(configPath string) (*db.Connection, error) {
+func Connection(configPath string, dbConfigKey string) (*database.Connection, error) {
 	if connection != nil {
 		return connection, nil
 	}
@@ -17,12 +17,12 @@ func Connection(configPath string) (*db.Connection, error) {
 		return nil, err
 	}
 
-	dbConnection := &db.Connection{
-		Host:     config.Database.Host,
-		Port:     config.Database.Port,
-		User:     config.Database.User,
-		Password: config.Database.Password,
-		Database: config.Database.Database,
+	dbConnection := &database.Connection{
+		Host:     config.Database[dbConfigKey].Host,
+		Port:     config.Database[dbConfigKey].Port,
+		User:     config.Database[dbConfigKey].User,
+		Password: config.Database[dbConfigKey].Password,
+		Database: config.Database[dbConfigKey].Database,
 	}
 	if err := dbConnection.Connect(); err != nil {
 		return nil, err

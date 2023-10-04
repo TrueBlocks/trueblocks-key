@@ -14,7 +14,7 @@ const prefix = "QNEXT"
 
 type ExtractConfigFile struct {
 	Version  string
-	Database databaseGroup
+	Database map[string]databaseGroup
 }
 
 type databaseGroup struct {

@@ -28,8 +28,12 @@ func runExport(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	dbConfigKey, err := cmd.Flags().GetString("database")
+	if err != nil {
+		return err
+	}
 
-	conn, err := db.Connection(configPath)
+	conn, err := db.Connection(configPath, dbConfigKey)
 	if err != nil {
 		return err
 	}

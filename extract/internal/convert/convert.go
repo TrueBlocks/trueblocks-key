@@ -13,10 +13,10 @@ import (
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/utils"
-	dbPkg "trueblocks.io/uploader/pkg/db"
+	database "trueblocks.io/database/pkg"
 )
 
-func Convert(dbConn *dbPkg.Connection, indexPath string) error {
+func Convert(dbConn *database.Connection, indexPath string) error {
 	log.Println("Reading Unchained Index from", indexPath)
 
 	// Collect chunk file names
@@ -58,7 +58,7 @@ func Convert(dbConn *dbPkg.Connection, indexPath string) error {
 
 	// Extract appearances in batches and push them to DB
 
-	batch := make([]*dbPkg.Appearance, 0, dbConn.BatchSize())
+	batch := make([]*database.Appearance, 0, dbConn.BatchSize())
 	var mu sync.Mutex
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -102,7 +102,7 @@ func Convert(dbConn *dbPkg.Connection, indexPath string) error {
 
 			for _, app := range apps {
 				mu.Lock()
-				batch = append(batch, &dbPkg.Appearance{
+				batch = append(batch, &database.Appearance{
 					Address:         addressRecord.Address.Hex(),
 					BlockNumber:     app.BlockNumber,
 					TransactionId:   app.TransactionId,
@@ -114,7 +114,7 @@ func Convert(dbConn *dbPkg.Connection, indexPath string) error {
 					if err = dbtx.Error; err != nil {
 						return err
 					}
-					batch = make([]*dbPkg.Appearance, 0, 5000)
+					batch = make([]*database.Appearance, 0, 5000)
 				}
 				mu.Unlock()
 				progressChan <- struct {

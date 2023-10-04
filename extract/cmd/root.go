@@ -25,7 +25,8 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringP("config_path", "c", "", "directory with configuration file")
+	rootCmd.PersistentFlags().StringP("config_path", "C", "", "directory with configuration file")
+	rootCmd.PersistentFlags().StringP("database", "D", "default", "database configuration to use")
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

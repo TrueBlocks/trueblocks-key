@@ -1,7 +1,10 @@
 go 1.20
 
 use (
+	.
 	./config
+	./database
 	./extract
+	./lambda/query
 	./scanner/
 )
