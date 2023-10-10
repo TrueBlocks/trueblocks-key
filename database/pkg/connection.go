@@ -50,7 +50,6 @@ func (c *Connection) String() string {
 func (c *Connection) AutoMigrate() error {
 	return c.db.AutoMigrate(
 		&Appearance{},
-		&Progress{},
 	)
 }
 

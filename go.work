@@ -5,6 +5,7 @@ use (
 	./config
 	./database
 	./extract
-	./lambda/query
+	./query
 	./scanner/
+	./watch
 )
