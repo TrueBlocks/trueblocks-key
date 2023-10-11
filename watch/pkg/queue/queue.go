@@ -1,9 +1,13 @@
 package queue
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 	database "trueblocks.io/database/pkg"
 )
+
+var ErrQueueEmpty = errors.New("queue empty")
 
 type Queue struct {
 	destConn  *database.Connection
@@ -30,73 +34,49 @@ func (q *Queue) Add(appearance *database.Appearance) error {
 	item := &database.QueueItem{
 		Appearance: appearance,
 	}
-	item.SetWaiting()
+	item.SetStatus(database.StatusWaiting)
 
 	return q.queueConn.Db().Create(item).Error
 }
 
-func (q *Queue) Process() (err error) {
+func (q *Queue) Process() (queueErr error, destErr error) {
 	var items []database.QueueItem
 
-	// query := q.queueConn.Db().Where("not (status like ? or status like ?)", database.StatusSuccess, database.StatusUploading)
-	// query.Limit(100)
-	// dbtx := query.Find(&items)
-	// if err = dbtx.Error; err != nil {
-	// 	return
-	// }
-
-	err = q.queueConn.Db().Transaction(func(tx *gorm.DB) error {
+	queueErr = q.queueConn.Db().Transaction(func(tx *gorm.DB) error {
 		query := tx.Where("not (status like ? or status like ?)", database.StatusSuccess, database.StatusUploading)
 		query.Limit(100)
 		if err := query.Find(&items).Error; err != nil {
 			return err
 		}
 
-		return setItemsUploading(tx, items)
+		return setItemsStatus(tx, database.StatusUploading, items)
 	})
-	if err != nil {
+	if queueErr != nil {
+		return
+	}
+
+	if len(items) == 0 {
+		queueErr = ErrQueueEmpty
 		return
 	}
 
 	insert := q.destConn.Db().CreateInBatches(items, len(items))
-	if err = insert.Error; err != nil {
-		updErr := setItemsFail(q.destConn.Db(), items)
-		if updErr != nil {
-			// TODO: report stuck items
-		}
+	if destErr = insert.Error; destErr != nil {
+		// If `setItemsFail` fails, we don't have to report the error back.
+		// Live database doesn't allow us to insert duplicates, so only item
+		// statuses in queue will be updated next time.
+		_ = setItemsStatus(q.destConn.Db(), database.StatusFail, items)
 		return
 	}
 
-	// TODO: The problem here is that this function returns single error for 2 different sources:
-	// out database write and queue status update. It should report 2 errors
-	return setItemsSuccess(q.destConn.Db(), items)
-}
-
-// TODO: get rid of repeated code in functions below
-
-func setItemsUploading(tx *gorm.DB, items []database.QueueItem) (err error) {
-	for _, item := range items {
-		item.SetUploading()
-		if err = tx.Save(&item).Error; err != nil {
-			return
-		}
-	}
+	// Again, if this fail we will update statuses next time
+	_ = setItemsStatus(q.destConn.Db(), database.StatusSuccess, items)
 	return
 }
 
-func setItemsFail(tx *gorm.DB, items []database.QueueItem) (err error) {
+func setItemsStatus(tx *gorm.DB, status database.QueueItemStatus, items []database.QueueItem) (err error) {
 	for _, item := range items {
-		item.SetFail()
-		if err = tx.Save(&item).Error; err != nil {
-			return
-		}
-	}
-	return
-}
-
-func setItemsSuccess(tx *gorm.DB, items []database.QueueItem) (err error) {
-	for _, item := range items {
-		item.SetSuccess()
+		item.SetStatus(status)
 		if err = tx.Save(&item).Error; err != nil {
 			return
 		}
