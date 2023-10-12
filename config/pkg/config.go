@@ -1,4 +1,4 @@
-package extract
+package config
 
 import (
 	"fmt"
@@ -15,6 +15,7 @@ const prefix = "QNEXT"
 type ConfigFile struct {
 	Version  string
 	Database map[string]databaseGroup
+	Sqs      sqsGroup
 }
 
 type databaseGroup struct {
@@ -23,6 +24,11 @@ type databaseGroup struct {
 	User     string
 	Password string
 	Database string
+}
+
+type sqsGroup struct {
+	QueueName       string
+	InsertBatchSize uint
 }
 
 var cached *ConfigFile

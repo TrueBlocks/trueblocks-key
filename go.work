@@ -7,5 +7,6 @@ use (
 	./extract
 	./query
 	./scanner/
-	./watch
+	./queue/insert
+	./queue/consume
 )
