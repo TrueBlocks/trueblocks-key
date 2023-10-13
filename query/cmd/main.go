@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	extractConfig "trueblocks.io/config/pkg"
+	qnConfig "trueblocks.io/config/pkg"
 	database "trueblocks.io/database/pkg"
 	"trueblocks.io/lambda/query/pkg/query"
 )
@@ -36,8 +36,7 @@ func main() {
 
 	address := strings.ToLower(flag.Arg(0))
 
-	// TODO: we should have separate DB config and not use extract config here
-	config, err := extractConfig.Get(configFilePath)
+	config, err := qnConfig.Get(configFilePath)
 	if err != nil {
 		log.Fatalln(err)
 	}

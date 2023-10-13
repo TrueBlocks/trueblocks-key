@@ -16,6 +16,7 @@ type ConfigFile struct {
 	Version  string
 	Database map[string]databaseGroup
 	Sqs      sqsGroup
+	Query    queryGroup
 }
 
 type databaseGroup struct {
@@ -29,6 +30,10 @@ type databaseGroup struct {
 type sqsGroup struct {
 	QueueName       string
 	InsertBatchSize uint
+}
+
+type queryGroup struct {
+	MaxLimit uint
 }
 
 var cached *ConfigFile
