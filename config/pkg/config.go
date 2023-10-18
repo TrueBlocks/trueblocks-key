@@ -20,11 +20,12 @@ type ConfigFile struct {
 }
 
 type databaseGroup struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Database string
+	Host      string
+	Port      int
+	User      string
+	Password  string
+	Database  string
+	AWSSecret string
 }
 
 type sqsGroup struct {

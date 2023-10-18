@@ -9,6 +9,9 @@ Parameters:
   RDSDBName:
     Type: String
     Default: index
+  AppearancesQueueBatchSize:
+    Type: Number
+    Default: "10"
 
 # Global values that are applied to all applicable resources in this template
 Globals:
@@ -16,9 +19,6 @@ Globals:
     MemorySize: 1024
     Architectures: ["x86_64"]
     Timeout: 30
-    Environment:
-      Variables:
-        SCNR_BUCKET_NAME: trueblocks-qn-index #!Ref IndexBucket
 
 Resources:
   ###
@@ -53,6 +53,33 @@ Resources:
       DBSubnetGroupName: !Ref RDSSubnetGroup
       VPCSecurityGroups:
         - !Ref RDSSecurityGroup
+
+  ###
+  # Appearances Queue
+  ###
+
+  AppearancesQueueConsume:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: consume
+      CodeUri: queue/consume/lambda
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AppearancesQueue.Arn
+            BatchSize: !Ref AppearancesQueueBatchSize
+      Environment:
+        Variables:
+          QNEXT_SQS_BATCHSIZE: !Ref AppearancesQueueBatchSize
+          QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          QNEXT_DATABASEPORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+  AppearancesQueue:
+    Type: AWS::SQS::Queue
 
   ###
   # API
@@ -93,7 +120,7 @@ Resources:
           QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
           QNEXT_DATABASEPORT: !GetAtt IndexDatabase.Endpoint.Port
           QNEXT_DATABASE_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_AWS_SECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
           QNEXT_DATABASE_DATABASE: !Ref RDSDBName
       VpcConfig: # For accessing RDS instance
         SecurityGroupIds:
@@ -107,6 +134,8 @@ Resources:
       #   - S3ReadPolicy:
       #       BucketName: !Ref IndexBucket
         - CloudWatchLambdaInsightsExecutionRolePolicy
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref MasterUserSecret
 
   ###
   # S3 object storage

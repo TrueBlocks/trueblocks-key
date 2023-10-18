@@ -2,11 +2,12 @@ go 1.20
 
 use (
 	.
+	./awshelper
 	./config
 	./database
 	./extract
 	./query
-	./scanner/
-	./queue/insert
 	./queue/consume
+	./queue/insert
+	./scanner/
 )
