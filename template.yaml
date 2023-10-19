@@ -9,6 +9,9 @@ Parameters:
   RDSDBName:
     Type: String
     Default: index
+  UsersQnTableName:
+    Type: String
+    Default: trueblocks-qn-users-qn
   AppearancesQueueBatchSize:
     Type: Number
     Default: "10"
@@ -19,11 +22,15 @@ Globals:
     MemorySize: 1024
     Architectures: ["x86_64"]
     Timeout: 30
+    Layers:
+      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
 
 Resources:
   ###
-  # Database
+  # Databases
   ###
+
+  ## SQL Appearances
 
   # Database master user password. Note: we want it to be managed by RDS service
   RDSMasterSecret:
@@ -54,6 +61,15 @@ Resources:
       VPCSecurityGroups:
         - !Ref RDSSecurityGroup
 
+  ### DynamoDB QN users
+  UsersQn:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: QuicknodeId
+        Type: String
+      TableName: !Ref UsersQnTableName
+
   ###
   # Appearances Queue
   ###
@@ -78,6 +94,9 @@ Resources:
           QNEXT_DATABASE_USER: !Ref RDSMasterUserName
           QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
           QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
   AppearancesQueue:
     Type: AWS::SQS::Queue
 
@@ -85,40 +104,141 @@ Resources:
   # API
   ###
 
-  ApiGatewayApi:
+  QnAPI:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
+      # Models:
+      #   # {"jsonrpc":"2.0","method":"eth_syncing","params":[], "id": 1}
+      #   RPCCall:
+      #     type: object
+      #     required:
+      #       - method
+      #       - params
+      #     Properties:
+      #       jsonrpc:
+      #         Type: string
+      #       id:
+      #         Type: number
+      #       method:
+      #         Type: string
+      #       params:
+      #         Type: array
+      #         Items:
+      #           address:
+      #             Type: string
 
-  # Route: /index
-  ApiFunction:
+      Auth:
+        DefaultAuthorizer: MyLambdaRequestAuthorizer
+        Authorizers:
+          MyLambdaRequestAuthorizer:
+            FunctionPayloadType: REQUEST
+            FunctionArn: !GetAtt MyAuthFunction.Arn
+            Identity:
+              Headers:
+                - x-quicknode-id
+
+  ### QN healthcheck
+  # Make sure this endpoint does not require auth
+  ApiHealthCheckFunction:
     Type: AWS::Serverless::Function
-    DependsOn: "MountTarget1"
     Properties:
       Runtime: go1.x
-      Handler: query
-      CodeUri: query/lambda
-      Layers:
-        # move to Globals to enable for all functions
-      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
+      Handler: healthcheck
+      CodeUri: quicknode/healthcheck/lambda
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /index
+            Path: /healthcheck
             Method: get
-            RequestParameters:
-              - method.request.querystring.address:
-                  Required: true
-                  Caching: false
-            Auth:
-              ApiKeyRequired: true
             RestApiId:
-              Ref: ApiGatewayApi
+              Ref: QnAPI
       Environment:
         Variables:
           QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
-          QNEXT_DATABASEPORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref RDSMasterUserName
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
+  ### QN Provision
+  ProvisionQnSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: QN Provision username and password
+      SecretString: '{"username":"Placeholder","password":"placeholder"}'
+
+  ApiProvisionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: provision
+      CodeUri: quicknode/provision/lambda
+      Events:
+        Provision:
+          Type: Api
+          Properties:
+            Path: /provision
+            Method: post
+            RestApiId:
+              Ref: QnAPI
+        Update:
+          Type: Api
+          Properties:
+            Path: /update
+            Method: put
+            RestApiId:
+              Ref: QnAPI
+        Deactivate:
+          Type: Api
+          Properties:
+            Path: /deactivate_endpoint
+            Method: delete
+            RestApiId:
+              Ref: QnAPI
+        Deprovision:
+          Type: Api
+          Properties:
+            Path: /deprovision
+            Method: delete
+            RestApiId:
+              Ref: QnAPI
+      Environment:
+        Variables:
+          QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
+          QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref ProvisionQnSecret
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
+  ### RPC route
+  RpcFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: query
+      CodeUri: query/lambda
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /rpc
+            Method: post
+            # RequestModel
+            Auth:
+              ApiKeyRequired: true
+            RestApiId:
+              Ref: QnAPI
+      Environment:
+        Variables:
+          QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          QNEXT_DATABASE_PORT: !GetAtt IndexDatabase.Endpoint.Port
           QNEXT_DATABASE_USER: !Ref RDSMasterUserName
           QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
           QNEXT_DATABASE_DATABASE: !Ref RDSDBName
@@ -129,13 +249,9 @@ Resources:
           - !Ref privateLambdaSubnet1
           - !Ref privateLambdaSubnet2
       Policies:
-      # TODO: do we need RDS access via VPC policy?
-      # Unused:
-      #   - S3ReadPolicy:
-      #       BucketName: !Ref IndexBucket
-        - CloudWatchLambdaInsightsExecutionRolePolicy
         - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref MasterUserSecret
+            SecretArn: !Ref RDSMasterSecret
+        - CloudWatchLambdaInsightsExecutionRolePolicy
 
   ###
   # S3 object storage

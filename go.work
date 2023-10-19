@@ -9,5 +9,7 @@ use (
 	./query
 	./queue/consume
 	./queue/insert
+	./quicknode/healthcheck
+	./quicknode/provision
 	./scanner/
 )

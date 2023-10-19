@@ -57,7 +57,7 @@ func setupDbConnection() (err error) {
 	}
 
 	var password string
-	secretId := cnf.Database["default"].AWSSecret
+	secretId := cnf.Database["default"].AwsSecret
 	if secretId != "" {
 		log.Println("using Secrets Manager secret as DB password")
 		password, err = awshelper.FetchSecret(secretId)

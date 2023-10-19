@@ -13,10 +13,11 @@ import (
 const prefix = "QNEXT"
 
 type ConfigFile struct {
-	Version  string
-	Database map[string]databaseGroup
-	Sqs      sqsGroup
-	Query    queryGroup
+	Version     string
+	Database    map[string]databaseGroup
+	Sqs         sqsGroup
+	Query       queryGroup
+	QnProvision qnProvisionGroup
 }
 
 type databaseGroup struct {
@@ -25,7 +26,7 @@ type databaseGroup struct {
 	User      string
 	Password  string
 	Database  string
-	AWSSecret string
+	AwsSecret string
 }
 
 type sqsGroup struct {
@@ -35,6 +36,13 @@ type sqsGroup struct {
 
 type queryGroup struct {
 	MaxLimit uint
+}
+
+type qnProvisionGroup struct {
+	TableName    string
+	AuthUsername string
+	AuthPassword string
+	AwsSecret    string
 }
 
 var cached *ConfigFile

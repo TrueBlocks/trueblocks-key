@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -14,17 +13,10 @@ import (
 
 var cnf *qnConfig.ConfigFile
 var dbConn *database.Connection
-var limit = 500
-
-type Response struct {
-	Address       string
-	BlockNumber   uint32
-	TransactionId uint32
-}
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
-	address := request.QueryStringParameters["address"]
-
+	// For now, we will just try to connect to the index database. If we can connect, then
+	// we report success.
 	if cnf == nil {
 		if err = loadConfig(); err != nil {
 			return
@@ -37,23 +29,8 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		}
 	}
 
-	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {
-		limit = int(confLimit)
-	}
-
-	items := make([]Response, 0, limit)
-	err = dbConn.Db().Where(&database.Appearance{Address: address}).Find(&items).Error
-	if err != nil {
-		return
-	}
-
-	// TODO: would returning non-JSON and rewriting the response in API gateway make it faster?
-	body, err := json.Marshal(items)
-	if err != nil {
-		return
-	}
 	response = events.APIGatewayProxyResponse{
-		Body:       string(body),
+		Body:       `{ "status": "ok" }`,
 		StatusCode: 200,
 	}
 	return
