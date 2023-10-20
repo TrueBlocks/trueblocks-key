@@ -13,18 +13,21 @@ import (
 const prefix = "QNEXT"
 
 type ConfigFile struct {
-	Version  string
-	Database map[string]databaseGroup
-	Sqs      sqsGroup
-	Query    queryGroup
+	Version     string
+	Database    map[string]databaseGroup
+	Sqs         sqsGroup
+	Query       queryGroup
+	QnProvision qnProvisionGroup
+	QnPlans     map[string]qnPlanGroup
 }
 
 type databaseGroup struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Database string
+	Host      string
+	Port      int
+	User      string
+	Password  string
+	Database  string
+	AwsSecret string
 }
 
 type sqsGroup struct {
@@ -34,6 +37,22 @@ type sqsGroup struct {
 
 type queryGroup struct {
 	MaxLimit uint
+}
+
+type qnProvisionGroup struct {
+	TableName    string
+	AuthUsername string
+	AuthPassword string
+	AwsSecret    string
+	// ARN of the API that the authorizer grants access to
+	// ApiArn string -- comes in an event from api gateway
+}
+
+type qnPlanGroup struct {
+	// Plan slug (name) that is registered in QN marketplace
+	QnSlug string
+	// Api Gateway (AWS) key id
+	AwsApiKey string
 }
 
 var cached *ConfigFile

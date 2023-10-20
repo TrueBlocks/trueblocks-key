@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	awshelper "trueblocks.io/awshelper/pkg"
 	config "trueblocks.io/config/pkg"
 	database "trueblocks.io/database/pkg"
 	"trueblocks.io/queue/consume/pkg/appearance"
@@ -45,7 +47,7 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 	return
 }
 
-func setupDbConnection() error {
+func setupDbConnection() (err error) {
 	cnf, err := config.Get("")
 	if err != nil {
 		return err
@@ -54,12 +56,25 @@ func setupDbConnection() error {
 		maxBatchSize = int(bs)
 	}
 
+	var password string
+	secretId := cnf.Database["default"].AwsSecret
+	if secretId != "" {
+		log.Println("using Secrets Manager secret as DB password")
+		password, err = awshelper.FetchSecret(secretId)
+		if err != nil {
+			return
+		}
+	} else {
+		log.Println("using configuration DB password")
+		password = cnf.Database["default"].Password
+	}
+
 	dbConn = &database.Connection{
 		Host:     cnf.Database["default"].Host,
 		Port:     cnf.Database["default"].Port,
 		Database: cnf.Database["default"].Database,
 		User:     cnf.Database["default"].User,
-		Password: cnf.Database["default"].Password,
+		Password: password,
 	}
 	return dbConn.Connect()
 }

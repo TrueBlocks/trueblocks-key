@@ -2,109 +2,424 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: AWS SAM template with a simple API definition
 
+Parameters:
+  RDSMasterUserName:
+    Type: String
+    Default: admin
+  RDSDBName:
+    Type: String
+    Default: index
+  UsersQnTableName:
+    Type: String
+    Default: trueblocks-qn-users-qn
+  AppearancesQueueBatchSize:
+    Type: Number
+    Default: "10"
+  QnApiStageName:
+    Type: String
+    Default: prod
+
 # Global values that are applied to all applicable resources in this template
 Globals:
   Function:
     MemorySize: 1024
     Architectures: ["x86_64"]
-    Timeout: 60
-    Environment:
-      Variables:
-        SCNR_BUCKET_NAME: trueblocks-qn-index #!Ref IndexBucket
+    Timeout: 30
+    Layers:
+      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
 
 Resources:
-  # API
-  ApiGatewayApi:
-    Type: AWS::Serverless::Api
+  ###
+  # Databases
+  ###
+
+  ## SQL Appearances
+
+  # Database master user password. Note: we want it to be managed by RDS service
+  RDSMasterSecret:
+    Type: AWS::SecretsManager::Secret
     Properties:
-      StageName: prod
-  # Adds a GET api endpoint at "/index" to the ApiGatewayApi via an Api event
-  ApiFunction:
+      Description: 'RDS instance secret'
+      GenerateSecretString:
+        SecretStringTemplate: !Sub '{"username": "${!Ref RDSMasterUserName}"}'
+        GenerateStringKey: 'password'
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\'
+
+  # Database
+  IndexDatabase:
+    Type: AWS::RDS::DBInstance
+    DependsOn:
+      - RDSSecurityGroup
+      - RDSSubnetGroup
+    Properties:
+      DBInstanceIdentifier: indexdatabase
+      Engine: postgres
+      DBName: !Ref RDSDBName
+      MasterUsername: !Ref RDSMasterUserName
+      # https://github.com/aws-samples/aws-secrets-manager-secure-database-credentials/blob/main/secretsmanager_IaC.yml
+      # MasterUserPassword: !Join ['', ['{{resolve:secretsmanager:', !Ref MyRDSInstanceRotationSecret, ':SecretString:password}}' ]]
+      # TODO: Does this rotate the secret?
+      ManageMasterUserPassword: true
+      MasterUserSecret:
+        SecretArn: !Ref RDSMasterSecret
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+
+  ### DynamoDB QN users
+  UsersQn:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: QuicknodeId
+        Type: String
+      TableName: !Ref UsersQnTableName
+
+  ###
+  # Appearances Queue
+  ###
+
+  AppearancesQueueConsume:
     Type: AWS::Serverless::Function
-    DependsOn: "MountTarget1"
+    DependsOn:
+      - IndexDatabase
+      - AppearancesQueue
     Properties:
       Runtime: go1.x
-      Handler: scanner
-      CodeUri: scanner/lambda
-      Layers:
-        # move to Globals to enable for all functions
-      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
-      VpcConfig:
-        SecurityGroupIds:
-        - Ref: EfsSecurityGroup
-        SubnetIds:
-        - Ref: Subnet1
-      FileSystemConfigs:
-      - Arn: !GetAtt AccessPoint.Arn
-        LocalMountPath: "/mnt/efs"
+      Handler: consume
+      CodeUri: queue/consume/lambda
+      Events:
+        Ingest:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AppearancesQueue.Arn
+            BatchSize: !Ref AppearancesQueueBatchSize
+      Environment:
+        Variables:
+          QNEXT_SQS_BATCHSIZE: !Ref AppearancesQueueBatchSize
+          QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          QNEXT_DATABASEPORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
+  AppearancesQueue:
+    Type: AWS::SQS::Queue
+
+  ###
+  # API
+  ###
+
+  QnApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref QnApiStageName
+      ApiKeySourceType: AUTHORIZER
+      Models:
+        RpcRequest:
+          type: object
+          required:
+            - method
+            - params
+          Properties:
+            jsonrpc:
+              type: string
+            id:
+              type: number
+            method:
+              type: string
+            params:
+              type: array
+              items:
+                address:
+                  type: string
+                  required: true
+                page:
+                  type: number
+                perPage:
+                  type: number
+      Auth:
+        # Authorizer
+        DefaultAuthorizer: LambdaAuthorizer
+        Authorizers:
+          LambdaAuthorizer:
+            # This setup uses default auth caching of 300 sec = 5 h
+            FunctionPayloadType: REQUEST
+            FunctionArn: !GetAtt QnAuthorizer.Arn
+            Identity:
+              Headers:
+                - Authorization
+                - x-quicknode-id
+
+  # ### QN Authorizer
+  QnAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: authorizer
+      CodeUri: quicknode/authorizer/lambda
+      Environment:
+        Variables:
+          QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
+          QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
+          QNEXT_QNPLANS_BETATEST_QNSLUG: qn-beta-test
+          # TODO: this 1. causes circular dependency 2. doesn't work
+          #QNEXT_QNPLANS_BETATEST_AWSAPIKEY: !Ref ApiKeyQnBetaTest
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref ProvisionQnSecret
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
+  # ### QN healthcheck
+
+  ApiHealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: healthcheck
+      CodeUri: quicknode/healthcheck/lambda
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /index
+            # Make sure this endpoint does not require auth
+            Auth:
+              # ApiKeyRequired: false
+              Authorizer: NONE
+            Path: /healthcheck
             Method: get
-            RequestParameters:
-              - method.request.querystring.address:
-                  Required: true
-                  Caching: false
-            TimeoutInMillis: 29000
+            RestApiId:
+              Ref: QnApi
+      Environment:
+        Variables:
+          QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          QNEXT_DATABASE_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref RDSMasterUserName
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
+  # ### QN Provision
+  ProvisionQnSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: QN Provision username and password
+      SecretString: '{"username":"Placeholder","password":"placeholder"}'
+
+  ApiProvisionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: provision
+      CodeUri: quicknode/provision/lambda
+      Events:
+        Provision:
+          Type: Api
+          Properties:
+            Path: /provision
+            Method: post
+            RestApiId:
+              Ref: QnApi
+            Auth:
+              # We cannot authorize against account here
+              Authorizer: NONE
+        Update:
+          Type: Api
+          Properties:
+            Path: /update
+            Method: put
+            RestApiId:
+              Ref: QnApi
+        Deactivate:
+          Type: Api
+          Properties:
+            Path: /deactivate_endpoint
+            Method: delete
+            RestApiId:
+              Ref: QnApi
+        Deprovision:
+          Type: Api
+          Properties:
+            Path: /deprovision
+            Method: delete
+            RestApiId:
+              Ref: QnApi
+      Environment:
+        Variables:
+          QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
+          QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref ProvisionQnSecret
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
+  # ### RPC route
+  RpcFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: query
+      CodeUri: query/lambda
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /rpc
+            Method: post
+            RequestModel:
+              Model: RpcRequest
+              Required: true
+              ValidateBody: true
             Auth:
               ApiKeyRequired: true
             RestApiId:
-              Ref: ApiGatewayApi
+              Ref: QnApi
+      Environment:
+        Variables:
+          QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          QNEXT_DATABASE_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+      VpcConfig: # For accessing RDS instance
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref privateLambdaSubnet1
+          - !Ref privateLambdaSubnet2
       Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref IndexBucket
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref RDSMasterSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
-  # EFS
-  VPC:
-    Type: AWS::EC2::VPC
+
+  ###
+  # Plans
+  ###
+
+  ### QN plans
+
+  UsagePlanQnBetaTest:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - QnApi
     Properties:
-      CidrBlock: 10.0.0.0/16
-  Subnet1:
-    Type: AWS::EC2::Subnet
+      ApiStages:
+        - ApiId: !Ref QnApi
+          Stage: !Ref QnApiStageName
+      Description: Test plan for QN beta testing
+      Quota:
+        Limit: 500
+        Period: MONTH
+      Throttle:
+            BurstLimit: 100
+            RateLimit: 10
+      UsagePlanName: qn-beta-test
+  ApiKeyQnBetaTest:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - UsagePlanQnBetaTest
     Properties:
-      VpcId:
-        Ref: VPC
-      CidrBlock: 10.0.1.0/24
-      AvailabilityZone: "us-west-2a"
-  EfsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+      Name: qn-beta-test-api-key
+      #Description:
+      Enabled: true
+      StageKeys:
+       - RestApiId: !Ref QnApi
+         StageName: !Ref QnApiStageName
+  LinkUsagePlanApiKeyQnBetaTest:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
     Properties:
-      VpcId:
-        Ref: VPC
-      GroupDescription: "mnt target sg"
-      SecurityGroupIngress:
-      - IpProtocol: -1
-        CidrIp: "0.0.0.0/0"
-  FileSystem:
-    Type: AWS::EFS::FileSystem
-    Properties:
-      PerformanceMode: generalPurpose
-  AccessPoint:
-    Type: AWS::EFS::AccessPoint
-    Properties:
-      FileSystemId:
-        Ref: FileSystem
-      PosixUser:
-        Uid: "1001"
-        Gid: "1001"
-      RootDirectory:
-        CreationInfo:
-          OwnerGid: "1001"
-          OwnerUid: "1001"
-          Permissions: "755"
-  MountTarget1:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId:
-        Ref: FileSystem
-      SubnetId:
-        Ref: Subnet1
-      SecurityGroups:
-      - Ref: EfsSecurityGroup
-  # end EFS
+      KeyId: !Ref ApiKeyQnBetaTest
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanQnBetaTest
+
+  ###
+  # S3 object storage
+  ###
+
+  # Not used:
   IndexBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: trueblocks-qn-index
+
+  ###
+  # Network
+  ###
+
+  # create VPC
+  RDSVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+        CidrBlock: 172.32.0.0/16
+        EnableDnsSupport: true
+        EnableDnsHostnames: true
+
+  # create subnets
+  privateDBSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref RDSVPC
+      CidrBlock: 172.32.0.0/20
+
+  privateDBSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref RDSVPC
+      CidrBlock: 172.32.16.0/20
+
+  privateLambdaSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref RDSVPC
+      CidrBlock: 172.32.32.0/20
+
+  privateLambdaSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref RDSVPC
+      CidrBlock: 172.32.48.0/20
+
+  RDSSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "description"
+      SubnetIds:
+        - !Ref privateDBSubnet1
+        - !Ref privateDBSubnet2
+
+  # Security groups
+  # https://repost.aws/knowledge-center/connect-lambda-to-an-rds-instance
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - LambdaSecurityGroup
+    Properties:
+      GroupDescription: Allow Postgres access from lambda subnets
+      VpcId: !Ref RDSVPC
+      # Make sure the database is only accessible from the stack, database port only
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        SourceSecurityGroupId : !Ref LambdaSecurityGroup
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - RDSVPC
+    Properties:
+      GroupDescription: Security group for Lambda ENIs
+      VpcId: !Ref RDSVPC
+      # Allow lambdas to connect to the database
+      # SecurityGroupEgress:
+      #   - IpProtocol: tcp
+      #     FromPort: -1
+      #     ToPort: 5432
+      #     DestinationSecurityGroupId: !Ref RDSSecurityGroup

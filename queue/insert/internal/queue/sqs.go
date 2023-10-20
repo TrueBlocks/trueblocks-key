@@ -48,6 +48,7 @@ func (s *SqsQueue) Add(app *appearance.Appearance) (msgId string, err error) {
 	}
 
 	msgInput := &sqs.SendMessageInput{
+		// Allows batching messages for consumers
 		DelaySeconds: 10,
 		MessageAttributes: map[string]types.MessageAttributeValue{
 			"Range": {
