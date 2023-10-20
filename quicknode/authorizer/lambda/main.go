@@ -36,12 +36,12 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		svc = dynamodb.New(sess)
 	}
 
-	apiArn := cnf.QnProvision.ApiArn
-	if apiArn == "" {
-		err = errors.New("cannot read API ARN from config")
-		log.Println(err.Error())
-		return
-	}
+	// apiArn := cnf.QnProvision.ApiArn
+	// if apiArn == "" {
+	// 	err = errors.New("cannot read API ARN from config")
+	// 	log.Println(err.Error())
+	// 	return
+	// }
 
 	// Create dummy request only so we can use it's BasicAuth method
 	// to check if QN Basic Auth is correct
@@ -110,6 +110,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 
 	// PrincipalID is something that uniquely identifies the account
 	result.PrincipalID = account.QuicknodeId
+	// TODO: this needs to return the key value, not key id
 	result.UsageIdentifierKey = apiKey
 	result.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
 		Version: "2012-10-17",
@@ -117,10 +118,10 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 			{
 				Effect: "allow",
 				Action: []string{
-					apiArn,
+					"execute-api:Invoke",
 				},
 				Resource: []string{
-					"execute-api:Invoke",
+					event.MethodArn,
 				},
 			},
 		},

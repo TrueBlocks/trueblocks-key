@@ -49,6 +49,9 @@ Resources:
   # Database
   IndexDatabase:
     Type: AWS::RDS::DBInstance
+    DependsOn:
+      - RDSSecurityGroup
+      - RDSSubnetGroup
     Properties:
       DBInstanceIdentifier: indexdatabase
       Engine: postgres
@@ -79,12 +82,15 @@ Resources:
 
   AppearancesQueueConsume:
     Type: AWS::Serverless::Function
+    DependsOn:
+      - IndexDatabase
+      - AppearancesQueue
     Properties:
       Runtime: go1.x
       Handler: consume
       CodeUri: queue/consume/lambda
       Events:
-        MySQSEvent:
+        Ingest:
           Type: SQS
           Properties:
             Queue: !GetAtt AppearancesQueue.Arn
@@ -111,6 +117,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref QnApiStageName
+      ApiKeySourceType: AUTHORIZER
       Models:
         RpcRequest:
           type: object
@@ -147,7 +154,7 @@ Resources:
                 - Authorization
                 - x-quicknode-id
 
-  ### QN Authorizer
+  # ### QN Authorizer
   QnAuthorizer:
     Type: AWS::Serverless::Function
     Properties:
@@ -158,15 +165,15 @@ Resources:
         Variables:
           QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
           QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
-          QNEXT_QNPROVISION_APIARN: !GetAtt RpcFunction.Arn
           QNEXT_QNPLANS_BETATEST_QNSLUG: qn-beta-test
-          QNEXT_QNPLANS_BETATEST_AWSAPIKEY: !Ref ApiKeyQnBetaTest
+          # TODO: this 1. causes circular dependency 2. doesn't work
+          #QNEXT_QNPLANS_BETATEST_AWSAPIKEY: !Ref ApiKeyQnBetaTest
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Ref ProvisionQnSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
 
-  ### QN healthcheck
+  # ### QN healthcheck
 
   ApiHealthCheckFunction:
     Type: AWS::Serverless::Function
@@ -180,7 +187,7 @@ Resources:
           Properties:
             # Make sure this endpoint does not require auth
             Auth:
-              ApiKeyRequired: false
+              # ApiKeyRequired: false
               Authorizer: NONE
             Path: /healthcheck
             Method: get
@@ -198,7 +205,7 @@ Resources:
             SecretArn: !Ref RDSMasterUserName
         - CloudWatchLambdaInsightsExecutionRolePolicy
 
-  ### QN Provision
+  # ### QN Provision
   ProvisionQnSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -219,6 +226,9 @@ Resources:
             Method: post
             RestApiId:
               Ref: QnApi
+            Auth:
+              # We cannot authorize against account here
+              Authorizer: NONE
         Update:
           Type: Api
           Properties:
@@ -249,7 +259,7 @@ Resources:
             SecretArn: !Ref ProvisionQnSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
 
-  ### RPC route
+  # ### RPC route
   RpcFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -293,6 +303,7 @@ Resources:
   ###
 
   ### QN plans
+
   UsagePlanQnBetaTest:
     Type: 'AWS::ApiGateway::UsagePlan'
     DependsOn:
@@ -387,6 +398,8 @@ Resources:
 
   RDSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - LambdaSecurityGroup
     Properties:
       GroupDescription: Allow Postgres access from lambda subnets
       VpcId: !Ref RDSVPC
@@ -399,12 +412,14 @@ Resources:
 
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - RDSVPC
     Properties:
       GroupDescription: Security group for Lambda ENIs
       VpcId: !Ref RDSVPC
       # Allow lambdas to connect to the database
-      SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: -1
-          ToPort: 5432
-          DestinationSecurityGroupId: !Ref RDSSecurityGroup
+      # SecurityGroupEgress:
+      #   - IpProtocol: tcp
+      #     FromPort: -1
+      #     ToPort: 5432
+      #     DestinationSecurityGroupId: !Ref RDSSecurityGroup

@@ -45,7 +45,7 @@ type qnProvisionGroup struct {
 	AuthPassword string
 	AwsSecret    string
 	// ARN of the API that the authorizer grants access to
-	ApiArn string
+	// ApiArn string -- comes in an event from api gateway
 }
 
 type qnPlanGroup struct {
