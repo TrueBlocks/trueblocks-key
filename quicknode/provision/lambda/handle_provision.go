@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	qnaccount "trueblocks.io/quicknode/account"
 )
 
 func HandleProvision(c *gin.Context) {
-	var account *Account
+	account := qnaccount.NewAccount(svc, cnf.QnProvision.TableName)
 	success := func() {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
@@ -24,13 +25,13 @@ func HandleProvision(c *gin.Context) {
 	}
 
 	// First check if the user is already in the database
-	dbItem, err := account.DynamoGet()
+	result, err := account.DynamoGet()
 	if err != nil {
 		log.Println("provision: account.DynamoRead:", err)
 		c.AbortWithError(http.StatusInternalServerError, nil)
 		return
 	}
-	if dbItem != nil {
+	if result != nil {
 		// We already have the account registered
 		log.Println("account already registered", account.QuicknodeId)
 		success()

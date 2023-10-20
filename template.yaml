@@ -15,6 +15,9 @@ Parameters:
   AppearancesQueueBatchSize:
     Type: Number
     Default: "10"
+  QnApiStageName:
+    Type: String
+    Default: prod
 
 # Global values that are applied to all applicable resources in this template
 Globals:
@@ -104,42 +107,67 @@ Resources:
   # API
   ###
 
-  QnAPI:
+  QnApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: prod
-      # Models:
-      #   # {"jsonrpc":"2.0","method":"eth_syncing","params":[], "id": 1}
-      #   RPCCall:
-      #     type: object
-      #     required:
-      #       - method
-      #       - params
-      #     Properties:
-      #       jsonrpc:
-      #         Type: string
-      #       id:
-      #         Type: number
-      #       method:
-      #         Type: string
-      #       params:
-      #         Type: array
-      #         Items:
-      #           address:
-      #             Type: string
-
+      StageName: !Ref QnApiStageName
+      Models:
+        RpcRequest:
+          type: object
+          required:
+            - method
+            - params
+          Properties:
+            jsonrpc:
+              type: string
+            id:
+              type: number
+            method:
+              type: string
+            params:
+              type: array
+              items:
+                address:
+                  type: string
+                  required: true
+                page:
+                  type: number
+                perPage:
+                  type: number
       Auth:
-        DefaultAuthorizer: MyLambdaRequestAuthorizer
+        # Authorizer
+        DefaultAuthorizer: LambdaAuthorizer
         Authorizers:
-          MyLambdaRequestAuthorizer:
+          LambdaAuthorizer:
+            # This setup uses default auth caching of 300 sec = 5 h
             FunctionPayloadType: REQUEST
-            FunctionArn: !GetAtt MyAuthFunction.Arn
+            FunctionArn: !GetAtt QnAuthorizer.Arn
             Identity:
               Headers:
+                - Authorization
                 - x-quicknode-id
 
+  ### QN Authorizer
+  QnAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: go1.x
+      Handler: authorizer
+      CodeUri: quicknode/authorizer/lambda
+      Environment:
+        Variables:
+          QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
+          QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
+          QNEXT_QNPROVISION_APIARN: !GetAtt RpcFunction.Arn
+          QNEXT_QNPLANS_BETATEST_QNSLUG: qn-beta-test
+          QNEXT_QNPLANS_BETATEST_AWSAPIKEY: !Ref ApiKeyQnBetaTest
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref ProvisionQnSecret
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
   ### QN healthcheck
-  # Make sure this endpoint does not require auth
+
   ApiHealthCheckFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -150,10 +178,14 @@ Resources:
         ApiEvent:
           Type: Api
           Properties:
+            # Make sure this endpoint does not require auth
+            Auth:
+              ApiKeyRequired: false
+              Authorizer: NONE
             Path: /healthcheck
             Method: get
             RestApiId:
-              Ref: QnAPI
+              Ref: QnApi
       Environment:
         Variables:
           QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
@@ -186,28 +218,28 @@ Resources:
             Path: /provision
             Method: post
             RestApiId:
-              Ref: QnAPI
+              Ref: QnApi
         Update:
           Type: Api
           Properties:
             Path: /update
             Method: put
             RestApiId:
-              Ref: QnAPI
+              Ref: QnApi
         Deactivate:
           Type: Api
           Properties:
             Path: /deactivate_endpoint
             Method: delete
             RestApiId:
-              Ref: QnAPI
+              Ref: QnApi
         Deprovision:
           Type: Api
           Properties:
             Path: /deprovision
             Method: delete
             RestApiId:
-              Ref: QnAPI
+              Ref: QnApi
       Environment:
         Variables:
           QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
@@ -230,11 +262,14 @@ Resources:
           Properties:
             Path: /rpc
             Method: post
-            # RequestModel
+            RequestModel:
+              Model: RpcRequest
+              Required: true
+              ValidateBody: true
             Auth:
               ApiKeyRequired: true
             RestApiId:
-              Ref: QnAPI
+              Ref: QnApi
       Environment:
         Variables:
           QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
@@ -252,6 +287,45 @@ Resources:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Ref RDSMasterSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
+
+  ###
+  # Plans
+  ###
+
+  ### QN plans
+  UsagePlanQnBetaTest:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - QnApi
+    Properties:
+      ApiStages:
+        - ApiId: !Ref QnApi
+          Stage: !Ref QnApiStageName
+      Description: Test plan for QN beta testing
+      Quota:
+        Limit: 500
+        Period: MONTH
+      Throttle:
+            BurstLimit: 100
+            RateLimit: 10
+      UsagePlanName: qn-beta-test
+  ApiKeyQnBetaTest:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - UsagePlanQnBetaTest
+    Properties:
+      Name: qn-beta-test-api-key
+      #Description:
+      Enabled: true
+      StageKeys:
+       - RestApiId: !Ref QnApi
+         StageName: !Ref QnApiStageName
+  LinkUsagePlanApiKeyQnBetaTest:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    Properties:
+      KeyId: !Ref ApiKeyQnBetaTest
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanQnBetaTest
 
   ###
   # S3 object storage

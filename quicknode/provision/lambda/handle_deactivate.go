@@ -6,12 +6,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	qnaccount "trueblocks.io/quicknode/account"
 )
 
 func HandleDeactivateEndpoint(c *gin.Context) {
 	// Since we don't need to support endpoint, we will just
 	// validate the account and return success if it's registered
-	var account *Account
+	account := qnaccount.NewAccount(svc, cnf.QnProvision.TableName)
 
 	err := c.BindJSON(&account)
 	if err != nil {
@@ -21,13 +22,13 @@ func HandleDeactivateEndpoint(c *gin.Context) {
 	}
 
 	// Read account data
-	dbItem, err := account.DynamoGet()
+	result, err := account.DynamoGet()
 	if err != nil {
 		log.Println("deactivate: account.DynamoRead:", err)
 		c.AbortWithError(http.StatusInternalServerError, nil)
 		return
 	}
-	if dbItem == nil {
+	if result == nil {
 		// This account is not registered
 		log.Println("deactivate: account not found", account.QuicknodeId)
 		c.AbortWithError(http.StatusNotFound, errors.New("account not found"))

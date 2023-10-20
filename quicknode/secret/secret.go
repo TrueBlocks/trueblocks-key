@@ -1,4 +1,4 @@
-package main
+package secret
 
 import (
 	"encoding/json"
@@ -12,8 +12,7 @@ type authSecret struct {
 	Password string `json:"password"`
 }
 
-func fetchAuthSecret() (secret *authSecret, err error) {
-	secretId := cnf.QnProvision.AwsSecret
+func FetchAuthSecret(secretId string) (secret *authSecret, err error) {
 	if secretId == "" {
 		err = errors.New("secretId is empty")
 		return

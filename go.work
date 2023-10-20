@@ -9,7 +9,10 @@ use (
 	./query
 	./queue/consume
 	./queue/insert
+	./quicknode/account
+	./quicknode/authorizer
 	./quicknode/healthcheck
 	./quicknode/provision
+	./quicknode/secret
 	./scanner/
 )

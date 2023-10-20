@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	qnaccount "trueblocks.io/quicknode/account"
 )
 
 func HandleUpdate(c *gin.Context) {
-	var account *Account
+	account := qnaccount.NewAccount(svc, cnf.QnProvision.TableName)
 
 	err := c.BindJSON(&account)
 	if err != nil {
@@ -19,13 +20,13 @@ func HandleUpdate(c *gin.Context) {
 	}
 
 	// Read account data
-	dbItem, err := account.DynamoGet()
+	result, err := account.DynamoGet()
 	if err != nil {
 		log.Println("update: account.DynamoRead:", err)
 		c.AbortWithError(http.StatusInternalServerError, nil)
 		return
 	}
-	if dbItem == nil {
+	if result == nil {
 		// This account is not registered
 		log.Println("update: account not found", account.QuicknodeId)
 		c.AbortWithError(http.StatusNotFound, errors.New("account not found"))

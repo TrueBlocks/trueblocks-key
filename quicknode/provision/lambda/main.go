@@ -6,26 +6,24 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
 	qnConfig "trueblocks.io/config/pkg"
+	"trueblocks.io/quicknode/secret"
 )
 
 var cnf *qnConfig.ConfigFile
 var svc *dynamodb.DynamoDB
 var ginLambda *ginadapter.GinLambda
-var dynamoTableName *string
 
 func init() {
 	if err := loadConfig(); err != nil {
 		panic(fmt.Errorf("reading configuration: %w", err))
 	}
 
-	dynamoTableName = aws.String(cnf.QnProvision.TableName)
-	secret, err := fetchAuthSecret()
+	secret, err := secret.FetchAuthSecret(cnf.QnProvision.AwsSecret)
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +45,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func initDynamoDb() {
-	if svc == nil {
+	if svc != nil {
 		return
 	}
 

@@ -1,4 +1,4 @@
-package main
+package qnaccount
 
 import (
 	"fmt"
@@ -19,17 +19,24 @@ type Account struct {
 	// Test does not come with request body, it has to be read from
 	// request headers
 	Test bool `json:"test"`
+
+	dynamoClient    *dynamodb.DynamoDB
+	dynamoTableName *string
 }
 
-func (a *Account) DynamoGet() (item map[string]*dynamodb.AttributeValue, err error) {
-	result, err := svc.GetItem(&dynamodb.GetItemInput{
-		TableName: dynamoTableName,
+func NewAccount(dynamoSession *dynamodb.DynamoDB, tableName string) *Account {
+	return &Account{
+		dynamoClient:    dynamoSession,
+		dynamoTableName: aws.String(tableName),
+	}
+}
+
+func (a *Account) DynamoGet() (result *dynamodb.GetItemOutput, err error) {
+	result, err = a.dynamoClient.GetItem(&dynamodb.GetItemInput{
+		TableName: a.dynamoTableName,
 		Key:       a.dynamoKey(),
 	})
-	if err != nil {
-		return
-	}
-	item = result.Item
+
 	return
 }
 
@@ -41,9 +48,9 @@ func (a *Account) DynamoPut() (err error) {
 		return
 	}
 
-	_, err = svc.PutItem(&dynamodb.PutItemInput{
+	_, err = a.dynamoClient.PutItem(&dynamodb.PutItemInput{
 		Item:      encoded,
-		TableName: dynamoTableName,
+		TableName: a.dynamoTableName,
 	})
 	if err != nil {
 		err = fmt.Errorf("put item: %w", err)
@@ -52,9 +59,9 @@ func (a *Account) DynamoPut() (err error) {
 }
 
 func (a *Account) DynamoDelete() (err error) {
-	_, err = svc.DeleteItem(&dynamodb.DeleteItemInput{
+	_, err = a.dynamoClient.DeleteItem(&dynamodb.DeleteItemInput{
 		Key:       a.dynamoKey(),
-		TableName: dynamoTableName,
+		TableName: a.dynamoTableName,
 	})
 	if err != nil {
 		err = fmt.Errorf("delete item: %w", err)
