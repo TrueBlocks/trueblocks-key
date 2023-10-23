@@ -52,7 +52,7 @@ type qnPlanGroup struct {
 	// Plan slug (name) that is registered in QN marketplace
 	QnSlug string
 	// Api Gateway (AWS) key id
-	AwsApiKey string
+	AwsApiKeyId string
 }
 
 var cached *ConfigFile

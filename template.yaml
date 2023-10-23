@@ -326,7 +326,6 @@ Resources:
       - UsagePlanQnBetaTest
     Properties:
       Name: qn-beta-test-api-key
-      #Description:
       Enabled: true
       StageKeys:
        - RestApiId: !Ref QnApi

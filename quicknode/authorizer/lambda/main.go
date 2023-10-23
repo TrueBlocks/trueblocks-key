@@ -9,6 +9,8 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	qnConfig "trueblocks.io/config/pkg"
@@ -18,6 +20,7 @@ import (
 
 var cnf *qnConfig.ConfigFile
 var svc *dynamodb.DynamoDB
+var apiGatewayClient *apigateway.Client
 var errUnauthorized = errors.New("Unauthorized")
 
 func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerRequestTypeRequest) (result events.APIGatewayCustomAuthorizerResponse, err error) {
@@ -35,13 +38,11 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		// Create DynamoDB client
 		svc = dynamodb.New(sess)
 	}
-
-	// apiArn := cnf.QnProvision.ApiArn
-	// if apiArn == "" {
-	// 	err = errors.New("cannot read API ARN from config")
-	// 	log.Println(err.Error())
-	// 	return
-	// }
+	if apiGatewayClient == nil {
+		apiGatewayClient = apigateway.New(apigateway.Options{
+			AppID: "qn-authorizer",
+		})
+	}
 
 	// Create dummy request only so we can use it's BasicAuth method
 	// to check if QN Basic Auth is correct
@@ -110,7 +111,6 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 
 	// PrincipalID is something that uniquely identifies the account
 	result.PrincipalID = account.QuicknodeId
-	// TODO: this needs to return the key value, not key id
 	result.UsageIdentifierKey = apiKey
 	result.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
 		Version: "2012-10-17",
@@ -129,11 +129,28 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 	return
 }
 
+var planSlugToApiKey map[string]string
+
 func findPlanApiKey(qnPlanSlug string) (string, error) {
+	if cached := planSlugToApiKey[qnPlanSlug]; cached != "" {
+		return cached, nil
+	}
+
 	for _, planConfig := range cnf.QnPlans {
-		if planConfig.QnSlug == qnPlanSlug {
-			return planConfig.AwsApiKey, nil
+		if planConfig.QnSlug != qnPlanSlug {
+			continue
 		}
+
+		keyOutput, err := apiGatewayClient.GetApiKey(context.TODO(), &apigateway.GetApiKeyInput{
+			ApiKey:       &planConfig.AwsApiKeyId,
+			IncludeValue: aws.Bool(true),
+		})
+		if err != nil {
+			return "", err
+		}
+		planSlugToApiKey[qnPlanSlug] = *keyOutput.Value
+		return *keyOutput.Value, nil
+
 	}
 	return "", fmt.Errorf("cannot find API key for qn plan slug '%s'", qnPlanSlug)
 }
