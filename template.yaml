@@ -25,7 +25,6 @@ Parameters:
 # Global values that are applied to all applicable resources in this template
 Globals:
   Function:
-    MemorySize: 1024
     Architectures: ["x86_64"]
     Timeout: 30
     Layers:
@@ -89,6 +88,7 @@ Resources:
       - IndexDatabase
       - AppearancesQueue
     Properties:
+      MemorySize: 512
       Runtime: go1.x
       Handler: consume
       CodeUri: queue/consume/lambda
@@ -161,6 +161,7 @@ Resources:
   QnAuthorizer:
     Type: AWS::Serverless::Function
     Properties:
+      MemorySize: 512
       Runtime: go1.x
       Handler: authorizer
       CodeUri: quicknode/authorizer/lambda
@@ -178,6 +179,7 @@ Resources:
   ApiHealthCheckFunction:
     Type: AWS::Serverless::Function
     Properties:
+      MemorySize: 512
       Runtime: go1.x
       Handler: healthcheck
       CodeUri: quicknode/healthcheck/lambda
@@ -215,6 +217,7 @@ Resources:
   ApiProvisionFunction:
     Type: AWS::Serverless::Function
     Properties:
+      MemorySize: 1024
       Runtime: go1.x
       Handler: provision
       CodeUri: quicknode/provision/lambda
@@ -263,6 +266,7 @@ Resources:
   RpcFunction:
     Type: AWS::Serverless::Function
     Properties:
+      MemorySize: 1024
       Runtime: go1.x
       Handler: query
       CodeUri: query/lambda
