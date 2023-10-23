@@ -3,18 +3,17 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	qnConfig "trueblocks.io/config/pkg"
 	qnaccount "trueblocks.io/quicknode/account"
+	"trueblocks.io/quicknode/authorizer/pkg/plan"
 	"trueblocks.io/quicknode/secret"
 )
 
@@ -102,7 +101,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 	}
 
 	planSlug := planItem.GoString()
-	apiKey, err := findPlanApiKey(planSlug)
+	apiKey, err := plan.FindBySlug(apiGatewayClient, planSlug)
 	if err != nil {
 		log.Println(err)
 		err = errUnauthorized
@@ -125,35 +124,6 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 				},
 			},
 		},
-	}
-	return
-}
-
-var planSlugToApiKey map[string]string
-
-func findPlanApiKey(qnPlanSlug string) (keyValue string, err error) {
-	if len(planSlugToApiKey) == 0 {
-		log.Println("loading plans into cache")
-		keysOutput, err := apiGatewayClient.GetApiKeys(context.TODO(), &apigateway.GetApiKeysInput{
-			IncludeValues: aws.Bool(true),
-		})
-		if err != nil {
-			err = fmt.Errorf("cannot get api keys: %w", err)
-			return "", err
-		}
-
-		for _, apiKey := range keysOutput.Items {
-			if !apiKey.Enabled {
-				log.Println("findPlanApiKey: ommiting disabled key:", apiKey.Id)
-				continue
-			}
-			planSlugToApiKey[*apiKey.Name] = *apiKey.Value
-		}
-	}
-
-	keyValue = planSlugToApiKey[qnPlanSlug]
-	if keyValue == "" {
-		return "", fmt.Errorf("cannot find API key for qn plan slug '%s'", qnPlanSlug)
 	}
 	return
 }
