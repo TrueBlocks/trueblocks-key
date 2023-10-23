@@ -18,7 +18,6 @@ type ConfigFile struct {
 	Sqs         sqsGroup
 	Query       queryGroup
 	QnProvision qnProvisionGroup
-	QnPlans     map[string]qnPlanGroup
 }
 
 type databaseGroup struct {
@@ -46,13 +45,6 @@ type qnProvisionGroup struct {
 	AwsSecret    string
 	// ARN of the API that the authorizer grants access to
 	// ApiArn string -- comes in an event from api gateway
-}
-
-type qnPlanGroup struct {
-	// Plan slug (name) that is registered in QN marketplace
-	QnSlug string
-	// Api Gateway (AWS) key id
-	AwsApiKeyId string
 }
 
 var cached *ConfigFile

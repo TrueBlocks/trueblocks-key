@@ -18,6 +18,9 @@ Parameters:
   QnApiStageName:
     Type: String
     Default: prod
+  QnBetaTestApiKeyName:
+    Type: String
+    Default: qn-beta-test
 
 # Global values that are applied to all applicable resources in this template
 Globals:
@@ -165,9 +168,6 @@ Resources:
         Variables:
           QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
           QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
-          QNEXT_QNPLANS_BETATEST_QNSLUG: qn-beta-test
-          # TODO: this 1. causes circular dependency 2. doesn't work
-          #QNEXT_QNPLANS_BETATEST_AWSAPIKEY: !Ref ApiKeyQnBetaTest
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Ref ProvisionQnSecret
@@ -325,7 +325,9 @@ Resources:
     DependsOn:
       - UsagePlanQnBetaTest
     Properties:
-      Name: qn-beta-test-api-key
+      # Note: due to SAM limitations, name of the plan HAS to be the same
+      # as plan slug defined in QN
+      Name: !Ref QnBetaTestApiKeyName
       Enabled: true
       StageKeys:
        - RestApiId: !Ref QnApi

@@ -131,28 +131,31 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 
 var planSlugToApiKey map[string]string
 
-func findPlanApiKey(qnPlanSlug string) (string, error) {
-	if cached := planSlugToApiKey[qnPlanSlug]; cached != "" {
-		return cached, nil
-	}
-
-	for _, planConfig := range cnf.QnPlans {
-		if planConfig.QnSlug != qnPlanSlug {
-			continue
-		}
-
-		keyOutput, err := apiGatewayClient.GetApiKey(context.TODO(), &apigateway.GetApiKeyInput{
-			ApiKey:       &planConfig.AwsApiKeyId,
-			IncludeValue: aws.Bool(true),
+func findPlanApiKey(qnPlanSlug string) (keyValue string, err error) {
+	if len(planSlugToApiKey) == 0 {
+		log.Panicln("loading plans into cache")
+		keysOutput, err := apiGatewayClient.GetApiKeys(context.TODO(), &apigateway.GetApiKeysInput{
+			IncludeValues: aws.Bool(true),
 		})
 		if err != nil {
+			err = fmt.Errorf("cannot get api keys: %w", err)
 			return "", err
 		}
-		planSlugToApiKey[qnPlanSlug] = *keyOutput.Value
-		return *keyOutput.Value, nil
 
+		for _, apiKey := range keysOutput.Items {
+			if !apiKey.Enabled {
+				log.Panicln("findPlanApiKey: ommiting disabled key:", apiKey.Id)
+				continue
+			}
+			planSlugToApiKey[*apiKey.Name] = *apiKey.Value
+		}
 	}
-	return "", fmt.Errorf("cannot find API key for qn plan slug '%s'", qnPlanSlug)
+
+	keyValue = planSlugToApiKey[qnPlanSlug]
+	if keyValue == "" {
+		return "", fmt.Errorf("cannot find API key for qn plan slug '%s'", qnPlanSlug)
+	}
+	return
 }
 
 func main() {
