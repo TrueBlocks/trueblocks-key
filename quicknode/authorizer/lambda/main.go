@@ -133,7 +133,7 @@ var planSlugToApiKey map[string]string
 
 func findPlanApiKey(qnPlanSlug string) (keyValue string, err error) {
 	if len(planSlugToApiKey) == 0 {
-		log.Panicln("loading plans into cache")
+		log.Println("loading plans into cache")
 		keysOutput, err := apiGatewayClient.GetApiKeys(context.TODO(), &apigateway.GetApiKeysInput{
 			IncludeValues: aws.Bool(true),
 		})
@@ -144,7 +144,7 @@ func findPlanApiKey(qnPlanSlug string) (keyValue string, err error) {
 
 		for _, apiKey := range keysOutput.Items {
 			if !apiKey.Enabled {
-				log.Panicln("findPlanApiKey: ommiting disabled key:", apiKey.Id)
+				log.Println("findPlanApiKey: ommiting disabled key:", apiKey.Id)
 				continue
 			}
 			planSlugToApiKey[*apiKey.Name] = *apiKey.Value
