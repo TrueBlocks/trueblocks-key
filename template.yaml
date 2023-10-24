@@ -348,10 +348,10 @@ Resources:
   ###
 
   # Not used:
-  IndexBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: trueblocks-qn-index
+  # IndexBucket:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     BucketName: trueblocks-qn-index
 
   ###
   # Network
