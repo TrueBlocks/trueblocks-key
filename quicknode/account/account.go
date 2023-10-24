@@ -1,11 +1,14 @@
 package qnaccount
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type Account struct {
@@ -19,20 +22,22 @@ type Account struct {
 	// Test does not come with request body, it has to be read from
 	// request headers
 	Test bool `json:"test"`
+	// ApiKey is set by us
+	ApiKey ApiKey `json:"api_key"`
 
-	dynamoClient    *dynamodb.DynamoDB
+	dynamoClient    *dynamodb.Client
 	dynamoTableName *string
 }
 
-func NewAccount(dynamoSession *dynamodb.DynamoDB, tableName string) *Account {
+func NewAccount(dynamoClient *dynamodb.Client, tableName string) *Account {
 	return &Account{
-		dynamoClient:    dynamoSession,
+		dynamoClient:    dynamoClient,
 		dynamoTableName: aws.String(tableName),
 	}
 }
 
 func (a *Account) DynamoGet() (result *dynamodb.GetItemOutput, err error) {
-	result, err = a.dynamoClient.GetItem(&dynamodb.GetItemInput{
+	result, err = a.dynamoClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
 		TableName: a.dynamoTableName,
 		Key:       a.dynamoKey(),
 	})
@@ -41,14 +46,19 @@ func (a *Account) DynamoGet() (result *dynamodb.GetItemOutput, err error) {
 }
 
 func (a *Account) DynamoPut() (err error) {
+	if a.ApiKey.Value == "" {
+		err = errors.New("cannot put with empty ApiKey.Value")
+		return
+	}
+
 	// Note: Example uses non-pointer value: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/dynamo-example-create-table-item.html
-	encoded, err := dynamodbattribute.MarshalMap(a)
+	encoded, err := attributevalue.MarshalMap(a)
 	if err != nil {
 		err = fmt.Errorf("marshal: %w", err)
 		return
 	}
 
-	_, err = a.dynamoClient.PutItem(&dynamodb.PutItemInput{
+	_, err = a.dynamoClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		Item:      encoded,
 		TableName: a.dynamoTableName,
 	})
@@ -59,7 +69,7 @@ func (a *Account) DynamoPut() (err error) {
 }
 
 func (a *Account) DynamoDelete() (err error) {
-	_, err = a.dynamoClient.DeleteItem(&dynamodb.DeleteItemInput{
+	_, err = a.dynamoClient.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
 		Key:       a.dynamoKey(),
 		TableName: a.dynamoTableName,
 	})
@@ -69,10 +79,10 @@ func (a *Account) DynamoDelete() (err error) {
 	return
 }
 
-func (a *Account) dynamoKey() map[string]*dynamodb.AttributeValue {
-	return map[string]*dynamodb.AttributeValue{
-		"QuicknodeId": {
-			S: aws.String(a.QuicknodeId),
+func (a *Account) dynamoKey() map[string]types.AttributeValue {
+	return map[string]types.AttributeValue{
+		"QuicknodeId": &types.AttributeValueMemberS{
+			Value: a.QuicknodeId,
 		},
 	}
 }

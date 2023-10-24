@@ -10,7 +10,7 @@ import (
 )
 
 func HandleUpdate(c *gin.Context) {
-	account := qnaccount.NewAccount(svc, cnf.QnProvision.TableName)
+	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 
 	err := c.BindJSON(&account)
 	if err != nil {
@@ -34,6 +34,15 @@ func HandleUpdate(c *gin.Context) {
 	}
 
 	// Save updated account
+	initApiGateway()
+	apiKey, err := qnaccount.FindByPlanSlug(apiGatewayClient, account.Plan)
+	if err != nil {
+		log.Println("fetching API key for plan", account.Plan, ":", err)
+		c.AbortWithError(http.StatusInternalServerError, nil)
+		return
+	}
+	account.ApiKey = *apiKey
+
 	if err = account.DynamoPut(); err != nil {
 		log.Println("update: saving account", account.QuicknodeId, ":", err)
 		c.AbortWithError(http.StatusInternalServerError, nil)

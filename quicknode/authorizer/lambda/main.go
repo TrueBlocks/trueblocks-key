@@ -8,18 +8,17 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/service/apigateway"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	qnConfig "trueblocks.io/config/pkg"
 	qnaccount "trueblocks.io/quicknode/account"
-	"trueblocks.io/quicknode/authorizer/pkg/plan"
 	"trueblocks.io/quicknode/secret"
 )
 
 var cnf *qnConfig.ConfigFile
-var svc *dynamodb.DynamoDB
-var apiGatewayClient *apigateway.Client
+var dynamoClient *dynamodb.Client
 var errUnauthorized = errors.New("Unauthorized")
 
 func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerRequestTypeRequest) (result events.APIGatewayCustomAuthorizerResponse, err error) {
@@ -29,18 +28,15 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 			return
 		}
 	}
-	if svc == nil {
-		sess := session.Must(session.NewSessionWithOptions(session.Options{
-			SharedConfigState: session.SharedConfigEnable,
-		}))
-
+	if dynamoClient == nil {
+		var awsConfig aws.Config
+		awsConfig, err = config.LoadDefaultConfig(context.TODO())
+		if err != nil {
+			log.Println("error reading config:", err)
+			return
+		}
 		// Create DynamoDB client
-		svc = dynamodb.New(sess)
-	}
-	if apiGatewayClient == nil {
-		apiGatewayClient = apigateway.New(apigateway.Options{
-			AppID: "qn-authorizer",
-		})
+		dynamoClient = dynamodb.NewFromConfig(awsConfig)
 	}
 
 	// Create dummy request only so we can use it's BasicAuth method
@@ -72,7 +68,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 
 	// QN Basic Auth is correct, we can now check account credentials
 
-	account := qnaccount.NewAccount(svc, cnf.QnProvision.TableName)
+	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 	account.QuicknodeId = event.Headers["x-quicknode-id"]
 
 	if account.QuicknodeId == "" {
@@ -93,24 +89,21 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		return
 	}
 
-	planItem := getResult.Item["Plan"]
-	if planItem == nil {
-		log.Println("plan is nil", account.QuicknodeId)
+	apiKeyAttr, ok := getResult.Item["ApiKey"]
+	if !ok || apiKeyAttr == nil {
+		log.Println("empty Account.ApiKey", account.QuicknodeId)
 		err = errUnauthorized
 		return
 	}
-
-	planSlug := planItem.GoString()
-	apiKey, err := plan.FindBySlug(apiGatewayClient, planSlug)
-	if err != nil {
-		log.Println(err)
+	if err = attributevalue.Unmarshal(apiKeyAttr, account.ApiKey); err != nil {
+		log.Println("unmarshal Account.ApiKey:", err)
 		err = errUnauthorized
 		return
 	}
 
 	// PrincipalID is something that uniquely identifies the account
 	result.PrincipalID = account.QuicknodeId
-	result.UsageIdentifierKey = apiKey
+	result.UsageIdentifierKey = account.ApiKey.Value
 	result.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
 		Version: "2012-10-17",
 		Statement: []events.IAMPolicyStatement{

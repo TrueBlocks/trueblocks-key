@@ -10,7 +10,7 @@ import (
 )
 
 func HandleProvision(c *gin.Context) {
-	account := qnaccount.NewAccount(svc, cnf.QnProvision.TableName)
+	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 	success := func() {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
@@ -39,6 +39,15 @@ func HandleProvision(c *gin.Context) {
 	}
 
 	log.Println("Adding new account", account.QuicknodeId)
+
+	initApiGateway()
+	apiKey, err := qnaccount.FindByPlanSlug(apiGatewayClient, account.Plan)
+	if err != nil {
+		log.Println("fetching API key for plan", account.Plan, ":", err)
+		c.AbortWithError(http.StatusInternalServerError, nil)
+		return
+	}
+	account.ApiKey = *apiKey
 
 	err = account.DynamoPut()
 	if err != nil {

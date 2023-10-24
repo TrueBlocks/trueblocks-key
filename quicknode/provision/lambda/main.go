@@ -6,8 +6,10 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
 	qnConfig "trueblocks.io/config/pkg"
@@ -15,7 +17,7 @@ import (
 )
 
 var cnf *qnConfig.ConfigFile
-var svc *dynamodb.DynamoDB
+var dynamoClient *dynamodb.Client
 var ginLambda *ginadapter.GinLambda
 
 func init() {
@@ -45,19 +47,17 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func initDynamoDb() {
-	if svc != nil {
+	if dynamoClient != nil {
 		return
 	}
 
-	// Initialize a session that the SDK will use to load
-	// credentials from the shared credentials file ~/.aws/credentials
-	// and region from the shared configuration file ~/.aws/config.
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
+	var awsConfig aws.Config
+	awsConfig, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		panic("error reading config: " + err.Error())
+	}
 	// Create DynamoDB client
-	svc = dynamodb.New(sess)
+	dynamoClient = dynamodb.NewFromConfig(awsConfig)
 }
 
 func loadConfig() (err error) {

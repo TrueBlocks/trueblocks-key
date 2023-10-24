@@ -1,4 +1,4 @@
-package plan
+package qnaccount
 
 import (
 	"context"
@@ -10,12 +10,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
+type ApiKey struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 // This is our QN plan slug to API key value cache
-var planSlugToApiKey = make(map[string]string)
+var planSlugToApiKey = make(map[string]*types.ApiKey)
 
 // FindBySlug fetches API keys from API Gateway (if the cache is empty) and finds the key which name is
 // same as qnPlanSlug
-func FindBySlug(apiGatewayClient *apigateway.Client, qnPlanSlug string) (keyValue string, err error) {
+func FindByPlanSlug(apiGatewayClient *apigateway.Client, qnPlanSlug string) (apiKey *ApiKey, err error) {
 	var keys []types.ApiKey
 	if len(planSlugToApiKey) == 0 {
 		keys, err = fetchApiKeys(apiGatewayClient)
@@ -24,7 +29,7 @@ func FindBySlug(apiGatewayClient *apigateway.Client, qnPlanSlug string) (keyValu
 		}
 		cacheApiKeys(keys)
 	} else {
-		log.Println("plans are already fetched")
+		log.Println("api keys are already fetched")
 	}
 	return findPlanApiKey(qnPlanSlug, planSlugToApiKey)
 }
@@ -51,16 +56,21 @@ func cacheApiKeys(keys []types.ApiKey) {
 			log.Println("findPlanApiKey: ommiting disabled key:", apiKey.Name, apiKey.Id)
 			continue
 		}
-		planSlugToApiKey[*apiKey.Name] = *apiKey.Value
+		planSlugToApiKey[*apiKey.Name] = &apiKey
 	}
 	return
 }
 
 // findPlanApiKey performs key lookup, caching the keys if the cache is empty
-func findPlanApiKey(qnPlanSlug string, planToKey map[string]string) (keyValue string, err error) {
-	keyValue = planToKey[qnPlanSlug]
-	if keyValue == "" {
-		return "", fmt.Errorf("cannot find API key for qn plan slug '%s'", qnPlanSlug)
+func findPlanApiKey(qnPlanSlug string, planToKey map[string]*types.ApiKey) (apiKey *ApiKey, err error) {
+	key := planToKey[qnPlanSlug]
+	if key == nil {
+		err = fmt.Errorf("cannot find API key for qn plan slug '%s'", qnPlanSlug)
+		return
+	}
+	apiKey = &ApiKey{
+		Name:  *key.Name,
+		Value: *key.Value,
 	}
 	return
 }

@@ -12,7 +12,7 @@ import (
 func HandleDeactivateEndpoint(c *gin.Context) {
 	// Since we don't need to support endpoint, we will just
 	// validate the account and return success if it's registered
-	account := qnaccount.NewAccount(svc, cnf.QnProvision.TableName)
+	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 
 	err := c.BindJSON(&account)
 	if err != nil {

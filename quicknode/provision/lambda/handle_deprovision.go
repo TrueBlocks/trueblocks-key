@@ -10,7 +10,7 @@ import (
 )
 
 func HandleDeprovision(c *gin.Context) {
-	account := qnaccount.NewAccount(svc, cnf.QnProvision.TableName)
+	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 
 	err := c.BindJSON(&account)
 	if err != nil {
