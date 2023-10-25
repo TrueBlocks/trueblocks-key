@@ -5,10 +5,10 @@ Description: AWS SAM template with a simple API definition
 Parameters:
   RDSMasterUserName:
     Type: String
-    Default: admin
+    Default: tbqnadmin
   RDSDBName:
     Type: String
-    Default: index
+    Default: tbqnindex
   UsersQnTableName:
     Type: String
     Default: trueblocks-qn-users-qn
@@ -52,11 +52,14 @@ Resources:
   IndexDatabase:
     Type: AWS::RDS::DBInstance
     DependsOn:
+      - RDSMasterSecret
       - RDSSecurityGroup
       - RDSSubnetGroup
     Properties:
+      DBInstanceClass: db.t3.micro
       DBInstanceIdentifier: indexdatabase
       Engine: postgres
+      AllocatedStorage: "20"
       DBName: !Ref RDSDBName
       MasterUsername: !Ref RDSMasterUserName
       # https://github.com/aws-samples/aws-secrets-manager-secure-database-credentials/blob/main/secretsmanager_IaC.yml
@@ -118,6 +121,8 @@ Resources:
 
   QnApi:
     Type: AWS::Serverless::Api
+    DependsOn:
+      - QnAuthorizer
     Properties:
       StageName: !Ref QnApiStageName
       ApiKeySourceType: AUTHORIZER
@@ -160,6 +165,8 @@ Resources:
   # ### QN Authorizer
   QnAuthorizer:
     Type: AWS::Serverless::Function
+    DependsOn:
+      - ProvisionQnSecret
     Properties:
       MemorySize: 512
       Runtime: go1.x
@@ -204,7 +211,7 @@ Resources:
           QNEXT_DATABASE_DATABASE: !Ref RDSDBName
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref RDSMasterUserName
+            SecretArn: !Ref RDSMasterSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
 
   # ### QN Provision
@@ -333,9 +340,6 @@ Resources:
       # as plan slug defined in QN
       Name: !Ref QnBetaTestApiKeyName
       Enabled: true
-      StageKeys:
-       - RestApiId: !Ref QnApi
-         StageName: !Ref QnApiStageName
   LinkUsagePlanApiKeyQnBetaTest:
     Type: 'AWS::ApiGateway::UsagePlanKey'
     Properties:
@@ -371,24 +375,28 @@ Resources:
     Properties:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.0.0/20
+      AvailabilityZone: !Select [ 0, !GetAZs ]
 
   privateDBSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.16.0/20
+      AvailabilityZone: !Select [ 1, !GetAZs ]
 
   privateLambdaSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.32.0/20
+      AvailabilityZone: !Select [ 0, !GetAZs ]
 
   privateLambdaSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.48.0/20
+      AvailabilityZone: !Select [ 1, !GetAZs ]
 
   RDSSubnetGroup:
     Type: "AWS::RDS::DBSubnetGroup"
