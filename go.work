@@ -13,6 +13,5 @@ use (
 	./quicknode/authorizer
 	./quicknode/healthcheck
 	./quicknode/provision
-	./quicknode/secret
 	./scanner/
 )

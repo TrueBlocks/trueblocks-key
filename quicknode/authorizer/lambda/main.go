@@ -12,9 +12,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	awshelper "trueblocks.io/awshelper/pkg"
 	qnConfig "trueblocks.io/config/pkg"
 	qnaccount "trueblocks.io/quicknode/account"
-	"trueblocks.io/quicknode/secret"
 )
 
 var cnf *qnConfig.ConfigFile
@@ -54,7 +54,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		return
 	}
 
-	secret, err := secret.FetchAuthSecret(cnf.QnProvision.AwsSecret)
+	secret, err := awshelper.FetchUsernamePasswordSecret(cnf.QnProvision.AwsSecret)
 	if err != nil {
 		log.Println("cannot read secret")
 		return
@@ -89,7 +89,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		return
 	}
 
-	apiKeyAttr, ok := getResult.Item["ApiKey"]
+	apiKeyAttr, ok := getResult["ApiKey"]
 	if !ok || apiKeyAttr == nil {
 		log.Println("empty Account.ApiKey", account.QuicknodeId)
 		err = errUnauthorized

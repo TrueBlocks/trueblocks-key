@@ -36,11 +36,26 @@ func NewAccount(dynamoClient *dynamodb.Client, tableName string) *Account {
 	}
 }
 
-func (a *Account) DynamoGet() (result *dynamodb.GetItemOutput, err error) {
-	result, err = a.dynamoClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
+func (a *Account) DynamoGet() (item map[string]types.AttributeValue, err error) {
+	key, err := a.dynamoKey()
+	if err != nil {
+		return
+	}
+	result, err := a.dynamoClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
 		TableName: a.dynamoTableName,
-		Key:       a.dynamoKey(),
+		Key:       key,
 	})
+	if err != nil {
+		return
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	if result.Item == nil {
+		return nil, nil
+	}
 
 	return
 }
@@ -69,8 +84,12 @@ func (a *Account) DynamoPut() (err error) {
 }
 
 func (a *Account) DynamoDelete() (err error) {
+	key, err := a.dynamoKey()
+	if err != nil {
+		return
+	}
 	_, err = a.dynamoClient.DeleteItem(context.TODO(), &dynamodb.DeleteItemInput{
-		Key:       a.dynamoKey(),
+		Key:       key,
 		TableName: a.dynamoTableName,
 	})
 	if err != nil {
@@ -79,10 +98,12 @@ func (a *Account) DynamoDelete() (err error) {
 	return
 }
 
-func (a *Account) dynamoKey() map[string]types.AttributeValue {
-	return map[string]types.AttributeValue{
-		"QuicknodeId": &types.AttributeValueMemberS{
-			Value: a.QuicknodeId,
-		},
+func (a *Account) dynamoKey() (map[string]types.AttributeValue, error) {
+	id, err := attributevalue.Marshal(a.QuicknodeId)
+	if err != nil {
+		return nil, err
 	}
+	return map[string]types.AttributeValue{
+		"QuicknodeId": id,
+	}, nil
 }

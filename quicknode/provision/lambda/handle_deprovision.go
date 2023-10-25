@@ -12,7 +12,7 @@ import (
 func HandleDeprovision(c *gin.Context) {
 	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 
-	err := c.BindJSON(&account)
+	err := c.BindJSON(account)
 	if err != nil {
 		log.Println("deprovision: binding account:", err)
 		c.AbortWithError(http.StatusBadRequest, errors.New("could not parse JSON"))

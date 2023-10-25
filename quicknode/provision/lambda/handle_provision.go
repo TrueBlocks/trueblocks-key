@@ -17,7 +17,7 @@ func HandleProvision(c *gin.Context) {
 		})
 	}
 
-	err := c.BindJSON(&account)
+	err := c.BindJSON(account)
 	if err != nil {
 		log.Println("provision: binding account:", err)
 		c.AbortWithError(http.StatusBadRequest, errors.New("could not parse JSON"))
@@ -40,7 +40,11 @@ func HandleProvision(c *gin.Context) {
 
 	log.Println("Adding new account", account.QuicknodeId)
 
-	initApiGateway()
+	if err = initApiGateway(); err != nil {
+		log.Println("initApiGateway:", err)
+		c.AbortWithError(http.StatusInternalServerError, nil)
+		return
+	}
 	apiKey, err := qnaccount.FindByPlanSlug(apiGatewayClient, account.Plan)
 	if err != nil {
 		log.Println("fetching API key for plan", account.Plan, ":", err)

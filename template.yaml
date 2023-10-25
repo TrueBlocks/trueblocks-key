@@ -35,24 +35,10 @@ Resources:
   # Databases
   ###
 
-  ## SQL Appearances
-
-  # Database master user password. Note: we want it to be managed by RDS service
-  RDSMasterSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description: 'RDS instance secret'
-      GenerateSecretString:
-        SecretStringTemplate: !Sub '{"username": "${RDSMasterUserName}"}'
-        GenerateStringKey: 'password'
-        PasswordLength: 32
-        ExcludeCharacters: '"@/\'
-
-  # Database
+  ## SQL Appearances Database
   IndexDatabase:
     Type: AWS::RDS::DBInstance
     DependsOn:
-      - RDSMasterSecret
       - RDSSecurityGroup
       - RDSSubnetGroup
     Properties:
@@ -62,12 +48,7 @@ Resources:
       AllocatedStorage: "20"
       DBName: !Ref RDSDBName
       MasterUsername: !Ref RDSMasterUserName
-      # https://github.com/aws-samples/aws-secrets-manager-secure-database-credentials/blob/main/secretsmanager_IaC.yml
-      # MasterUserPassword: !Join ['', ['{{resolve:secretsmanager:', !Ref MyRDSInstanceRotationSecret, ':SecretString:password}}' ]]
-      # TODO: Does this rotate the secret?
       ManageMasterUserPassword: true
-      MasterUserSecret:
-        SecretArn: !Ref RDSMasterSecret
       DBSubnetGroupName: !Ref RDSSubnetGroup
       VPCSecurityGroups:
         - !Ref RDSSecurityGroup
@@ -113,12 +94,10 @@ Resources:
           QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
           QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
           QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_DEFAULT_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
           QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
-        # - AWSSecretsManagerGetSecretValuePolicy:
-        #     SecretArn: !Ref RDSMasterSecret
         - Version: '2012-10-17' # Policy Document
           Statement:
             - Effect: Allow
@@ -127,7 +106,7 @@ Resources:
                 - secretsmanager:GetSecretValue
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
-              Resource: !Ref RDSMasterSecret
+              Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
 
   AppearancesQueue:
     Type: AWS::SQS::Queue
@@ -194,9 +173,8 @@ Resources:
           QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
           QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
       Policies:
-        # - AWSSecretsManagerGetSecretValuePolicy:
-        #     SecretArn: !Ref ProvisionQnSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
+        - AmazonDynamoDBReadOnlyAccess
         - Version: '2012-10-17' # Policy Document
           Statement:
             - Effect: Allow
@@ -239,11 +217,9 @@ Resources:
           QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
           QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
           QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_DEFAULT_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
           QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       Policies:
-        # - AWSSecretsManagerGetSecretValuePolicy:
-        #     SecretArn: !Ref RDSMasterSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - Version: '2012-10-17' # Policy Document
           Statement:
@@ -253,7 +229,7 @@ Resources:
                 - secretsmanager:GetSecretValue
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
-              Resource: !Ref RDSMasterSecret
+              Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
 
   # ### QN Provision
   ProvisionQnSecret:
@@ -306,9 +282,8 @@ Resources:
           QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
           QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
       Policies:
-        # - AWSSecretsManagerGetSecretValuePolicy:
-        #     SecretArn: !Ref ProvisionQnSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
+        - AmazonDynamoDBFullAccess
         - Version: '2012-10-17' # Policy Document
           Statement:
             - Effect: Allow
@@ -318,6 +293,12 @@ Resources:
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
               Resource: !Ref ProvisionQnSecret
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - apigateway:GET
+              Resource: "*"
 
   # ### RPC route
   RpcFunction:
@@ -346,7 +327,7 @@ Resources:
           QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
           QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
           QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_DEFAULT_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
           QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       VpcConfig: # For accessing RDS instance
         SecurityGroupIds:
@@ -355,8 +336,6 @@ Resources:
           - !Ref privateLambdaSubnet1
           - !Ref privateLambdaSubnet2
       Policies:
-        # - AWSSecretsManagerGetSecretValuePolicy:
-        #     SecretArn: !Ref RDSMasterSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - Version: '2012-10-17' # Policy Document
           Statement:
@@ -366,7 +345,7 @@ Resources:
                 - secretsmanager:GetSecretValue
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
-              Resource: !Ref RDSMasterSecret
+              Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
 
   ###
   # Plans
@@ -489,13 +468,7 @@ Resources:
     Properties:
       GroupDescription: Security group for Lambda ENIs
       VpcId: !Ref RDSVPC
-      # Allow lambdas to connect to the database
-      # SecurityGroupEgress:
-      #   - IpProtocol: tcp
-      #     FromPort: -1
-      #     ToPort: 5432
-      #     DestinationSecurityGroupId: !Ref RDSSecurityGroup
-      # Allow Lambda <-> Secrets Manager
+      # Allow Lambda <-> Secrets Manager:
       SecurityGroupIngress:
         - IpProtocol: -1
           ToPort: 65535

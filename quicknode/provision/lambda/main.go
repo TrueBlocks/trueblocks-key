@@ -12,8 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
+	awshelper "trueblocks.io/awshelper/pkg"
 	qnConfig "trueblocks.io/config/pkg"
-	"trueblocks.io/quicknode/secret"
 )
 
 var cnf *qnConfig.ConfigFile
@@ -25,7 +25,7 @@ func init() {
 		panic(fmt.Errorf("reading configuration: %w", err))
 	}
 
-	secret, err := secret.FetchAuthSecret(cnf.QnProvision.AwsSecret)
+	secret, err := awshelper.FetchUsernamePasswordSecret(cnf.QnProvision.AwsSecret)
 	if err != nil {
 		panic(err)
 	}
@@ -38,6 +38,8 @@ func init() {
 	authorized.PUT("/update", HandleUpdate)
 	authorized.DELETE("/deactivate_endpoint", HandleDeactivateEndpoint)
 	authorized.DELETE("/deprovision", HandleDeprovision)
+
+	ginLambda = ginadapter.New(r)
 }
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {

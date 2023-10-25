@@ -12,7 +12,7 @@ import (
 func HandleUpdate(c *gin.Context) {
 	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 
-	err := c.BindJSON(&account)
+	err := c.BindJSON(account)
 	if err != nil {
 		log.Println("update: binding account:", err)
 		c.AbortWithError(http.StatusBadRequest, errors.New("could not parse JSON"))
@@ -34,7 +34,11 @@ func HandleUpdate(c *gin.Context) {
 	}
 
 	// Save updated account
-	initApiGateway()
+	if err = initApiGateway(); err != nil {
+		log.Println("initApiGateway:", err)
+		c.AbortWithError(http.StatusInternalServerError, nil)
+		return
+	}
 	apiKey, err := qnaccount.FindByPlanSlug(apiGatewayClient, account.Plan)
 	if err != nil {
 		log.Println("fetching API key for plan", account.Plan, ":", err)

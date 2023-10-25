@@ -139,16 +139,20 @@ func loadConfig() (err error) {
 }
 
 func setupDbConnection() (err error) {
+	var user string
 	var password string
 	secretId := cnf.Database["default"].AwsSecret
 	if secretId != "" {
 		log.Println("using Secrets Manager secret as DB password")
-		password, err = awshelper.FetchSecret(secretId)
+		secretValue, err := awshelper.FetchUsernamePasswordSecret(secretId)
 		if err != nil {
-			return
+			return err
 		}
+		user = secretValue.Username
+		password = secretValue.Password
 	} else {
 		log.Println("using configuration DB password")
+		user = cnf.Database["default"].User
 		password = cnf.Database["default"].Password
 	}
 
@@ -156,7 +160,7 @@ func setupDbConnection() (err error) {
 		Host:     cnf.Database["default"].Host,
 		Port:     cnf.Database["default"].Port,
 		Database: cnf.Database["default"].Database,
-		User:     cnf.Database["default"].User,
+		User:     user,
 		Password: password,
 	}
 

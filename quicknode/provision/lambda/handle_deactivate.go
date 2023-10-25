@@ -14,7 +14,7 @@ func HandleDeactivateEndpoint(c *gin.Context) {
 	// validate the account and return success if it's registered
 	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 
-	err := c.BindJSON(&account)
+	err := c.BindJSON(account)
 	if err != nil {
 		log.Println("deactivate: binding account:", err)
 		c.AbortWithError(http.StatusBadRequest, errors.New("could not parse JSON"))

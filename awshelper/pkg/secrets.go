@@ -1,6 +1,7 @@
 package awshelper
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
@@ -18,4 +19,23 @@ func FetchSecret(id string) (result string, err error) {
 	}
 
 	return secretCache.GetSecretString(id)
+}
+
+type UsernamePasswordSecret struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (u *UsernamePasswordSecret) FromString(rawValue string) error {
+	return json.Unmarshal([]byte(rawValue), u)
+}
+
+func FetchUsernamePasswordSecret(id string) (result *UsernamePasswordSecret, err error) {
+	raw, err := FetchSecret(id)
+	if err != nil {
+		return
+	}
+	result = &UsernamePasswordSecret{}
+	err = result.FromString(raw)
+	return
 }
