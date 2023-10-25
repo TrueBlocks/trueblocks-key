@@ -43,7 +43,7 @@ Resources:
     Properties:
       Description: 'RDS instance secret'
       GenerateSecretString:
-        SecretStringTemplate: !Sub '{"username": "${!Ref RDSMasterUserName}"}'
+        SecretStringTemplate: !Sub '{"username": "${RDSMasterUserName}"}'
         GenerateStringKey: 'password'
         PasswordLength: 32
         ExcludeCharacters: '"@/\'
