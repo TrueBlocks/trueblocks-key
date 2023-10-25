@@ -26,6 +26,8 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 	recordCount := len(sqsEvent.Records)
 	models := make([]appearance.Appearance, 0, recordCount)
 
+	log.Println("Inserting", recordCount, "items")
+
 	for _, record := range sqsEvent.Records {
 		app := appearance.Appearance{}
 		if err = json.Unmarshal([]byte(record.Body), &app); err != nil {
@@ -40,9 +42,14 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 		batchSize = maxBatchSize
 	}
 
+	log.Println("Creating database items")
 	// With GORM we cannot get a list of failed inserts, so we can't use
 	// events.SQSEventResponse.BatchItemFailures (marking only some queue items as failed)
 	err = dbConn.Db().CreateInBatches(&models, batchSize).Error
+
+	if err == nil {
+		log.Println("Success:", recordCount, "items inserted")
+	}
 
 	return
 }

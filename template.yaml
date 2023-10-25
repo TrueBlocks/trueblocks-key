@@ -101,16 +101,33 @@ Resources:
           Properties:
             Queue: !GetAtt AppearancesQueue.Arn
             BatchSize: !Ref AppearancesQueueBatchSize
+      VpcConfig: # For accessing RDS instance
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref privateLambdaSubnet1
+          - !Ref privateLambdaSubnet2
       Environment:
         Variables:
           QNEXT_SQS_BATCHSIZE: !Ref AppearancesQueueBatchSize
-          QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
-          QNEXT_DATABASEPORT: !GetAtt IndexDatabase.Endpoint.Port
-          QNEXT_DATABASE_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
-          QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+          QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_DEFAULT_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
+        # - AWSSecretsManagerGetSecretValuePolicy:
+        #     SecretArn: !Ref RDSMasterSecret
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetResourcePolicy
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+                - secretsmanager:ListSecretVersionIds
+              Resource: !Ref RDSMasterSecret
 
   AppearancesQueue:
     Type: AWS::SQS::Queue
@@ -177,9 +194,18 @@ Resources:
           QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
           QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
       Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref ProvisionQnSecret
+        # - AWSSecretsManagerGetSecretValuePolicy:
+        #     SecretArn: !Ref ProvisionQnSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetResourcePolicy
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+                - secretsmanager:ListSecretVersionIds
+              Resource: !Ref ProvisionQnSecret
 
   # ### QN healthcheck
 
@@ -202,17 +228,32 @@ Resources:
             Method: get
             RestApiId:
               Ref: QnApi
+      VpcConfig: # For accessing RDS instance
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref privateLambdaSubnet1
+          - !Ref privateLambdaSubnet2
       Environment:
         Variables:
-          QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
-          QNEXT_DATABASE_PORT: !GetAtt IndexDatabase.Endpoint.Port
-          QNEXT_DATABASE_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
-          QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+          QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_DEFAULT_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref RDSMasterSecret
+        # - AWSSecretsManagerGetSecretValuePolicy:
+        #     SecretArn: !Ref RDSMasterSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetResourcePolicy
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+                - secretsmanager:ListSecretVersionIds
+              Resource: !Ref RDSMasterSecret
 
   # ### QN Provision
   ProvisionQnSecret:
@@ -265,9 +306,18 @@ Resources:
           QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
           QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
       Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref ProvisionQnSecret
+        # - AWSSecretsManagerGetSecretValuePolicy:
+        #     SecretArn: !Ref ProvisionQnSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetResourcePolicy
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+                - secretsmanager:ListSecretVersionIds
+              Resource: !Ref ProvisionQnSecret
 
   # ### RPC route
   RpcFunction:
@@ -293,11 +343,11 @@ Resources:
               Ref: QnApi
       Environment:
         Variables:
-          QNEXT_DATABASE_HOST: !GetAtt IndexDatabase.Endpoint.Address
-          QNEXT_DATABASE_PORT: !GetAtt IndexDatabase.Endpoint.Port
-          QNEXT_DATABASE_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_AWSSECRET: !Ref RDSMasterSecret
-          QNEXT_DATABASE_DATABASE: !Ref RDSDBName
+          QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_DEFAULT_AWSSECRET: !Ref RDSMasterSecret
+          QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       VpcConfig: # For accessing RDS instance
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
@@ -305,9 +355,18 @@ Resources:
           - !Ref privateLambdaSubnet1
           - !Ref privateLambdaSubnet2
       Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref RDSMasterSecret
+        # - AWSSecretsManagerGetSecretValuePolicy:
+        #     SecretArn: !Ref RDSMasterSecret
         - CloudWatchLambdaInsightsExecutionRolePolicy
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetResourcePolicy
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+                - secretsmanager:ListSecretVersionIds
+              Resource: !Ref RDSMasterSecret
 
   ###
   # Plans
@@ -436,3 +495,30 @@ Resources:
       #     FromPort: -1
       #     ToPort: 5432
       #     DestinationSecurityGroupId: !Ref RDSSecurityGroup
+      # Allow Lambda <-> Secrets Manager
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          ToPort: 65535
+          FromPort: 0
+          CidrIp: !GetAtt privateLambdaSubnet1.CidrBlock
+        - IpProtocol: -1
+          ToPort: 65535
+          FromPort: 0
+          CidrIp: !GetAtt privateLambdaSubnet2.CidrBlock
+
+
+  ### VPC Endpoints
+  SecretsManagerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn:
+      - LambdaSecurityGroup
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.secretsmanager'
+      PrivateDnsEnabled: true
+      VpcId: !Ref RDSVPC
+      SubnetIds:
+        - !Ref privateLambdaSubnet1
+        - !Ref privateLambdaSubnet2
+      SecurityGroupIds:
+        - !Ref LambdaSecurityGroup
