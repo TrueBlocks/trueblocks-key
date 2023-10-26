@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -41,6 +42,9 @@ func (a *Account) DynamoGet() (item map[string]types.AttributeValue, err error) 
 	if err != nil {
 		return
 	}
+
+	log.Println("account.DynamoGet: table", *a.dynamoTableName, "key:", key["QuicknodeId"])
+
 	result, err := a.dynamoClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
 		TableName: a.dynamoTableName,
 		Key:       key,
@@ -56,6 +60,9 @@ func (a *Account) DynamoGet() (item map[string]types.AttributeValue, err error) 
 	if result.Item == nil {
 		return nil, nil
 	}
+
+	item = result.Item
+	log.Println("account.DynamoGet: found account", item["QuicknodeId"])
 
 	return
 }

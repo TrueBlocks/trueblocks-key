@@ -7,3 +7,14 @@ region = "us-west-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
+
+
+[samqndeployer.deploy.parameters]
+stack_name = "trueblocks-qn"
+resolve_s3 = true
+s3_prefix = "trueblocks-qn"
+region = "us-east-1"
+profile = "samqndeployer"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

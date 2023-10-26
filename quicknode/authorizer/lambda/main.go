@@ -95,7 +95,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		err = errUnauthorized
 		return
 	}
-	if err = attributevalue.Unmarshal(apiKeyAttr, account.ApiKey); err != nil {
+	if err = attributevalue.Unmarshal(apiKeyAttr, &account.ApiKey); err != nil {
 		log.Println("unmarshal Account.ApiKey:", err)
 		err = errUnauthorized
 		return

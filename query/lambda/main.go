@@ -42,12 +42,12 @@ func (r *RpcRequest) validate() error {
 	if r.Params.Address[:2] != "0x" {
 		return ErrAddressIncorrect
 	}
-	if _, err := hex.DecodeString(r.Params.Address); err != nil {
+	if _, err := hex.DecodeString(r.Params.Address[2:]); err != nil {
 		return ErrAddressIncorrect
 	}
 
 	// Validate pagination
-	if r.Params.Page < 1 || r.Params.PerPage < 1 {
+	if r.Params.Page < 0 || r.Params.PerPage < 0 {
 		return errors.New("incorrect page or perPage")
 	}
 
@@ -71,7 +71,7 @@ type RpcResponse struct {
 // type RpcResponse
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
-	var rpcRequest *RpcRequest
+	rpcRequest := &RpcRequest{}
 	if err = json.Unmarshal([]byte(request.Body), rpcRequest); err != nil {
 		response.StatusCode = http.StatusBadRequest
 		response.Body = "invalid JSON"
@@ -79,6 +79,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 	if err = rpcRequest.validate(); err != nil {
 		response.StatusCode = http.StatusBadRequest
+		response.Body = err.Error()
 		return
 	}
 
@@ -110,7 +111,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 
 	items := make([]PublicAppearance, 0, limit)
-	err = dbConn.Db().Where(&database.Appearance{Address: rpcRequest.Address()}).Limit(limit).Offset(offset).Find(&items).Error
+	err = dbConn.Db().Where(&database.Appearance{Address: rpcRequest.Address()}).Limit(limit).Offset(offset).Model(&database.Appearance{}).Find(&items).Error
 	if err != nil {
 		return
 	}
