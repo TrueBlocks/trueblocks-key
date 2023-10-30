@@ -327,6 +327,7 @@ Resources:
           QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
           QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
           QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          QNEXT_DATABASE_DEFAULT_PASSWORD:
           QNEXT_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
           QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       VpcConfig: # For accessing RDS instance
