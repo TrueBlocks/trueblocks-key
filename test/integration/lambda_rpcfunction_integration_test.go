@@ -4,161 +4,25 @@
 package integration_test
 
 import (
+	"fmt"
+	"math/big"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	database "trueblocks.io/database/pkg"
 	"trueblocks.io/database/pkg/dbtest"
+	"trueblocks.io/query/pkg/query"
 	"trueblocks.io/test/integration/helpers"
 )
 
-var eventStr = `
-{
-    "body": "{ \"jsonrpc\": \"2.0\", \"method\": \"tb_getAppearances\", \"params\": { \"address\": \"0x0000000000000281526004018083600019166000\" } }",
-    "resource": "/{proxy+}",
-    "path": "/path/to/resource",
-    "httpMethod": "POST",
-    "isBase64Encoded": true,
-    "queryStringParameters": {
-        "foo": "bar"
-    },
-    "multiValueQueryStringParameters": {
-        "foo": [
-            "bar"
-        ]
-    },
-    "pathParameters": {
-        "proxy": "/path/to/resource"
-    },
-    "stageVariables": {
-        "baz": "qux"
-    },
-    "headers": {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, sdch",
-        "Accept-Language": "en-US,en;q=0.8",
-        "Cache-Control": "max-age=0",
-        "CloudFront-Forwarded-Proto": "https",
-        "CloudFront-Is-Desktop-Viewer": "true",
-        "CloudFront-Is-Mobile-Viewer": "false",
-        "CloudFront-Is-SmartTV-Viewer": "false",
-        "CloudFront-Is-Tablet-Viewer": "false",
-        "CloudFront-Viewer-Country": "US",
-        "Host": "1234567890.execute-api.us-east-1.amazonaws.com",
-        "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Custom User Agent String",
-        "Via": "1.1 08f323deadbeefa7af34d5feb414ce27.cloudfront.net (CloudFront)",
-        "X-Amz-Cf-Id": "cDehVQoZnx43VYQb9j2-nvCh-9z396Uhbp027Y2JvkCPNLmGJHqlaA==",
-        "X-Forwarded-For": "127.0.0.1, 127.0.0.2",
-        "X-Forwarded-Port": "443",
-        "X-Forwarded-Proto": "https"
-    },
-    "multiValueHeaders": {
-        "Accept": [
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-        ],
-        "Accept-Encoding": [
-            "gzip, deflate, sdch"
-        ],
-        "Accept-Language": [
-            "en-US,en;q=0.8"
-        ],
-        "Cache-Control": [
-            "max-age=0"
-        ],
-        "CloudFront-Forwarded-Proto": [
-            "https"
-        ],
-        "CloudFront-Is-Desktop-Viewer": [
-            "true"
-        ],
-        "CloudFront-Is-Mobile-Viewer": [
-            "false"
-        ],
-        "CloudFront-Is-SmartTV-Viewer": [
-            "false"
-        ],
-        "CloudFront-Is-Tablet-Viewer": [
-            "false"
-        ],
-        "CloudFront-Viewer-Country": [
-            "US"
-        ],
-        "Host": [
-            "0123456789.execute-api.us-east-1.amazonaws.com"
-        ],
-        "Upgrade-Insecure-Requests": [
-            "1"
-        ],
-        "User-Agent": [
-            "Custom User Agent String"
-        ],
-        "Via": [
-            "1.1 08f323deadbeefa7af34d5feb414ce27.cloudfront.net (CloudFront)"
-        ],
-        "X-Amz-Cf-Id": [
-            "cDehVQoZnx43VYQb9j2-nvCh-9z396Uhbp027Y2JvkCPNLmGJHqlaA=="
-        ],
-        "X-Forwarded-For": [
-            "127.0.0.1, 127.0.0.2"
-        ],
-        "X-Forwarded-Port": [
-            "443"
-        ],
-        "X-Forwarded-Proto": [
-            "https"
-        ]
-    },
-    "requestContext": {
-        "accountId": "123456789012",
-        "resourceId": "123456",
-        "stage": "prod",
-        "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
-        "requestTime": "09/Apr/2015:12:34:56 +0000",
-        "requestTimeEpoch": 1428582896000,
-        "identity": {
-            "cognitoIdentityPoolId": null,
-            "accountId": null,
-            "cognitoIdentityId": null,
-            "caller": null,
-            "accessKey": null,
-            "sourceIp": "127.0.0.1",
-            "cognitoAuthenticationType": null,
-            "cognitoAuthenticationProvider": null,
-            "userArn": null,
-            "userAgent": "Custom User Agent String",
-            "user": null
-        },
-        "path": "/prod/path/to/resource",
-        "resourcePath": "/{proxy+}",
-        "httpMethod": "POST",
-        "apiId": "1234567890",
-        "protocol": "HTTP/1.1"
-    }
-}`
+// rawPayload is used to send a request with totally wrong parameters
+type rawPayload string
 
-// TODO: this is copy paste
-type RpcRequest struct {
-	Id     int `json:"id"`
-	Params struct {
-		Address string `json:"address"`
-		Page    int    `json:"page"`
-		PerPage int    `json:"perPage"`
-	} `json:"params"`
+func (r rawPayload) LambdaPayload() (string, error) {
+	return string(r), nil
 }
 
-type PublicAppearance struct {
-	Address       string
-	BlockNumber   uint32
-	TransactionId uint32
-}
-
-type RpcResponse struct {
-	JsonRpc string             `json:"jsonrpc"`
-	Id      int                `json:"id"`
-	Result  []PublicAppearance `json:"result"`
-}
-
-func TestValidRequestItemFound(t *testing.T) {
+func TestLambdaRpcFunctionRequests(t *testing.T) {
 	dbConn, done, err := dbtest.NewTestConnection()
 	if err != nil {
 		t.Fatal("connecting to test db:", err)
@@ -176,38 +40,24 @@ func TestValidRequestItemFound(t *testing.T) {
 		t.Fatal("inserting test data:", err)
 	}
 
-	var count int64
-	if err = dbConn.Db().Model(&database.Appearance{}).Count(&count).Error; err != nil {
-		t.Fatal("count:", err)
-	}
+	client := helpers.NewLambdaClient(t)
+	var request *query.RpcRequest
+	var output *lambda.InvokeOutput
+	response := &query.RpcResponse{}
 
-	if count != 1 {
-		t.Fatal("wrong count:", count)
-	}
+	// Valid request, appearance found
 
-	client, err := helpers.NewLambdaClient()
-	if err != nil {
-		t.Fatal("creating lambda client:", err)
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: query.RpcRequestParams{
+			Address: appearance.Address,
+		},
 	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
-	output, err := helpers.InvokeLambda(client, "RpcFunction", eventStr)
-	if err != nil {
-		t.Fatal("invoke error:", err)
-	}
-	if output.StatusCode != 200 {
-		t.Fatal("status code is not 200")
-	}
-
-	if output.FunctionError != nil {
-		t.Fatal(*output.FunctionError, ":", string(output.Payload))
-	}
-
-	t.Log("payload:", string(output.Payload))
-
-	response := &RpcResponse{}
-	if err := helpers.UnmarshalLambdaOutput(output, response); err != nil {
-		t.Fatal(err)
-	}
+	helpers.AssertLambdaSuccessful(t, output)
+	helpers.UnmarshalLambdaOutput(t, output, response)
 
 	t.Logf("result: %+v", response)
 
@@ -223,4 +73,103 @@ func TestValidRequestItemFound(t *testing.T) {
 	if txid := response.Result[0].TransactionId; txid != appearance.TransactionId {
 		t.Fatal("wrong txid:", txid)
 	}
+
+	// Valid request, no appearance found
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: query.RpcRequestParams{
+			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+		},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	helpers.UnmarshalLambdaOutput(t, output, response)
+
+	t.Logf("result: %+v", response)
+
+	if l := len(response.Result); l != 0 {
+		t.Fatal("wrong result count:", l)
+	}
+
+	// Invalid request: no address
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: query.RpcRequestParams{},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	t.Logf("result: %+v", response)
+	helpers.AssertLambdaError(t, string(output.Payload), "incorrect address")
+
+	// Invalid request: invalid address
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: query.RpcRequestParams{
+			Address: "0000000000000281526004018083600019166000",
+		},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	t.Logf("result: %+v", response)
+	helpers.AssertLambdaError(t, string(output.Payload), "incorrect address")
+
+	// Invalid request: invalid page
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: query.RpcRequestParams{
+			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+			Page:    -1,
+		},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	t.Logf("result: %+v", response)
+	helpers.AssertLambdaError(t, string(output.Payload), "incorrect page or perPage")
+
+	// Invalid request: invalid PerPage
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: query.RpcRequestParams{
+			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+			Page:    10,
+			PerPage: -1,
+		},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	t.Logf("result: %+v", response)
+	helpers.AssertLambdaError(t, string(output.Payload), "incorrect page or perPage")
+
+	// Invalid request: params out of range
+
+	outOfIntRange := big.NewInt(0)
+	// Set outOfIntRange value to max value of int as mentioned here: https://stackoverflow.com/questions/6878590/the-maximum-value-for-an-int-type-in-go
+	outOfIntRange.SetString(fmt.Sprint(int((^uint(0))>>1)), 10)
+	// Now make it out of range
+	outOfIntRange.Add(outOfIntRange, big.NewInt(1))
+	rp := rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"test_method\",\"params\":{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}}"}`, outOfIntRange.String()))
+	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
+
+	t.Logf("result: %+v", response)
+	helpers.AssertLambdaError(t, string(output.Payload), "invalid JSON")
+
+	// Invalid request: insane number as parameter
+
+	insane := big.NewInt(1 << 60)
+	rp = rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"test_method\",\"params\":{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}}"}`, insane.String()))
+	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
+
+	t.Logf("result: %+v", response)
+	helpers.AssertLambdaError(t, string(output.Payload), "incorrect page or perPage")
 }

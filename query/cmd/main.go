@@ -8,7 +8,7 @@ import (
 
 	qnConfig "trueblocks.io/config/pkg"
 	database "trueblocks.io/database/pkg"
-	"trueblocks.io/lambda/query/pkg/query"
+	"trueblocks.io/query/pkg/query"
 )
 
 var configFilePath string
