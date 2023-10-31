@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -31,6 +32,8 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 	for _, record := range sqsEvent.Records {
 		app := appearance.Appearance{}
 		if err = json.Unmarshal([]byte(record.Body), &app); err != nil {
+			log.Println("unmarshal JSON:", err)
+			err = errors.New("invalid JSON")
 			return
 		}
 		app.SetAppearanceId()
