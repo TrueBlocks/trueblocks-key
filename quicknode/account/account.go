@@ -43,7 +43,7 @@ func (a *Account) DynamoGet() (item map[string]types.AttributeValue, err error) 
 		return
 	}
 
-	log.Println("account.DynamoGet: table", *a.dynamoTableName, "key:", key["QuicknodeId"])
+	log.Println("account.DynamoGet: table", *a.dynamoTableName, "key:", a.QuicknodeId)
 
 	result, err := a.dynamoClient.GetItem(context.TODO(), &dynamodb.GetItemInput{
 		TableName: a.dynamoTableName,

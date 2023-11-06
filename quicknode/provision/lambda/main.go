@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -14,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	awshelper "trueblocks.io/awshelper/pkg"
 	qnConfig "trueblocks.io/config/pkg"
+	qnDynamodb "trueblocks.io/extract/quicknode/dynamodb"
 )
 
 var cnf *qnConfig.ConfigFile
@@ -59,7 +61,13 @@ func initDynamoDb() {
 		panic("error reading config: " + err.Error())
 	}
 	// Create DynamoDB client
-	dynamoClient = dynamodb.NewFromConfig(awsConfig)
+	dynamoClient = dynamodb.NewFromConfig(awsConfig, func(o *dynamodb.Options) {
+		if qnDynamodb.ShouldUseLocal() {
+			// When running inside sam local (in tests), use local endpoint
+			o.BaseEndpoint = aws.String("http://dynamodb:8000")
+			o.Credentials = credentials.NewStaticCredentialsProvider("fake", "fake", "test")
+		}
+	})
 }
 
 func loadConfig() (err error) {

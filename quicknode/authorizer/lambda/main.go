@@ -10,10 +10,12 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awshelper "trueblocks.io/awshelper/pkg"
 	qnConfig "trueblocks.io/config/pkg"
+	qnDynamodb "trueblocks.io/extract/quicknode/dynamodb"
 	qnaccount "trueblocks.io/quicknode/account"
 )
 
@@ -36,14 +38,20 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 			return
 		}
 		// Create DynamoDB client
-		dynamoClient = dynamodb.NewFromConfig(awsConfig)
+		dynamoClient = dynamodb.NewFromConfig(awsConfig, func(o *dynamodb.Options) {
+			if qnDynamodb.ShouldUseLocal() {
+				// When running inside sam local (in tests), use local endpoint
+				o.BaseEndpoint = aws.String("http://dynamodb:8000")
+				o.Credentials = credentials.NewStaticCredentialsProvider("fake", "fake", "test")
+			}
+		})
 	}
 
-	// Create dummy request only so we can use it's BasicAuth method
+	// Create dummy request only so we can use its BasicAuth method
 	// to check if QN Basic Auth is correct
 	r, err := http.NewRequest("get", "/", nil)
 	if err != nil {
-		log.Println("parsing basic auth header:", err)
+		log.Println("creating dummy request:", err)
 		return
 	}
 	r.Header.Add("Authorization", event.Headers["Authorization"])
@@ -79,7 +87,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 
 	getResult, err := account.DynamoGet()
 	if err != nil {
-		log.Println("cannot get from account DynamoDB:", account.QuicknodeId)
+		log.Println("cannot get from account DynamoDB:", account.QuicknodeId, err)
 		err = errUnauthorized
 		return
 	}

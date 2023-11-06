@@ -32,7 +32,7 @@ func StartSam() (cancelSam context.CancelFunc, wait func() error) {
 
 	var samCtx context.Context
 	samCtx, cancelSam = context.WithCancel(context.Background())
-	samCmd := exec.CommandContext(samCtx, "sam", "local", "start-lambda", "--profile", awsProfile, "--docker-network", dockerNetwork)
+	samCmd := exec.CommandContext(samCtx, "sam", "local", "start-lambda", "--profile", awsProfile, "--docker-network", dockerNetwork, "--skip-pull-image")
 	samReady := make(chan bool)
 
 	_, sourceFileName, _, ok := runtime.Caller(0)
@@ -62,12 +62,13 @@ func StartSam() (cancelSam context.CancelFunc, wait func() error) {
 			panic(err)
 		}
 		scanner := bufio.NewScanner(stderr)
+		samRunning := false
 		for scanner.Scan() {
 			log.Println("output:", scanner.Text())
-			if strings.Contains(scanner.Text(), "Running") {
+			if !samRunning && strings.Contains(scanner.Text(), "Running") {
 				samReady <- true
 				close(samReady)
-				// break
+				samRunning = true
 			}
 		}
 	}()
