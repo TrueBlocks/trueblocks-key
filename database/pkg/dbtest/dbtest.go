@@ -42,7 +42,8 @@ func NewTestConnection() (conn *database.Connection, done func() error, err erro
 		ctx,
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "postgres:latest",
+				// Make sure image version matches one in Makefile (for target "test")
+				Image:        "postgres:15.4",
 				Name:         containerName,
 				ExposedPorts: []string{containerPort},
 				WaitingFor:   wait.ForListeningPort(nat.Port(containerPort)),
