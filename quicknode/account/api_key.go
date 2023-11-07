@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
+	qnDynamodb "trueblocks.io/extract/quicknode/dynamodb"
 )
 
 type ApiKey struct {
@@ -36,6 +37,16 @@ func FindByPlanSlug(apiGatewayClient *apigateway.Client, qnPlanSlug string) (api
 
 // fetchApiKeys fetches API keys from API Gateway
 func fetchApiKeys(apiGatewayClient *apigateway.Client) (keys []types.ApiKey, err error) {
+	if qnDynamodb.ShouldUseLocal() {
+		// Testing: return test keys
+
+		log.Println("using TEST API keys")
+		keys = loadTestApiKeys()
+		return
+	}
+
+	// Production: fetch real API key
+
 	keysOutput, err := apiGatewayClient.GetApiKeys(context.TODO(), &apigateway.GetApiKeysInput{
 		IncludeValues: aws.Bool(true),
 	})
@@ -53,7 +64,7 @@ func cacheApiKeys(keys []types.ApiKey) {
 
 	for _, apiKey := range keys {
 		if !apiKey.Enabled {
-			log.Println("findPlanApiKey: ommiting disabled key:", apiKey.Name, apiKey.Id)
+			log.Println("findPlanApiKey: ommiting disabled key:", *apiKey.Name, *apiKey.Id)
 			continue
 		}
 		planSlugToApiKey[*apiKey.Name] = &apiKey
@@ -73,4 +84,14 @@ func findPlanApiKey(qnPlanSlug string, planToKey map[string]*types.ApiKey) (apiK
 		Value: *key.Value,
 	}
 	return
+}
+
+func loadTestApiKeys() []types.ApiKey {
+	return []types.ApiKey{
+		{
+			Name:    aws.String("IntegrationTestPlan"),
+			Value:   aws.String("int3gr4ti0n"),
+			Enabled: true,
+		},
+	}
 }

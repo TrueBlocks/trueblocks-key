@@ -1,3 +1,3 @@
-module trueblocks.io/lambda/query
+module trueblocks.io/query
 
 go 1.20
