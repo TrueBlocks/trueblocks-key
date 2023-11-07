@@ -7,6 +7,7 @@ import (
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
 )
 
@@ -14,10 +15,17 @@ const prefix = "QNEXT"
 
 type ConfigFile struct {
 	Version     string
+	Chains      chainsGroup
 	Database    map[string]databaseGroup
 	Sqs         sqsGroup
 	Query       queryGroup
 	QnProvision qnProvisionGroup
+}
+
+type chainsGroup struct {
+	// map of chain name to network names,
+	// e.g. "ethereum" => ["mainnet"]
+	Allowed map[string][]string
 }
 
 type databaseGroup struct {
@@ -43,8 +51,6 @@ type qnProvisionGroup struct {
 	AuthUsername string
 	AuthPassword string
 	AwsSecret    string
-	// ARN of the API that the authorizer grants access to
-	// ApiArn string -- comes in an event from api gateway
 }
 
 var cached *ConfigFile
@@ -54,6 +60,15 @@ func Get(configPath string) (*ConfigFile, error) {
 	if cached != nil {
 		return cached, nil
 	}
+
+	// Load defaults
+	k.Load(structs.Provider(ConfigFile{
+		Chains: chainsGroup{
+			Allowed: map[string][]string{
+				"ethereum": {"mainnet"},
+			},
+		},
+	}, ""), nil)
 
 	if configPath != "" {
 		if err := k.Load(file.Provider(configPath), toml.Parser()); err != nil {

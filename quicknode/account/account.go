@@ -13,13 +13,13 @@ import (
 )
 
 type Account struct {
-	QuicknodeId string `json:"quicknode-id"`
-	Plan        string `json:"plan"`
-	EndpointId  string `json:"endpoint-id"`
-	WssUrl      string `json:"wss-url"`
-	HttpUrl     string `json:"http-url"`
-	Chain       string `json:"chain"`
-	Network     string `json:"network"`
+	QuicknodeId string   `json:"quicknode-id"`
+	Plan        string   `json:"plan"`
+	EndpointIds []string `json:"endpoint-id"`
+	WssUrl      string   `json:"wss-url"`
+	HttpUrl     string   `json:"http-url"`
+	Chain       string   `json:"chain"`
+	Network     string   `json:"network"`
 	// Test does not come with request body, it has to be read from
 	// request headers
 	Test bool `json:"test"`
@@ -113,4 +113,36 @@ func (a *Account) dynamoKey() (map[string]types.AttributeValue, error) {
 	return map[string]types.AttributeValue{
 		"QuicknodeId": id,
 	}, nil
+}
+
+func (a *Account) HasEndpointId(endpointId string) bool {
+	for _, registeredEndpoint := range a.EndpointIds {
+		if registeredEndpoint == endpointId {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *Account) SetFromAccountData(ad *AccountData) {
+	a.QuicknodeId = ad.QuicknodeId
+	a.Plan = ad.Plan
+	a.EndpointIds = append(a.EndpointIds, ad.EndpointId)
+	a.WssUrl = ad.WssUrl
+	a.HttpUrl = ad.HttpUrl
+	a.Chain = ad.Chain
+	a.Network = ad.Network
+}
+
+func (a *Account) DeactivateEndpoint(endpointId string) (found bool) {
+	endpoints := make([]string, 0, len(a.EndpointIds))
+	for _, registeredEndpoint := range a.EndpointIds {
+		if registeredEndpoint == endpointId {
+			found = true
+		} else {
+			endpoints = append(endpoints, registeredEndpoint)
+		}
+	}
+	a.EndpointIds = endpoints
+	return
 }
