@@ -55,11 +55,6 @@ func upsertAccount(c *gin.Context, mustExist bool) {
 
 	account.SetFromAccountData(accountData)
 
-	if err = initApiGateway(); err != nil {
-		log.Println("initApiGateway:", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
-		return
-	}
 	apiKey, err := qnaccount.FindByPlanSlug(apiGatewayClient, account.Plan)
 	if err != nil {
 		log.Println("fetching API key for plan", account.Plan, ":", err)
