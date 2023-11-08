@@ -8,18 +8,22 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
+var ErrAccountNotFound = errors.New("account not found")
+var ErrEndpointNotFound = errors.New("endpoint not found")
+
 type Account struct {
-	QuicknodeId string `json:"quicknode-id"`
-	Plan        string `json:"plan"`
-	EndpointId  string `json:"endpoint-id"`
-	WssUrl      string `json:"wss-url"`
-	HttpUrl     string `json:"http-url"`
-	Chain       string `json:"chain"`
-	Network     string `json:"network"`
+	QuicknodeId string   `json:"quicknode-id"`
+	Plan        string   `json:"plan"`
+	EndpointIds []string `json:"endpoint-id"`
+	WssUrl      string   `json:"wss-url"`
+	HttpUrl     string   `json:"http-url"`
+	Chain       string   `json:"chain"`
+	Network     string   `json:"network"`
 	// Test does not come with request body, it has to be read from
 	// request headers
 	Test bool `json:"test"`
@@ -28,6 +32,7 @@ type Account struct {
 
 	dynamoClient    *dynamodb.Client
 	dynamoTableName *string
+	dynamoItem      map[string]types.AttributeValue
 }
 
 func NewAccount(dynamoClient *dynamodb.Client, tableName string) *Account {
@@ -37,9 +42,52 @@ func NewAccount(dynamoClient *dynamodb.Client, tableName string) *Account {
 	}
 }
 
-func (a *Account) DynamoGet() (item map[string]types.AttributeValue, err error) {
+func (a *Account) LoadApiKey(apiGatewayClient *apigateway.Client) error {
+	apiKey, err := FindByPlanSlug(apiGatewayClient, a.Plan)
+	if err != nil {
+		return fmt.Errorf("fetching API key for plan %s: %w", a.Plan, err)
+	}
+	a.ApiKey = *apiKey
+	return nil
+}
+
+func (a *Account) Find() (found bool, err error) {
+	if err = a.dynamoGet(false); err != nil {
+		err = fmt.Errorf("loading account: %w", err)
+		return
+	}
+	if a.dynamoItem == nil {
+		log.Println("account not found:", a.QuicknodeId)
+		return
+	}
+
+	found = true
+
+	if err = attributevalue.UnmarshalMap(a.dynamoItem, a); err != nil {
+		err = fmt.Errorf("unmarshalling endpoint ids: %w", err)
+	}
+	return
+}
+
+func (a *Account) Authorize(ad *AccountData) error {
+	if a.QuicknodeId != ad.EndpointId {
+		return ErrAccountNotFound
+	}
+	if !a.HasEndpointId(ad.EndpointId) {
+		return ErrEndpointNotFound
+	}
+	return nil
+}
+
+func (a *Account) dynamoGet(force bool) (err error) {
+	if len(a.dynamoItem) > 0 && !force {
+		log.Println("account.DynamoGet: using cached DynamoDB item")
+		return
+	}
+
 	key, err := a.dynamoKey()
 	if err != nil {
+		err = fmt.Errorf("getting DynamoDB key: %w", err)
 		return
 	}
 
@@ -50,19 +98,20 @@ func (a *Account) DynamoGet() (item map[string]types.AttributeValue, err error) 
 		Key:       key,
 	})
 	if err != nil {
+		err = fmt.Errorf("getting DynamoDB item: %w", err)
 		return
 	}
 
 	if result == nil {
-		return nil, nil
+		return nil
 	}
 
 	if result.Item == nil {
-		return nil, nil
+		return nil
 	}
 
-	item = result.Item
-	log.Println("account.DynamoGet: found account", item["QuicknodeId"])
+	a.dynamoItem = result.Item
+	log.Println("account.DynamoGet: found account", a.dynamoItem["QuicknodeId"])
 
 	return
 }
@@ -76,7 +125,7 @@ func (a *Account) DynamoPut() (err error) {
 	// Note: Example uses non-pointer value: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/dynamo-example-create-table-item.html
 	encoded, err := attributevalue.MarshalMap(a)
 	if err != nil {
-		err = fmt.Errorf("marshal: %w", err)
+		err = fmt.Errorf("dynamoDB put: marshal: %w", err)
 		return
 	}
 
@@ -85,7 +134,7 @@ func (a *Account) DynamoPut() (err error) {
 		TableName: a.dynamoTableName,
 	})
 	if err != nil {
-		err = fmt.Errorf("put item: %w", err)
+		err = fmt.Errorf("dynamoDB put: %w", err)
 	}
 	return
 }
@@ -113,4 +162,39 @@ func (a *Account) dynamoKey() (map[string]types.AttributeValue, error) {
 	return map[string]types.AttributeValue{
 		"QuicknodeId": id,
 	}, nil
+}
+
+func (a *Account) HasEndpointId(endpointId string) bool {
+	for _, registeredEndpoint := range a.EndpointIds {
+		if registeredEndpoint == endpointId {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *Account) SetFromAccountData(ad *AccountData) {
+	a.QuicknodeId = ad.QuicknodeId
+	a.Plan = ad.Plan
+	a.WssUrl = ad.WssUrl
+	a.HttpUrl = ad.HttpUrl
+	a.Chain = ad.Chain
+	a.Network = ad.Network
+}
+
+func (a *Account) DeactivateEndpoint(endpointId string) (found bool) {
+	endpoints := make([]string, 0, len(a.EndpointIds))
+	for _, registeredEndpoint := range a.EndpointIds {
+		if registeredEndpoint == endpointId {
+			found = true
+		} else {
+			endpoints = append(endpoints, registeredEndpoint)
+		}
+	}
+	a.EndpointIds = endpoints
+	return
+}
+
+func (a *Account) ActivateEndpoint(endpointId string) {
+	a.EndpointIds = append(a.EndpointIds, endpointId)
 }

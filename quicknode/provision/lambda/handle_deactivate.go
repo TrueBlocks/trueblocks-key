@@ -6,37 +6,32 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	qnaccount "trueblocks.io/quicknode/account"
 )
 
 func HandleDeactivateEndpoint(c *gin.Context) {
-	// Since we don't need to support endpoint, we will just
-	// validate the account and return success if it's registered
-	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
+	resp := &responder{c}
 
-	err := c.BindJSON(account)
+	account, accountData, err := readAccountFromRequest(resp, c)
 	if err != nil {
-		log.Println("deactivate: binding account:", err)
-		c.AbortWithError(http.StatusBadRequest, errors.New("could not parse JSON"))
 		return
 	}
 
-	// Read account data
-	result, err := account.DynamoGet()
+	if err := findAccount(resp, account); err != nil {
+		return
+	}
+
+	endpointFound := account.DeactivateEndpoint(accountData.EndpointId)
+	log.Println("endpoint found:", endpointFound)
+	if !endpointFound {
+		resp.abortWithError(http.StatusNotFound, errors.New("endpoint not found"))
+		return
+	}
+
+	err = account.DynamoPut()
 	if err != nil {
-		log.Println("deactivate: account.DynamoRead:", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
+		log.Println(err)
+		resp.abortWithInternalError()
 		return
 	}
-	if result == nil {
-		// This account is not registered
-		log.Println("deactivate: account not found", account.QuicknodeId)
-		c.AbortWithError(http.StatusNotFound, errors.New("account not found"))
-		return
-	}
-
-	// Do nothing
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-	})
+	resp.success()
 }

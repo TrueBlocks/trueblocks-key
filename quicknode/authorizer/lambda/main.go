@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awshelper "trueblocks.io/awshelper/pkg"
 	qnConfig "trueblocks.io/config/pkg"
@@ -85,26 +84,43 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		return
 	}
 
-	getResult, err := account.DynamoGet()
+	found, err := account.Find()
 	if err != nil {
-		log.Println("cannot get from account DynamoDB:", account.QuicknodeId, err)
-		err = errUnauthorized
-		return
-	}
-	if getResult == nil {
-		log.Println("no such account:", account.QuicknodeId)
+		log.Println("finding account:", account.QuicknodeId, err)
 		err = errUnauthorized
 		return
 	}
 
-	apiKeyAttr, ok := getResult["ApiKey"]
-	if !ok || apiKeyAttr == nil {
-		log.Println("empty Account.ApiKey", account.QuicknodeId)
+	if !found {
+		log.Println("account not found", account.QuicknodeId)
 		err = errUnauthorized
 		return
 	}
-	if err = attributevalue.Unmarshal(apiKeyAttr, &account.ApiKey); err != nil {
-		log.Println("unmarshal Account.ApiKey:", err)
+
+	endpoint := event.Headers["x-instance-id"]
+	chain := event.Headers["x-qn-chain"]
+	network := event.Headers["x-qn-network"]
+
+	if chain == "" || network == "" {
+		log.Println("empty chain or network", chain, network)
+		err = errUnauthorized
+		return
+	}
+
+	if err = qnaccount.ValidateChainNetwork(chain, network, cnf); err != nil {
+		log.Println(err, chain, network)
+		err = errUnauthorized
+		return
+	}
+
+	if !account.HasEndpointId(endpoint) {
+		log.Println("endpoint not found", endpoint)
+		err = errUnauthorized
+		return
+	}
+
+	if account.ApiKey.Value == "" {
+		log.Println("empty Account.ApiKey", account.QuicknodeId)
 		err = errUnauthorized
 		return
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"net/http"
 
@@ -10,50 +9,43 @@ import (
 )
 
 func HandleUpdate(c *gin.Context) {
-	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
+	resp := &responder{c}
 
-	err := c.BindJSON(account)
+	account, accountData, err := readAccountFromRequest(resp, c)
 	if err != nil {
-		log.Println("update: binding account:", err)
-		c.AbortWithError(http.StatusBadRequest, errors.New("could not parse JSON"))
 		return
 	}
 
-	// Read account data
-	result, err := account.DynamoGet()
+	if err := findAccount(resp, account); err != nil {
+		return
+	}
+
+	if err := account.Authorize(accountData); err != nil {
+		log.Println(err.Error(), accountData.QuicknodeId, accountData.EndpointId)
+		resp.abortWithError(http.StatusNotFound, err)
+		return
+	}
+
+	err = account.DynamoPut()
 	if err != nil {
-		log.Println("update: account.DynamoRead:", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
+		log.Println(err)
+		resp.abortWithInternalError()
 		return
 	}
-	if result == nil {
-		// This account is not registered
-		log.Println("update: account not found", account.QuicknodeId)
-		c.AbortWithError(http.StatusNotFound, errors.New("account not found"))
-		return
-	}
+	resp.success()
+}
 
-	// Save updated account
-	if err = initApiGateway(); err != nil {
-		log.Println("initApiGateway:", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
-		return
-	}
-	apiKey, err := qnaccount.FindByPlanSlug(apiGatewayClient, account.Plan)
+func findAccount(resp *responder, account *qnaccount.Account) (err error) {
+	found, err := account.Find()
 	if err != nil {
-		log.Println("fetching API key for plan", account.Plan, ":", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
+		log.Println(err)
+		resp.abortWithInternalError()
 		return
 	}
-	account.ApiKey = *apiKey
-
-	if err = account.DynamoPut(); err != nil {
-		log.Println("update: saving account", account.QuicknodeId, ":", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
+	if !found {
+		log.Println("account not found", account.QuicknodeId)
+		resp.abortWithCode(http.StatusNotFound)
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-	})
+	return
 }

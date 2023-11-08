@@ -18,14 +18,19 @@ import (
 	qnDynamodb "trueblocks.io/extract/quicknode/dynamodb"
 )
 
+var awsConfig aws.Config
 var cnf *qnConfig.ConfigFile
 var dynamoClient *dynamodb.Client
 var ginLambda *ginadapter.GinLambda
 
 func init() {
+	initAwsConfig()
+
 	if err := loadConfig(); err != nil {
 		panic(fmt.Errorf("reading configuration: %w", err))
 	}
+
+	initApiGateway()
 
 	secret, err := awshelper.FetchUsernamePasswordSecret(cnf.QnProvision.AwsSecret)
 	if err != nil {
@@ -55,11 +60,6 @@ func initDynamoDb() {
 		return
 	}
 
-	var awsConfig aws.Config
-	awsConfig, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		panic("error reading config: " + err.Error())
-	}
 	// Create DynamoDB client
 	dynamoClient = dynamodb.NewFromConfig(awsConfig, func(o *dynamodb.Options) {
 		if qnDynamodb.ShouldUseLocal() {
@@ -68,6 +68,14 @@ func initDynamoDb() {
 			o.Credentials = credentials.NewStaticCredentialsProvider("fake", "fake", "test")
 		}
 	})
+}
+
+func initAwsConfig() {
+	var err error
+	awsConfig, err = config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		panic("error reading config: " + err.Error())
+	}
 }
 
 func loadConfig() (err error) {

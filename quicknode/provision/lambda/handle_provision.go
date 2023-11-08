@@ -10,56 +10,57 @@ import (
 )
 
 func HandleProvision(c *gin.Context) {
-	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
-	success := func() {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "success",
-		})
-	}
+	resp := &responder{c}
 
-	err := c.BindJSON(account)
+	account, accountData, err := readAccountFromRequest(resp, c)
 	if err != nil {
-		log.Println("provision: binding account:", err)
-		c.AbortWithError(http.StatusBadRequest, errors.New("could not parse JSON"))
 		return
 	}
 
-	// First check if the user is already in the database
-	result, err := account.DynamoGet()
-	if err != nil {
-		log.Println("provision: account.DynamoRead:", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
-		return
+	found, _ := account.Find()
+	if !found {
+		log.Println("creating new account:", account.QuicknodeId, accountData.EndpointId)
+	} else {
+		log.Println("account exists, adding new endpoint", account.QuicknodeId, accountData.EndpointId)
 	}
-	if result != nil {
-		// We already have the account registered
-		log.Println("account already registered", account.QuicknodeId)
-		success()
+
+	if accountData.EndpointId == "" {
+		log.Println("empty EndpointId")
+		resp.abortWithError(http.StatusBadRequest, errors.New("missing endpoint ID"))
 		return
 	}
 
-	log.Println("Adding new account", account.QuicknodeId)
-
-	if err = initApiGateway(); err != nil {
-		log.Println("initApiGateway:", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
+	account.ActivateEndpoint(accountData.EndpointId)
+	if err := account.LoadApiKey(apiGatewayClient); err != nil {
+		log.Println(err)
+		resp.abortWithInternalError()
 		return
 	}
-	apiKey, err := qnaccount.FindByPlanSlug(apiGatewayClient, account.Plan)
-	if err != nil {
-		log.Println("fetching API key for plan", account.Plan, ":", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
-		return
-	}
-	account.ApiKey = *apiKey
 
 	err = account.DynamoPut()
 	if err != nil {
-		log.Println("provision: account.DynamoPut:", err)
-		c.AbortWithError(http.StatusInternalServerError, nil)
+		log.Println(err)
+		resp.abortWithInternalError()
 		return
 	}
 
-	success()
+	resp.success()
+}
+
+func readAccountFromRequest(resp *responder, c *gin.Context) (account *qnaccount.Account, accountData *qnaccount.AccountData, err error) {
+	accountData, err = qnaccount.NewAccountData(c)
+	if err != nil {
+		log.Println("parsing account data:", err)
+
+		if err != qnaccount.ErrInvalidChainNetwork {
+			resp.abortWithInvalidJson()
+		} else {
+			resp.abortWithError(http.StatusBadRequest, err)
+		}
+		return
+	}
+	account = qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
+	account.SetFromAccountData(accountData)
+
 	return
 }
