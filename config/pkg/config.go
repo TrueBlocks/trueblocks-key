@@ -62,17 +62,14 @@ func Get(configPath string) (*ConfigFile, error) {
 	}
 
 	// Load defaults
-	k.Load(structs.Provider(ConfigFile{
-		Chains: chainsGroup{
-			Allowed: map[string][]string{
-				"ethereum": {"mainnet"},
-			},
-		},
-	}, ""), nil)
+	err := k.Load(structs.Provider(defaultConfig, ""), nil)
+	if err != nil {
+		return nil, fmt.Errorf("config: setting default values: %w", err)
+	}
 
 	if configPath != "" {
 		if err := k.Load(file.Provider(configPath), toml.Parser()); err != nil {
-			return nil, fmt.Errorf("config.extract: reading file %s: %w", configPath, err)
+			return nil, fmt.Errorf("config: reading file %s: %w", configPath, err)
 		}
 	}
 
@@ -81,12 +78,12 @@ func Get(configPath string) (*ConfigFile, error) {
 			strings.TrimPrefix(s, "QNEXT_")), "_", ".", -1)
 	}
 	if err := k.Load(env.Provider(prefix+"_", ".", translateEnv), nil); err != nil {
-		return nil, fmt.Errorf("config.extract: parsing env: %w", err)
+		return nil, fmt.Errorf("config: parsing env: %w", err)
 	}
 
 	var out ConfigFile
 	if err := k.Unmarshal("", &out); err != nil {
-		return nil, fmt.Errorf("config.extract: unmarshal: %w", err)
+		return nil, fmt.Errorf("config: unmarshal: %w", err)
 	}
 	cached = &out
 	return cached, nil

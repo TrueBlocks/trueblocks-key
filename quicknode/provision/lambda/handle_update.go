@@ -1,9 +1,51 @@
 package main
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+	qnaccount "trueblocks.io/quicknode/account"
 )
 
 func HandleUpdate(c *gin.Context) {
-	upsertAccount(c, true)
+	resp := &responder{c}
+
+	account, accountData, err := readAccountFromRequest(resp, c)
+	if err != nil {
+		return
+	}
+
+	if err := findAccount(resp, account); err != nil {
+		return
+	}
+
+	if err := account.Authorize(accountData); err != nil {
+		log.Println(err.Error(), accountData.QuicknodeId, accountData.EndpointId)
+		resp.abortWithError(http.StatusNotFound, err)
+		return
+	}
+
+	err = account.DynamoPut()
+	if err != nil {
+		log.Println(err)
+		resp.abortWithInternalError()
+		return
+	}
+	resp.success()
+}
+
+func findAccount(resp *responder, account *qnaccount.Account) (err error) {
+	found, err := account.Find()
+	if err != nil {
+		log.Println(err)
+		resp.abortWithInternalError()
+		return
+	}
+	if !found {
+		log.Println("account not found", account.QuicknodeId)
+		resp.abortWithCode(http.StatusNotFound)
+		return
+	}
+	return
 }

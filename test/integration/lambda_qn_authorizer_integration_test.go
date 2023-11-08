@@ -81,7 +81,7 @@ func (a *authorizerRequest) LambdaPayload() (string, error) {
 }
 
 type provisonRequest struct {
-	Account *qnAccount.Account
+	Account *qnAccount.AccountData
 	method  string
 	path    string
 }
@@ -286,10 +286,13 @@ func TestLambdaQnAuthorizer(t *testing.T) {
 
 	// Insert account record into DynamoDB
 	provisionRequest := newProvisionRequest("POST", "/provision")
-	provisionRequest.Account = &qnAccount.Account{
+	provisionRequest.Account = &qnAccount.AccountData{
 		QuicknodeId: "test-quicknode-id",
+		EndpointId:  "test-endpoint-id",
 		Test:        true,
 		Plan:        "IntegrationTestPlan",
+		Chain:       "ethereum",
+		Network:     "mainnet",
 	}
 	output = helpers.InvokeLambda(t, client, "ApiProvisionFunction", provisionRequest)
 	helpers.AssertLambdaSuccessful(t, output)
@@ -305,7 +308,7 @@ func TestLambdaQnAuthorizer(t *testing.T) {
 		t.Fatal("cannot read provision result status code", fmt.Sprintf("%+v", provisionResult))
 	}
 	if fmt.Sprint(statusCode) != "200" {
-		t.Fatal("provision request failed: status code =", statusCode)
+		t.Fatal("provision request failed: status code =", statusCode, fmt.Sprintf("%+v", provisionResult))
 	}
 
 	t.Log("Inserted new account")
@@ -332,6 +335,9 @@ func TestLambdaQnAuthorizer(t *testing.T) {
 	request = newAuthorizerRequest(map[string]string{
 		"Authorization":  basicAuth,
 		"x-quicknode-id": provisionRequest.Account.QuicknodeId,
+		"x-instance-id":  provisionRequest.Account.EndpointId,
+		"x-qn-chain":     provisionRequest.Account.Chain,
+		"x-qn-network":   provisionRequest.Account.Network,
 	})
 	output = helpers.InvokeLambda(t, client, "QnAuthorizer", request)
 	helpers.AssertLambdaSuccessful(t, output)

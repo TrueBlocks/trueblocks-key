@@ -2,6 +2,8 @@ package qnaccount
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	config "trueblocks.io/config/pkg"
 )
@@ -29,21 +31,31 @@ type requestContext interface {
 func NewAccountData(c requestContext) (accountData *AccountData, err error) {
 	accountData = &AccountData{}
 	if err = c.BindJSON(accountData); err != nil {
+		err = fmt.Errorf("parsing account data json: %w", err)
 		return
 	}
 	accountData.Test = (c.GetHeader("X-QN-TESTING") == "true")
 
 	cnf, err := config.Get("")
 	if err != nil {
+		err = fmt.Errorf("account data: reading config: %w", err)
 		return
 	}
-	chain, ok := cnf.Chains.Allowed[accountData.Chain]
+
+	err = ValidateChainNetwork(accountData.Chain, accountData.Network, cnf)
+	return
+}
+
+func ValidateChainNetwork(chain string, network string, cnf *config.ConfigFile) (err error) {
+	chain = strings.ToLower(chain)
+	network = strings.ToLower(network)
+	allowedChain, ok := cnf.Chains.Allowed[chain]
 	if !ok {
 		err = ErrInvalidChainNetwork
 		return
 	}
-	for _, network := range chain {
-		if network == accountData.Network {
+	for _, allowedNetwork := range allowedChain {
+		if allowedNetwork == network {
 			return
 		}
 	}

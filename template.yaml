@@ -158,6 +158,9 @@ Resources:
               Headers:
                 - Authorization
                 - x-quicknode-id
+                - x-instance-id
+                - x-qn-chain
+                - x-qn-network
 
   # ### QN Authorizer
   QnAuthorizer:
