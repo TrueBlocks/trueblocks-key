@@ -30,7 +30,11 @@ func HandleProvision(c *gin.Context) {
 		return
 	}
 
-	account.ActivateEndpoint(accountData.EndpointId)
+	if eid := accountData.EndpointId; !account.HasEndpointId(eid) {
+		log.Println("Adding new endpoint", eid)
+		account.ActivateEndpoint(eid)
+	}
+
 	if err := account.LoadApiKey(apiGatewayClient); err != nil {
 		log.Println(err)
 		resp.abortWithInternalError()

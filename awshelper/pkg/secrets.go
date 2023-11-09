@@ -29,6 +29,8 @@ func FetchSecret(id string) (result string, err error) {
 		}
 	}
 
+	log.Println("Fetching secret with ID:", id)
+
 	return secretCache.GetSecretString(id)
 }
 

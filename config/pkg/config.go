@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/knadh/koanf/parsers/toml"
+	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
 )
 
@@ -19,7 +19,7 @@ type ConfigFile struct {
 	Database    map[string]databaseGroup
 	Sqs         sqsGroup
 	Query       queryGroup
-	QnProvision qnProvisionGroup
+	QnProvision qnProvisionGroup `koanf:"qnprovision"`
 }
 
 type chainsGroup struct {
@@ -62,7 +62,7 @@ func Get(configPath string) (*ConfigFile, error) {
 	}
 
 	// Load defaults
-	err := k.Load(structs.Provider(defaultConfig, ""), nil)
+	err := k.Load(confmap.Provider(defaultConfig, "."), nil)
 	if err != nil {
 		return nil, fmt.Errorf("config: setting default values: %w", err)
 	}
