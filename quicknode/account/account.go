@@ -70,7 +70,7 @@ func (a *Account) Find() (found bool, err error) {
 }
 
 func (a *Account) Authorize(ad *AccountData) error {
-	if a.QuicknodeId != ad.EndpointId {
+	if a.QuicknodeId != ad.QuicknodeId {
 		return ErrAccountNotFound
 	}
 	if !a.HasEndpointId(ad.EndpointId) {

@@ -116,6 +116,14 @@ Resources:
   # API
   ###
 
+  QnApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - '-'
+        - - !Ref QnApi
+          - access-logs
+
   QnApi:
     Type: AWS::Serverless::Api
     DependsOn:
@@ -123,6 +131,13 @@ Resources:
     Properties:
       StageName: !Ref QnApiStageName
       ApiKeySourceType: AUTHORIZER
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+      AccessLogSetting:
+        DestinationArn: !GetAtt QnApiLogGroup.Arn
+        Format: $context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
       Models:
         RpcRequest:
           type: object
@@ -161,6 +176,41 @@ Resources:
                 - x-instance-id
                 - x-qn-chain
                 - x-qn-network
+
+  # CloudWatch logging policies
+
+  # Specifies the IAM role that API Gateway uses to write API logs to Amazon CloudWatch Logs
+  QnApiLoggingRoleArn:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt QnApiCloudWatchRole.Arn
+
+  # IAM Role with 'AmazonAPIGatewayPushToCloudWatchLogs' managed policy
+  QnApiCloudWatchRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Path: /
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+
+  # For QuickNode, we need to override the default MISSING_AUTHENTICATION_TOKEN
+  # status code. QN expects it to be 401, not 403
+  GatewayResponseMissingAuthToken:
+    Type: 'AWS::ApiGateway::GatewayResponse'
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+      ResponseType: MISSING_AUTHENTICATION_TOKEN
+      RestApiId: !Ref QnApi
+      StatusCode: "401"
 
   # ### QN Authorizer
   QnAuthorizer:
@@ -204,7 +254,6 @@ Resources:
           Properties:
             # Make sure this endpoint does not require auth
             Auth:
-              # ApiKeyRequired: false
               Authorizer: NONE
             Path: /healthcheck
             Method: get
@@ -258,7 +307,7 @@ Resources:
             RestApiId:
               Ref: QnApi
             Auth:
-              # We cannot authorize against account here
+              # Do not require QuickNode's headers
               Authorizer: NONE
         Update:
           Type: Api
@@ -267,6 +316,9 @@ Resources:
             Method: put
             RestApiId:
               Ref: QnApi
+            Auth:
+              # Do not require QuickNode's headers
+              Authorizer: NONE
         Deactivate:
           Type: Api
           Properties:
@@ -274,6 +326,9 @@ Resources:
             Method: delete
             RestApiId:
               Ref: QnApi
+            Auth:
+              # Do not require QuickNode's headers
+              Authorizer: NONE
         Deprovision:
           Type: Api
           Properties:
@@ -281,6 +336,9 @@ Resources:
             Method: delete
             RestApiId:
               Ref: QnApi
+            Auth:
+              # Do not require QuickNode's headers
+              Authorizer: NONE
       Environment:
         Variables:
           QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
