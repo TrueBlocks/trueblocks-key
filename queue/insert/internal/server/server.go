@@ -24,7 +24,9 @@ func New(qu *queue.Queue) *Server {
 
 func (s *Server) Start(port int) (err error) {
 	http.HandleFunc("/add", s.addHandler)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	url := fmt.Sprintf(":%d", port)
+	fmt.Println("Listening:", url)
+	err = http.ListenAndServe(url, nil)
 	return
 }
 

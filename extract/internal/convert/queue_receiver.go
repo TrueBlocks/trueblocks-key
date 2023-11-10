@@ -76,7 +76,7 @@ func (q *QueueReceiver) send(encoded <-chan []byte, errs chan<- error) {
 
 func (q *QueueReceiver) sendOne(encoded []byte) (err error) {
 	var resp *http.Response
-	resp, err = http.Post(q.InsertUrl, "application/json", bytes.NewReader(encoded))
+	resp, err = http.Post(q.InsertUrl+"/add", "application/json", bytes.NewReader(encoded))
 	if err != nil {
 		return
 	}

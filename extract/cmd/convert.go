@@ -22,6 +22,7 @@ var convertCmd = &cobra.Command{
 }
 
 func init() {
+	convertCmd.Flags().StringP("insert_url", "", "", "URL of insert tool")
 	rootCmd.AddCommand(convertCmd)
 }
 
@@ -36,6 +37,11 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	insertServerUrl, err := cmd.Flags().GetString("insert_url")
+	if err != nil {
+		return err
+	}
+
 	cnf, err := config.Get(configPath)
 	if err != nil {
 		return err
@@ -43,14 +49,14 @@ func runConvert(cmd *cobra.Command, args []string) error {
 
 	var receiver convert.AppearanceReceiver
 
-	if dbConfigKey != "" {
+	if insertServerUrl == "" {
 		dbRecv := &convert.DatabaseReceiver{
 			DbConn: &database.Connection{
-				Host:     cnf.Database["default"].Host,
-				Port:     cnf.Database["default"].Port,
-				Database: cnf.Database["default"].Database,
-				User:     cnf.Database["default"].User,
-				Password: cnf.Database["default"].Password,
+				Host:     cnf.Database[dbConfigKey].Host,
+				Port:     cnf.Database[dbConfigKey].Port,
+				Database: cnf.Database[dbConfigKey].Database,
+				User:     cnf.Database[dbConfigKey].User,
+				Password: cnf.Database[dbConfigKey].Password,
 			},
 		}
 		log.Println(dbRecv.DbConn)
@@ -62,10 +68,6 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		}
 		receiver = dbRecv
 	} else {
-		insertServerUrl, err := cmd.Flags().GetString("insert_url")
-		if err != nil {
-			return err
-		}
 		if insertServerUrl == "" {
 			return errors.New("--insert_url or --database required")
 		}
