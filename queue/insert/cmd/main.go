@@ -42,6 +42,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	srv := server.New(q)
 
-	log.Fatalln(server.Start(port, q))
+	log.Println(srv.Start(port))
 }

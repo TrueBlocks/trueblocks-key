@@ -1,31 +1,14 @@
 package queue
 
 import (
-	"fmt"
 	"testing"
 
 	"trueblocks.io/queue/consume/pkg/appearance"
+	"trueblocks.io/queue/insert/internal/queue/queuetest"
 )
 
-type mockQueue struct {
-	items []*appearance.Appearance
-}
-
-func (m *mockQueue) Init() error {
-	return nil
-}
-
-func (m *mockQueue) Add(app *appearance.Appearance) (string, error) {
-	m.items = append(m.items, app)
-	return fmt.Sprintf("%d", m.Len()), nil
-}
-
-func (m *mockQueue) Len() int {
-	return len(m.items)
-}
-
 func TestQueueAdd(t *testing.T) {
-	mock := &mockQueue{}
+	mock := &queuetest.MockQueue{}
 	q, err := NewQueue(mock)
 	if err != nil {
 		t.Fatal(err)
@@ -44,7 +27,7 @@ func TestQueueAdd(t *testing.T) {
 		t.Fatal("wrong queue length:", l)
 	}
 
-	item := mock.items[0]
+	item := mock.Get(0)
 	if item.AppearanceId != app.AppearanceId {
 		t.Fatal("wrong AppearanceId")
 	}

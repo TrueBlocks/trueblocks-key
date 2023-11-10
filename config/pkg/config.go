@@ -20,6 +20,7 @@ type ConfigFile struct {
 	Sqs         sqsGroup
 	Query       queryGroup
 	QnProvision qnProvisionGroup `koanf:"qnprovision"`
+	Convert     convertGroup
 }
 
 type chainsGroup struct {
@@ -51,6 +52,11 @@ type qnProvisionGroup struct {
 	AuthUsername string
 	AuthPassword string
 	AwsSecret    string
+}
+
+type convertGroup struct {
+	BatchSize      int
+	MaxConnections int
 }
 
 var cached *ConfigFile
