@@ -15,11 +15,13 @@ import (
 
 var configPath string
 var port int
+var file string
 
 var client *sqs.Client
 
 func main() {
 	flag.StringVar(&configPath, "config", "", "path to configuration file")
+	flag.StringVar(&file, "file", "", "(testing only) use this local file instead of a real queue")
 	flag.IntVar(&port, "port", 5555, "port to listen on")
 	flag.Parse()
 
@@ -38,10 +40,18 @@ func main() {
 		log.Fatalln("reading configuration:", err)
 	}
 
-	q, err := queue.NewQueue(queue.NewSqsQueue(client, qnConfig))
+	var impl queue.RemoteQueuer
+	if file != "" {
+		impl = queue.NewFileQueue(file)
+	} else {
+		impl = queue.NewSqsQueue(client, qnConfig)
+	}
+
+	q, err := queue.NewQueue(impl)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	srv := server.New(q)
 
-	log.Fatalln(server.Start(port, q))
+	srv.Start(port)
 }

@@ -13,20 +13,20 @@ import (
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/utils"
+	config "trueblocks.io/config/pkg"
 	database "trueblocks.io/database/pkg"
 )
 
-func Convert(dbConn *database.Connection, indexPath string) error {
+type AppearanceReceiver interface {
+	SendBatch([]*database.Appearance) error
+}
+
+func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath string) error {
 	log.Println("Reading Unchained Index from", indexPath)
 
 	// Collect chunk file names
 	chunkPaths := make(map[string]string)
 	lastFile := ""
-
-	if err := dbConn.AutoMigrate(); err != nil {
-		return err
-	}
-	db := dbConn.Db()
 
 	err := filepath.WalkDir(indexPath, func(path string, d fs.DirEntry, derr error) error {
 		if derr != nil {
@@ -57,8 +57,8 @@ func Convert(dbConn *database.Connection, indexPath string) error {
 	appsFound := atomic.Int32{}
 
 	// Extract appearances in batches and push them to DB
-
-	batch := make([]*database.Appearance, 0, dbConn.BatchSize())
+	batchSize := cnf.Convert.BatchSize
+	batch := make([]*database.Appearance, 0, batchSize)
 	var mu sync.Mutex
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -109,12 +109,11 @@ func Convert(dbConn *database.Connection, indexPath string) error {
 					BlockRangeStart: fileRange.First,
 					BlockRangeEnd:   fileRange.Last,
 				})
-				if len(batch) >= 5000 {
-					dbtx := db.Create(batch)
-					if err = dbtx.Error; err != nil {
+				if len(batch) >= batchSize {
+					if err := receiver.SendBatch(batch); err != nil {
 						return err
 					}
-					batch = make([]*database.Appearance, 0, 5000)
+					batch = make([]*database.Appearance, 0, batchSize)
 				}
 				mu.Unlock()
 				progressChan <- struct {
@@ -131,8 +130,7 @@ func Convert(dbConn *database.Connection, indexPath string) error {
 
 		// Empty buffer
 		if path == lastFile && len(batch) > 0 {
-			dbtx := db.Create(batch)
-			if err = dbtx.Error; err != nil {
+			if err := receiver.SendBatch(batch); err != nil {
 				return err
 			}
 		}

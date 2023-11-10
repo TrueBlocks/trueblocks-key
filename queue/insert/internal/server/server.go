@@ -12,16 +12,25 @@ import (
 
 // This will be removed when Scraper supports Notify
 
-var qu *queue.Queue
+type Server struct {
+	qu *queue.Queue
+}
 
-func Start(port int, q *queue.Queue) (err error) {
-	qu = q
-	http.HandleFunc("/add", addHandler)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+func New(qu *queue.Queue) *Server {
+	return &Server{
+		qu,
+	}
+}
+
+func (s *Server) Start(port int) (err error) {
+	http.HandleFunc("/add", s.addHandler)
+	url := fmt.Sprintf(":%d", port)
+	fmt.Println("Listening:", url)
+	err = http.ListenAndServe(url, nil)
 	return
 }
 
-func addHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) addHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(400)
 	}
@@ -38,7 +47,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 	}
 
-	msgId, err := qu.Add(app)
+	msgId, err := s.qu.Add(app)
 	if err != nil {
 		w.WriteHeader(400)
 		w.Write([]byte(err.Error()))
