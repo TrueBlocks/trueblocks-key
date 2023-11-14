@@ -48,6 +48,7 @@ func (q *QueueReceiver) SendBatch(batch []*database.Appearance) (err error) {
 func (q *QueueReceiver) encodeBatch(batch []*database.Appearance, results chan<- []byte, errs chan<- error) {
 	defer close(results)
 	for _, item := range batch {
+		item := item
 		app := &appearance.Appearance{
 			Address:         item.Address,
 			TransactionId:   item.TransactionId,
