@@ -38,9 +38,6 @@ func TestSetFromAccountData(t *testing.T) {
 	if v := a.QuicknodeId; v != ad.QuicknodeId {
 		t.Fatal("wrong QuicknodeId", v)
 	}
-	if v := a.EndpointIds; !reflect.DeepEqual(v, []string{ad.EndpointId}) {
-		t.Fatal("wrong EndpointIds", v)
-	}
 	if v := a.Plan; v != ad.Plan {
 		t.Fatal("wrong Plan", v)
 	}

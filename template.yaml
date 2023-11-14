@@ -523,6 +523,11 @@ Resources:
         FromPort: 5432
         ToPort: 5432
         SourceSecurityGroupId : !Ref LambdaSecurityGroup
+      # Make it accessible from DevOps instances, too
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        SourceSecurityGroupId : !Ref DebugInstanceSecurityGroup
 
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -558,3 +563,78 @@ Resources:
         - !Ref privateLambdaSubnet2
       SecurityGroupIds:
         - !Ref LambdaSecurityGroup
+
+  ###
+  # Debug
+  ###
+
+  # Debug EC2 instance and resources it needs
+
+  # You can download this pair's private key from AWS Parameter Store
+  DebugInstanceKeyPair:
+      Type: AWS::EC2::KeyPair
+      Properties:
+        KeyName: debug-instance-keypair
+
+  # Public internet connection configuration. It should only allow SSH and PostgreSQL connections
+  PublicDevOpsSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref RDSVPC
+      CidrBlock: 172.32.64.0/20
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      MapPublicIpOnLaunch: true
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref RDSVPC
+      InternetGatewayId: !Ref InternetGateway
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RDSVPC
+  RoutePublicSubnet:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicDevOpsSubnet
+  RouteIG:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  DebugInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: DevOps SSH PSQL
+      GroupDescription: Allows SSH and PostgreSQL connections to DevOps instance
+      VpcId: !Ref RDSVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
+
+  # Debug EC2 instance. Remember that SAM and CF are always turning on the instances
+  # their create, so if you comment the instance out, deploy (removing it) and uncomment
+  # and redeploy (creating it) it will be on and you most likely want to stop it
+  DebugInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: "ami-0e8a34246278c21e4"
+      KeyName: !Ref DebugInstanceKeyPair
+      SecurityGroupIds:
+        - !GetAtt DebugInstanceSecurityGroup.GroupId
+      SubnetId: !Ref PublicDevOpsSubnet
+      UserData: !Base64
+        |
+          #!/bin/sh
+          sudo amazon-linux-extras install postgresql15
