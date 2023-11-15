@@ -6,6 +6,7 @@ package integration_test
 import (
 	"fmt"
 	"math/big"
+	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -172,4 +173,103 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	t.Logf("result: %+v", response)
 	helpers.AssertLambdaError(t, string(output.Payload), "incorrect page or perPage")
+}
+
+func TestLambdaRpcFunctionPagination(t *testing.T) {
+	dbConn, done, err := dbtest.NewTestConnection()
+	if err != nil {
+		t.Fatal("connecting to test db:", err)
+	}
+	defer done()
+	defer helpers.KillSamOnPanic()
+
+	// Prepate test data
+	appearances := []database.Appearance{
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 1},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 2},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 3},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 4},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 5},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 6},
+	}
+	if err = dbConn.Db().Create(&appearances).Error; err != nil {
+		t.Fatal("inserting test data:", err)
+	}
+
+	client := helpers.NewLambdaClient(t)
+	var request *query.RpcRequest
+	var output *lambda.InvokeOutput
+	response := &query.RpcResponse{}
+
+	// Check basic pagination
+
+	for i := 1; i < len(appearances)+1; i++ {
+		request = &query.RpcRequest{
+			Id:     1,
+			Method: "tb_getAppearances",
+			Params: query.RpcRequestParams{
+				Address: appearances[0].Address,
+				PerPage: 1,
+				Page:    i,
+			},
+		}
+		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+		helpers.AssertLambdaSuccessful(t, output)
+		helpers.UnmarshalLambdaOutput(t, output, response)
+
+		if l := len(response.Result); l != 1 {
+			t.Fatal(i, "-- wrong result count:", l)
+		}
+
+		pa := query.PublicAppearance{
+			Address:       appearances[i-1].Address,
+			BlockNumber:   appearances[i-1].BlockNumber,
+			TransactionId: appearances[i-1].TransactionId,
+		}
+		if r := response.Result; !reflect.DeepEqual(r, []query.PublicAppearance{pa}) {
+			t.Fatal(i, "-- wrong result:", r)
+		}
+	}
+
+	// Check items
+
+	var pagingResults = make([]query.PublicAppearance, 0, len(appearances))
+	perPage := 3
+	for i := 1; i < (len(appearances)/perPage)+1; i++ {
+		request = &query.RpcRequest{
+			Id:     1,
+			Method: "tb_getAppearances",
+			Params: query.RpcRequestParams{
+				Address: appearances[0].Address,
+				PerPage: perPage,
+				Page:    i,
+			},
+		}
+		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+		helpers.AssertLambdaSuccessful(t, output)
+		helpers.UnmarshalLambdaOutput(t, output, response)
+
+		if l := len(response.Result); l != 3 {
+			t.Fatal(i, "-- wrong page len:", l)
+		}
+		pagingResults = append(pagingResults, response.Result...)
+	}
+
+	if l := len(pagingResults); l != len(appearances) {
+		t.Fatal("wrong result length", l, "expected", len(appearances))
+	}
+
+	for index, pa := range pagingResults {
+		if addr := pa.Address; addr != appearances[index].Address {
+			t.Fatal("wrong address", addr, "expected", appearances[index].Address)
+		}
+		if bn := pa.BlockNumber; bn != appearances[index].BlockNumber {
+			t.Fatal("wrong block number", bn, "expected", appearances[index].BlockNumber)
+		}
+		if txid := pa.TransactionId; txid != appearances[index].TransactionId {
+			t.Fatal("wrong txid", txid, "expected", appearances[index].TransactionId)
+		}
+	}
 }

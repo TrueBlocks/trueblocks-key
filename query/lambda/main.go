@@ -66,6 +66,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	if offset < 0 {
 		offset = 0
 	}
+	offset = offset * limit
 
 	items := make([]query.PublicAppearance, 0, limit)
 	err = dbConn.Db().Where(&database.Appearance{Address: rpcRequest.Address()}).Limit(limit).Offset(offset).Model(&database.Appearance{}).Find(&items).Error
