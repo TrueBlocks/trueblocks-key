@@ -1,0 +1,58 @@
+# This file MUST BE moved to the root directory to work
+version: '3.1'
+
+services:
+
+  db:
+    image: postgres:15.4
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: index
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - export:/export
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  extract:
+    build: ./
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+    volumes:
+      - index:/index:ro
+    environment:
+      KY_REALTIME_PROGRESS: false
+      KY_DATABASE_DEFAULT_HOST: db
+      KY_DATABASE_DEFAULT_PORT: 5432
+      KY_DATABASE_DEFAULT_USER: postgres
+      KY_DATABASE_DEFAULT_PASSWORD: example
+      KY_DATABASE_DEFAULT_DATABASE: index
+
+volumes:
+  db_data:
+  export:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /tmp
+  index:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /tmp

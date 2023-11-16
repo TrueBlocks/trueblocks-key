@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"os"
+	"path"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -17,12 +19,22 @@ import (
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
+var realTimeProgress bool
+
+func init() {
+	if os.Getenv("KY_REALTIME_PROGRESS") != "false" {
+		realTimeProgress = true
+	}
+}
+
 type AppearanceReceiver interface {
 	SendBatch([]*database.Appearance) error
 }
 
 func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath string) error {
 	log.Println("Reading Unchained Index from", indexPath)
+	log.Println("Saving status info to", statusFile.Name())
+	defer CloseStatusFile()
 
 	// Collect chunk file names
 	chunkPaths := make(map[string]string)
@@ -65,19 +77,23 @@ func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath stri
 	defer cancel()
 	errs := make(chan error)
 	step := func(key string, value string) error {
-		path := key
-		chunk, err := index.NewChunkData(path)
+		chunkPath := key
+		fileName := path.Base(chunkPath)
+		chunk, err := index.NewChunkData(chunkPath)
 		if err != nil {
+			SaveStatus(fileName, StatusError)
 			return err
 		}
 
 		_, err = chunk.File.Seek(int64(index.HeaderWidth), io.SeekStart)
 		if err != nil {
+			SaveStatus(fileName, StatusError)
 			return err
 		}
 
-		fileRange, err := base.RangeFromFilenameE(path)
+		fileRange, err := base.RangeFromFilenameE(chunkPath)
 		if err != nil {
+			SaveStatus(fileName, StatusError)
 			return err
 		}
 
@@ -93,10 +109,12 @@ func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath stri
 		for i := 0; i < int(chunk.Header.AddressCount); i++ {
 			addressRecord := index.AddressRecord{}
 			if err := addressRecord.ReadAddress(chunk.File); err != nil {
+				SaveStatus(fileName, StatusError)
 				return err
 			}
 			apps, err := chunk.ReadAppearanceRecordsAndResetOffset(&addressRecord)
 			if err != nil {
+				SaveStatus(fileName, StatusError)
 				return err
 			}
 
@@ -111,6 +129,7 @@ func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath stri
 				})
 				if len(batch) >= batchSize {
 					if err := receiver.SendBatch(batch); err != nil {
+						SaveStatus(fileName, StatusAppError)
 						return err
 					}
 					batch = make([]*database.Appearance, 0, batchSize)
@@ -126,11 +145,16 @@ func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath stri
 				}
 			}
 		}
+		if !realTimeProgress {
+			fmt.Println("done chunk", fileRange.String(), "appearances total:", appsFound.Load())
+		}
+		SaveStatus(fileName, StatusDone)
 		chunk.Close()
 
 		// Empty buffer
-		if path == lastFile && len(batch) > 0 {
+		if chunkPath == lastFile && len(batch) > 0 {
 			if err := receiver.SendBatch(batch); err != nil {
+				SaveStatus(fileName, StatusAppError)
 				return err
 			}
 		}
@@ -152,7 +176,9 @@ func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath stri
 			if message.App == 1 {
 				f = appsFound.Add(1)
 			}
-			fmt.Printf("\rchunk %d/%d, range %s, total appearances found %d		", p, totalChunks, message.Range, f)
+			if realTimeProgress {
+				fmt.Printf("\rchunk %d/%d, range %s, total appearances found %d		", p, totalChunks, message.Range, f)
+			}
 		}
 		fmt.Println()
 		wg.Done()
