@@ -1,4 +1,4 @@
-module trueblocks.io/uploader
+module github.com/TrueBlocks/trueblocks-key/extract
 
 go 1.20
 

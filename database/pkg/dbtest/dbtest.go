@@ -3,10 +3,10 @@ package dbtest
 import (
 	"context"
 
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	database "trueblocks.io/database/pkg"
 )
 
 var containerName = "test-db"

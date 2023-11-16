@@ -6,16 +6,16 @@ import (
 	"log"
 	"net/http"
 
+	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
+	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	qnaccount "github.com/TrueBlocks/trueblocks-key/quicknode/account"
+	keyDynamodb "github.com/TrueBlocks/trueblocks-key/quicknode/keyDynamodb"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	awshelper "trueblocks.io/awshelper/pkg"
-	keyConfig "trueblocks.io/config/pkg"
-	keyDynamodb "trueblocks.io/extract/quicknode/keyDynamodb"
-	qnaccount "trueblocks.io/quicknode/account"
 )
 
 var cnf *keyConfig.ConfigFile

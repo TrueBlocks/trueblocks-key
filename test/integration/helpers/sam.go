@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"trueblocks.io/database/pkg/dbtest"
+	"github.com/TrueBlocks/trueblocks-key/database/pkg/dbtest"
 )
 
 var cancelSam context.CancelFunc

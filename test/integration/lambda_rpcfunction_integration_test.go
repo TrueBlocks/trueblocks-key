@@ -9,11 +9,11 @@ import (
 	"reflect"
 	"testing"
 
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
+	"github.com/TrueBlocks/trueblocks-key/database/pkg/dbtest"
+	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
+	"github.com/TrueBlocks/trueblocks-key/test/integration/helpers"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	database "trueblocks.io/database/pkg"
-	"trueblocks.io/database/pkg/dbtest"
-	"trueblocks.io/query/pkg/query"
-	"trueblocks.io/test/integration/helpers"
 )
 
 // rawPayload is used to send a request with totally wrong parameters

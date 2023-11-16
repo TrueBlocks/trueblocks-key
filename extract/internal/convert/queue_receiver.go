@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sync"
 
-	database "trueblocks.io/database/pkg"
-	"trueblocks.io/queue/consume/pkg/appearance"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
 )
 
 // QueueReceiver uses HTTP to send appearances to `insert` tool running

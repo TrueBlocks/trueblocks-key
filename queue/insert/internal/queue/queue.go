@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"trueblocks.io/queue/consume/pkg/appearance"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
 )
 
 type RemoteQueuer interface {

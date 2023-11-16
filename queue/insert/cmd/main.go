@@ -8,9 +8,9 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 
-	config "trueblocks.io/config/pkg"
-	"trueblocks.io/queue/insert/internal/queue"
-	"trueblocks.io/queue/insert/internal/server"
+	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	"github.com/TrueBlocks/trueblocks-key/queue/insert/internal/queue"
+	"github.com/TrueBlocks/trueblocks-key/queue/insert/internal/server"
 )
 
 var configPath string

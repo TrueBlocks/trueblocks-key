@@ -1,6 +1,6 @@
 package convert
 
-import database "trueblocks.io/database/pkg"
+import database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 
 type DatabaseReceiver struct {
 	DbConn *database.Connection

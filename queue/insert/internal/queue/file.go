@@ -3,7 +3,7 @@ package queue
 import (
 	"os"
 
-	"trueblocks.io/queue/consume/pkg/appearance"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
 )
 
 // FileQueue is only meant for local testing, as it uses

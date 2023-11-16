@@ -1,4 +1,4 @@
-module trueblocks.io/quicknode/provision
+module github.com/TrueBlocks/trueblocks-key/quicknode/provision
 
 go 1.20
 

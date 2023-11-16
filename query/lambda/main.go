@@ -7,12 +7,12 @@ import (
 	"log"
 	"net/http"
 
+	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
+	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
+	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	awshelper "trueblocks.io/awshelper/pkg"
-	keyConfig "trueblocks.io/config/pkg"
-	database "trueblocks.io/database/pkg"
-	"trueblocks.io/query/pkg/query"
 )
 
 var ErrInternal = errors.New(http.StatusText(http.StatusInternalServerError))

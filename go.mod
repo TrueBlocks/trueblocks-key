@@ -1,3 +1,3 @@
-module trueblocks.io/extract
+module github.com/TrueBlocks/trueblocks-key
 
 go 1.20

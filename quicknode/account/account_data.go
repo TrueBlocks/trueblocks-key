@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	config "trueblocks.io/config/pkg"
+	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
 )
 
 var ErrInvalidChainNetwork = errors.New("network or chain is not supported")

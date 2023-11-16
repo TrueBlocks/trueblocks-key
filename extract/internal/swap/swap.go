@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"gorm.io/gorm"
-	database "trueblocks.io/database/pkg"
 )
 
 func Swap(dbConn *database.Connection) error {

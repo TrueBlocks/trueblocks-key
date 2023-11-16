@@ -4,11 +4,11 @@ import (
 	"context"
 	"log"
 
+	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
+	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	awshelper "trueblocks.io/awshelper/pkg"
-	keyConfig "trueblocks.io/config/pkg"
-	database "trueblocks.io/database/pkg"
 )
 
 var cnf *keyConfig.ConfigFile

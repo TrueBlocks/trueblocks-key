@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"trueblocks.io/searcher/pkg/query"
-	"trueblocks.io/searcher/pkg/query/chunk"
+	"github.com/TrueBlocks/trueblocks-key/searcher/pkg/query"
+	"github.com/TrueBlocks/trueblocks-key/searcher/pkg/query/chunk"
 )
 
 var runEnv *CmdRunEnv

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"testing"
 
+	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
+	qnaccount "github.com/TrueBlocks/trueblocks-key/quicknode/account"
+	"github.com/TrueBlocks/trueblocks-key/test/integration/helpers"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	awshelper "trueblocks.io/awshelper/pkg"
-	qnaccount "trueblocks.io/quicknode/account"
-	"trueblocks.io/test/integration/helpers"
 )
 
 type provisonRequest struct {

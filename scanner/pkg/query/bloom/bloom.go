@@ -8,7 +8,7 @@ import (
 	"io"
 	"unsafe"
 
-	"trueblocks.io/searcher/pkg/blkrange"
+	"github.com/TrueBlocks/trueblocks-key/searcher/pkg/blkrange"
 )
 
 const (

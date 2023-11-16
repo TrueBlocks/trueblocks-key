@@ -3,7 +3,7 @@ package query
 import (
 	"fmt"
 
-	database "trueblocks.io/database/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
 // TODO make it configurable

@@ -1,4 +1,4 @@
-module trueblocks.io/awshelper
+module github.com/TrueBlocks/trueblocks-key/awshelper
 
 go 1.20
 

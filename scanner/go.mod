@@ -1,4 +1,4 @@
-module trueblocks.io/searcher
+module github.com/TrueBlocks/trueblocks-key/searcher
 
 go 1.20
 

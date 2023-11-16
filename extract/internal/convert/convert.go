@@ -13,8 +13,8 @@ import (
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/base"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/utils"
-	config "trueblocks.io/config/pkg"
-	database "trueblocks.io/database/pkg"
+	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
 type AppearanceReceiver interface {

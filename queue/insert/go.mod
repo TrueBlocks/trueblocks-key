@@ -1,4 +1,4 @@
-module trueblocks.io/queue/insert
+module github.com/TrueBlocks/trueblocks-key/queue/insert
 
 go 1.20
 

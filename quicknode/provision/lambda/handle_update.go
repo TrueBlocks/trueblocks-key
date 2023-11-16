@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	qnaccount "github.com/TrueBlocks/trueblocks-key/quicknode/account"
 	"github.com/gin-gonic/gin"
-	qnaccount "trueblocks.io/quicknode/account"
 )
 
 func HandleUpdate(c *gin.Context) {

@@ -1,4 +1,4 @@
-module trueblocks.io/database
+module github.com/TrueBlocks/trueblocks-key/database
 
 go 1.20
 

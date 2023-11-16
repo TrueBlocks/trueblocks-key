@@ -1,3 +1,3 @@
-module trueblocks.io/quicknode/healthcheck
+module github.com/TrueBlocks/trueblocks-key/quicknode/healthcheck
 
 go 1.20

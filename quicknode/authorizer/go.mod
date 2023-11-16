@@ -1,4 +1,4 @@
-module trueblocks.io/quicknode/authorizer
+module github.com/TrueBlocks/trueblocks-key/quicknode/authorizer
 
 go 1.20
 

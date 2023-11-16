@@ -1,8 +1,8 @@
 package db
 
 import (
-	extractConfig "trueblocks.io/config/pkg"
-	database "trueblocks.io/database/pkg"
+	extractConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
 var connection *database.Connection

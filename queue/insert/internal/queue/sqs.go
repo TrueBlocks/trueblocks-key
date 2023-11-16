@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
-	config "trueblocks.io/config/pkg"
-	"trueblocks.io/queue/consume/pkg/appearance"
 )
 
 var queueUrl string

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	database "trueblocks.io/database/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
 func TestQueueReceiver_SendBatch(t *testing.T) {

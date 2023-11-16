@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	"github.com/TrueBlocks/trueblocks-key/database/pkg/dbtest"
+	"github.com/TrueBlocks/trueblocks-key/quicknode/keyDynamodb"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -12,9 +15,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	keyConfig "trueblocks.io/config/pkg"
-	"trueblocks.io/database/pkg/dbtest"
-	"trueblocks.io/extract/quicknode/keyDynamodb"
 )
 
 func NewDynamoConnection() (done func() error, err error) {

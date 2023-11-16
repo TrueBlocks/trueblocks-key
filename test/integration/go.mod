@@ -1,4 +1,4 @@
-module trueblocks.io/test/integration
+module github.com/TrueBlocks/trueblocks-key/test/integration
 
 go 1.20
 

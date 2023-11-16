@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"trueblocks.io/queue/consume/pkg/appearance"
-	"trueblocks.io/queue/insert/internal/queue"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	"github.com/TrueBlocks/trueblocks-key/queue/insert/internal/queue"
 )
 
 // This will be removed when Scraper supports Notify

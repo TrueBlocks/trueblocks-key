@@ -6,9 +6,9 @@ import (
 	"log"
 	"strings"
 
-	keyConfig "trueblocks.io/config/pkg"
-	database "trueblocks.io/database/pkg"
-	"trueblocks.io/query/pkg/query"
+	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
+	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 )
 
 var configFilePath string

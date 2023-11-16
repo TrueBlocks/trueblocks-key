@@ -6,9 +6,9 @@ package cmd
 import (
 	"log"
 
+	"github.com/TrueBlocks/trueblocks-key/extract/internal/db"
+	"github.com/TrueBlocks/trueblocks-key/extract/internal/export"
 	"github.com/spf13/cobra"
-	"trueblocks.io/uploader/internal/db"
-	"trueblocks.io/uploader/internal/export"
 )
 
 // exportCmd represents the export command

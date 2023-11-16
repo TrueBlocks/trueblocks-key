@@ -1,4 +1,4 @@
-module trueblocks.io/config
+module github.com/TrueBlocks/trueblocks-key/config
 
 go 1.20
 

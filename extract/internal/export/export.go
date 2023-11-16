@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	database "trueblocks.io/database/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
 func Export(dbConn *database.Connection, destPath string) error {

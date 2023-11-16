@@ -7,10 +7,10 @@ import (
 	"errors"
 	"log"
 
+	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
+	"github.com/TrueBlocks/trueblocks-key/extract/internal/convert"
 	"github.com/spf13/cobra"
-	config "trueblocks.io/config/pkg"
-	database "trueblocks.io/database/pkg"
-	"trueblocks.io/uploader/internal/convert"
 )
 
 // convertCmd represents the convert command

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"trueblocks.io/test/integration/helpers"
+	"github.com/TrueBlocks/trueblocks-key/test/integration/helpers"
 )
 
 func TestMain(m *testing.M) {

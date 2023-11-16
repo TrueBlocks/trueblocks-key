@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/TrueBlocks/trueblocks-key/searcher/pkg/query"
+	"github.com/TrueBlocks/trueblocks-key/searcher/pkg/query/chunk"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"trueblocks.io/searcher/pkg/query"
-	"trueblocks.io/searcher/pkg/query/chunk"
 )
 
 type Response struct {

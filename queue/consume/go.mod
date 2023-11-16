@@ -1,4 +1,4 @@
-module trueblocks.io/queue/consume
+module github.com/TrueBlocks/trueblocks-key/queue/consume
 
 go 1.20
 

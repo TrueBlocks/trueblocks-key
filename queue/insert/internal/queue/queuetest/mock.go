@@ -3,7 +3,7 @@ package queuetest
 import (
 	"fmt"
 
-	"trueblocks.io/queue/consume/pkg/appearance"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
 )
 
 type MockQueue struct {

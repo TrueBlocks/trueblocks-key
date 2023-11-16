@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
+	keyDynamodb "github.com/TrueBlocks/trueblocks-key/quicknode/keyDynamodb"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
-	keyDynamodb "trueblocks.io/extract/quicknode/keyDynamodb"
 )
 
 type ApiKey struct {

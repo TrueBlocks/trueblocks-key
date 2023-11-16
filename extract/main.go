@@ -1,7 +1,7 @@
 package main
 
 import (
-	"trueblocks.io/uploader/cmd"
+	"github.com/TrueBlocks/trueblocks-key/extract/cmd"
 )
 
 func main() {

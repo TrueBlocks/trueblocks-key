@@ -6,12 +6,12 @@ import (
 	"errors"
 	"log"
 
+	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
+	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	awshelper "trueblocks.io/awshelper/pkg"
-	config "trueblocks.io/config/pkg"
-	database "trueblocks.io/database/pkg"
-	"trueblocks.io/queue/consume/pkg/appearance"
 )
 
 var maxBatchSize = 500

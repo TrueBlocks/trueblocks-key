@@ -9,13 +9,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 
+	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
+	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
+	"github.com/TrueBlocks/trueblocks-key/quicknode/keyDynamodb"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
-	awshelper "trueblocks.io/awshelper/pkg"
-	keyConfig "trueblocks.io/config/pkg"
-	"trueblocks.io/extract/quicknode/keyDynamodb"
 )
 
 var awsConfig aws.Config

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"trueblocks.io/searcher/pkg/blkrange"
-	"trueblocks.io/searcher/pkg/query/bloom"
-	"trueblocks.io/searcher/pkg/query/chunk"
+	"github.com/TrueBlocks/trueblocks-key/searcher/pkg/blkrange"
+	"github.com/TrueBlocks/trueblocks-key/searcher/pkg/query/bloom"
+	"github.com/TrueBlocks/trueblocks-key/searcher/pkg/query/chunk"
 )
 
 func Find(chain string, address string, runEnv RunEnv, results chan chunk.AppearanceRecord) (err error) {

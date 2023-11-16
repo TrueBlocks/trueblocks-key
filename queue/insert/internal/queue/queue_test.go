@@ -3,8 +3,8 @@ package queue
 import (
 	"testing"
 
-	"trueblocks.io/queue/consume/pkg/appearance"
-	"trueblocks.io/queue/insert/internal/queue/queuetest"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	"github.com/TrueBlocks/trueblocks-key/queue/insert/internal/queue/queuetest"
 )
 
 func TestQueueAdd(t *testing.T) {
