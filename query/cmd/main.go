@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	qnConfig "trueblocks.io/config/pkg"
+	keyConfig "trueblocks.io/config/pkg"
 	database "trueblocks.io/database/pkg"
 	"trueblocks.io/query/pkg/query"
 )
@@ -36,7 +36,7 @@ func main() {
 
 	address := strings.ToLower(flag.Arg(0))
 
-	config, err := qnConfig.Get(configFilePath)
+	config, err := keyConfig.Get(configFilePath)
 	if err != nil {
 		log.Fatalln(err)
 	}

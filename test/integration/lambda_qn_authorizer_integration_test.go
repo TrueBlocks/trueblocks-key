@@ -7,7 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	awshelper "trueblocks.io/awshelper/pkg"
-	qnAccount "trueblocks.io/quicknode/account"
+	qnaccount "trueblocks.io/quicknode/account"
 	"trueblocks.io/test/integration/helpers"
 )
 
@@ -136,7 +136,7 @@ func TestLambdaQnAuthorizer(t *testing.T) {
 
 	// Insert account record into DynamoDB
 	provisionRequest := newProvisionRequest("POST", "/provision")
-	provisionRequest.Account = &qnAccount.AccountData{
+	provisionRequest.Account = &qnaccount.AccountData{
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id",
 		Test:        true,

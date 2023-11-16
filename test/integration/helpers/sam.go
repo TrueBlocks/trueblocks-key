@@ -21,7 +21,7 @@ var cancelSam context.CancelFunc
 // to kill SAM process.
 func StartSam() (cancelSam context.CancelFunc, wait func() error) {
 	// Start AWS SAM local lambda
-	awsProfile := os.Getenv("QNEXT_TEST_AWS_PROFILE")
+	awsProfile := os.Getenv("KY_TEST_AWS_PROFILE")
 	if awsProfile == "" {
 		awsProfile = "default"
 	}
@@ -49,7 +49,9 @@ func StartSam() (cancelSam context.CancelFunc, wait func() error) {
 	dbEnvs := dbtest.ConnectionEnvs()
 	// Add database connection envs
 	for key, value := range dbEnvs {
-		samCmd.Env = append(samCmd.Env, strings.Join([]string{key, value}, "="))
+		envVar := key + "=" + value
+		log.Println(envVar)
+		samCmd.Env = append(samCmd.Env, envVar)
 	}
 
 	go func() {

@@ -1,7 +1,7 @@
 package config
 
 var defaultConfig = map[string]any{
-	"QnProvision.TableName": "trueblocks-qn-users-qn",
+	"QnProvision.TableName": "key-users-qn",
 	"Chains.Allowed": map[string][]string{
 		"ethereum": {"mainnet"},
 	},

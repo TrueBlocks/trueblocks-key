@@ -14,12 +14,12 @@ import (
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
 	awshelper "trueblocks.io/awshelper/pkg"
-	qnConfig "trueblocks.io/config/pkg"
-	qnDynamodb "trueblocks.io/extract/quicknode/dynamodb"
+	keyConfig "trueblocks.io/config/pkg"
+	"trueblocks.io/extract/quicknode/keyDynamodb"
 )
 
 var awsConfig aws.Config
-var cnf *qnConfig.ConfigFile
+var cnf *keyConfig.ConfigFile
 var dynamoClient *dynamodb.Client
 var ginLambda *ginadapter.GinLambda
 
@@ -62,7 +62,7 @@ func initDynamoDb() {
 
 	// Create DynamoDB client
 	dynamoClient = dynamodb.NewFromConfig(awsConfig, func(o *dynamodb.Options) {
-		if qnDynamodb.ShouldUseLocal() {
+		if keyDynamodb.ShouldUseLocal() {
 			// When running inside sam local (in tests), use local endpoint
 			o.BaseEndpoint = aws.String("http://dynamodb:8000")
 			o.Credentials = credentials.NewStaticCredentialsProvider("fake", "fake", "test")
@@ -79,7 +79,7 @@ func initAwsConfig() {
 }
 
 func loadConfig() (err error) {
-	cnf, err = qnConfig.Get("")
+	cnf, err = keyConfig.Get("")
 	return
 }
 

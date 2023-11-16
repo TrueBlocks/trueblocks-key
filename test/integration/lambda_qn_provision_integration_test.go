@@ -7,12 +7,12 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	awshelper "trueblocks.io/awshelper/pkg"
-	qnAccount "trueblocks.io/quicknode/account"
+	qnaccount "trueblocks.io/quicknode/account"
 	"trueblocks.io/test/integration/helpers"
 )
 
 type provisonRequest struct {
-	Account *qnAccount.AccountData
+	Account *qnaccount.AccountData
 	method  string
 	path    string
 }
@@ -180,7 +180,7 @@ func expectProvisionRequestSuccess(t *testing.T, output *lambda.InvokeOutput) {
 	}
 }
 
-func expectAuth(t *testing.T, client *lambda.Client, accountData *qnAccount.AccountData, fail bool) {
+func expectAuth(t *testing.T, client *lambda.Client, accountData *qnaccount.AccountData, fail bool) {
 	t.Helper()
 
 	basicAuth, err := basicAuthValue(awshelper.TestSecret)
@@ -218,7 +218,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 	// Provision
 
 	request = newProvisionRequest("POST", "/provision")
-	request.Account = &qnAccount.AccountData{
+	request.Account = &qnaccount.AccountData{
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id",
 		Test:        true,
@@ -235,7 +235,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 	// Provision another endpoint
 
 	request = newProvisionRequest("POST", "/provision")
-	request.Account = &qnAccount.AccountData{
+	request.Account = &qnaccount.AccountData{
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id2",
 		Test:        true,
@@ -252,7 +252,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 	// Update
 
 	request = newProvisionRequest("PUT", "/update")
-	request.Account = &qnAccount.AccountData{
+	request.Account = &qnaccount.AccountData{
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id",
 		Test:        true,
@@ -269,7 +269,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 	// Deactivate endpoint
 
 	request = newProvisionRequest("DELETE", "/deactivate_endpoint")
-	request.Account = &qnAccount.AccountData{
+	request.Account = &qnaccount.AccountData{
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id2",
 		Test:        true,
@@ -286,7 +286,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 	// Deprovision
 
 	request = newProvisionRequest("DELETE", "/deprovision")
-	request.Account = &qnAccount.AccountData{
+	request.Account = &qnaccount.AccountData{
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id",
 		Test:        true,

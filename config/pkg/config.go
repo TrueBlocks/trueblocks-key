@@ -11,7 +11,7 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-const prefix = "QNEXT"
+const prefix = "KY_"
 
 type ConfigFile struct {
 	Version     string
@@ -81,9 +81,9 @@ func Get(configPath string) (*ConfigFile, error) {
 
 	translateEnv := func(s string) string {
 		return strings.Replace(strings.ToLower(
-			strings.TrimPrefix(s, "QNEXT_")), "_", ".", -1)
+			strings.TrimPrefix(s, prefix)), "_", ".", -1)
 	}
-	if err := k.Load(env.Provider(prefix+"_", ".", translateEnv), nil); err != nil {
+	if err := k.Load(env.Provider(prefix, ".", translateEnv), nil); err != nil {
 		return nil, fmt.Errorf("config: parsing env: %w", err)
 	}
 

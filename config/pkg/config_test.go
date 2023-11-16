@@ -6,8 +6,8 @@ import (
 )
 
 func TestEnvVariables(t *testing.T) {
-	t.Setenv(fmt.Sprintf("%s_DATABASE_DEFAULT_HOST", prefix), "localhost")
-	t.Setenv(fmt.Sprintf("%s_DATABASE_DEFAULT_PORT", prefix), "5324")
+	t.Setenv(fmt.Sprintf("%sDATABASE_DEFAULT_HOST", prefix), "localhost")
+	t.Setenv(fmt.Sprintf("%sDATABASE_DEFAULT_PORT", prefix), "5324")
 
 	config, err := Get("")
 	if err != nil {

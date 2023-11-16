@@ -19,10 +19,10 @@ type SqsQueue struct {
 	queueName string
 }
 
-func NewSqsQueue(awsClient *sqs.Client, qnConfig *config.ConfigFile) *SqsQueue {
+func NewSqsQueue(awsClient *sqs.Client, keyConfig *config.ConfigFile) *SqsQueue {
 	return &SqsQueue{
 		awsClient: awsClient,
-		queueName: qnConfig.Sqs.QueueName,
+		queueName: keyConfig.Sqs.QueueName,
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
-	qnDynamodb "trueblocks.io/extract/quicknode/dynamodb"
+	keyDynamodb "trueblocks.io/extract/quicknode/keyDynamodb"
 )
 
 type ApiKey struct {
@@ -37,7 +37,7 @@ func FindByPlanSlug(apiGatewayClient *apigateway.Client, qnPlanSlug string) (api
 
 // fetchApiKeys fetches API keys from API Gateway
 func fetchApiKeys(apiGatewayClient *apigateway.Client) (keys []types.ApiKey, err error) {
-	if qnDynamodb.ShouldUseLocal() {
+	if keyDynamodb.ShouldUseLocal() {
 		// Testing: return test keys
 
 		log.Println("using TEST API keys")

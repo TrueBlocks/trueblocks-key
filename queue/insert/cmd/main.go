@@ -35,7 +35,7 @@ func main() {
 	}
 	client := sqs.NewFromConfig(cfg)
 
-	qnConfig, err := config.Get(configPath)
+	keyConfig, err := config.Get(configPath)
 	if err != nil {
 		log.Fatalln("reading configuration:", err)
 	}
@@ -44,7 +44,7 @@ func main() {
 	if file != "" {
 		impl = queue.NewFileQueue(file)
 	} else {
-		impl = queue.NewSqsQueue(client, qnConfig)
+		impl = queue.NewSqsQueue(client, keyConfig)
 	}
 
 	q, err := queue.NewQueue(impl)

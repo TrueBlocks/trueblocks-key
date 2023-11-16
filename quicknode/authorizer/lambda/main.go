@@ -13,18 +13,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	awshelper "trueblocks.io/awshelper/pkg"
-	qnConfig "trueblocks.io/config/pkg"
-	qnDynamodb "trueblocks.io/extract/quicknode/dynamodb"
+	keyConfig "trueblocks.io/config/pkg"
+	keyDynamodb "trueblocks.io/extract/quicknode/keyDynamodb"
 	qnaccount "trueblocks.io/quicknode/account"
 )
 
-var cnf *qnConfig.ConfigFile
+var cnf *keyConfig.ConfigFile
 var dynamoClient *dynamodb.Client
 var errUnauthorized = errors.New("Unauthorized")
 
 func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerRequestTypeRequest) (result events.APIGatewayCustomAuthorizerResponse, err error) {
 	if cnf == nil {
-		if cnf, err = qnConfig.Get(""); err != nil {
+		if cnf, err = keyConfig.Get(""); err != nil {
 			log.Println("cannot read configuration")
 			return
 		}
@@ -38,7 +38,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		}
 		// Create DynamoDB client
 		dynamoClient = dynamodb.NewFromConfig(awsConfig, func(o *dynamodb.Options) {
-			if qnDynamodb.ShouldUseLocal() {
+			if keyDynamodb.ShouldUseLocal() {
 				// When running inside sam local (in tests), use local endpoint
 				o.BaseEndpoint = aws.String("http://dynamodb:8000")
 				o.Credentials = credentials.NewStaticCredentialsProvider("fake", "fake", "test")

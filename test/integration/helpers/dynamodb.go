@@ -12,8 +12,9 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	keyConfig "trueblocks.io/config/pkg"
 	"trueblocks.io/database/pkg/dbtest"
-	qnDynamodb "trueblocks.io/extract/quicknode/dynamodb"
+	"trueblocks.io/extract/quicknode/keyDynamodb"
 )
 
 func NewDynamoConnection() (done func() error, err error) {
@@ -25,9 +26,9 @@ func NewDynamoConnection() (done func() error, err error) {
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image:        "amazon/dynamodb-local",
-				Name:         qnDynamodb.LocalDynamoDbSettings.ContainerName,
-				ExposedPorts: []string{qnDynamodb.LocalDynamoDbSettings.Port},
-				WaitingFor:   wait.ForListeningPort(nat.Port(qnDynamodb.LocalDynamoDbSettings.Port)),
+				Name:         keyDynamodb.LocalDynamoDbSettings.ContainerName,
+				ExposedPorts: []string{keyDynamodb.LocalDynamoDbSettings.Port},
+				WaitingFor:   wait.ForListeningPort(nat.Port(keyDynamodb.LocalDynamoDbSettings.Port)),
 				// Env: map[string]string{},
 				Networks: []string{dockerNetwork},
 			},
@@ -53,13 +54,20 @@ func NewDynamoConnection() (done func() error, err error) {
 		terminateContainer()
 		return
 	}
+	var dynamoTableName string
+	if cnf, err := keyConfig.Get(""); err == nil {
+		dynamoTableName = cnf.QnProvision.TableName
+	} else {
+		terminateContainer()
+		return done, err
+	}
 	dynamoClient := dynamodb.NewFromConfig(awsConfig, func(o *dynamodb.Options) {
 		// When running inside sam local (in tests), use local endpoint
 		o.BaseEndpoint = aws.String(endpoint)
 		o.Credentials = credentials.NewStaticCredentialsProvider("fake", "fake", "test")
 	})
 	_, err = dynamoClient.CreateTable(context.TODO(), &dynamodb.CreateTableInput{
-		TableName: aws.String("trueblocks-qn-users-qn"),
+		TableName: aws.String(dynamoTableName),
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String("QuicknodeId"),

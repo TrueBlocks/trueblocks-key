@@ -11,7 +11,7 @@ Parameters:
     Default: tbqnindex
   UsersQnTableName:
     Type: String
-    Default: trueblocks-qn-users-qn
+    Default: key-users-qn
   AppearancesQueueBatchSize:
     Type: Number
     Default: "10"
@@ -90,13 +90,13 @@ Resources:
           - !Ref privateLambdaSubnet2
       Environment:
         Variables:
-          QNEXT_SQS_BATCHSIZE: !Ref AppearancesQueueBatchSize
-          QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
-          QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
-          QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_DEFAULT_PASSWORD: "" # Used only in integration tests
-          QNEXT_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
-          QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
+          KY_SQS_BATCHSIZE: !Ref AppearancesQueueBatchSize
+          KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          KY_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          KY_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          KY_DATABASE_DEFAULT_PASSWORD: "" # Used only in integration tests
+          KY_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+          KY_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - Version: '2012-10-17' # Policy Document
@@ -224,8 +224,8 @@ Resources:
       CodeUri: quicknode/authorizer/lambda
       Environment:
         Variables:
-          QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
-          QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
+          KY_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
+          KY_QNPROVISION_TABLENAME: !Ref UsersQnTableName
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - AmazonDynamoDBReadOnlyAccess
@@ -267,11 +267,11 @@ Resources:
           - !Ref privateLambdaSubnet2
       Environment:
         Variables:
-          QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
-          QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
-          QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
-          QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
+          KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          KY_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          KY_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          KY_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+          KY_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - Version: '2012-10-17' # Policy Document
@@ -341,8 +341,8 @@ Resources:
               Authorizer: NONE
       Environment:
         Variables:
-          QNEXT_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
-          QNEXT_QNPROVISION_TABLENAME: !Ref UsersQnTableName
+          KY_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
+          KY_QNPROVISION_TABLENAME: !Ref UsersQnTableName
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - AmazonDynamoDBFullAccess
@@ -386,12 +386,12 @@ Resources:
               Ref: QnApi
       Environment:
         Variables:
-          QNEXT_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
-          QNEXT_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
-          QNEXT_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
-          QNEXT_DATABASE_DEFAULT_PASSWORD: "" # Used only in integration tests
-          QNEXT_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
-          QNEXT_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
+          KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          KY_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          KY_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          KY_DATABASE_DEFAULT_PASSWORD: "" # Used only in integration tests
+          KY_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+          KY_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
       VpcConfig: # For accessing RDS instance
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup

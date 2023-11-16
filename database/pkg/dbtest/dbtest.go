@@ -22,11 +22,11 @@ func ContainerNetwork() string {
 
 func ConnectionEnvs() map[string]string {
 	return map[string]string{
-		"QNEXT_DATABASE_DEFAULT_HOST":     containerName,
-		"QNEXT_DATABASE_DEFAULT_PORT":     containerPort,
-		"QNEXT_DATABASE_DEFAULT_USER":     containerDbUser,
-		"QNEXT_DATABASE_DEFAULT_PASSWORD": containerDbPassword,
-		"QNEXT_DATABASE_DEFAULT_DATABASE": containerDbName,
+		"KY_DATABASE_DEFAULT_HOST":     containerName,
+		"KY_DATABASE_DEFAULT_PORT":     containerPort,
+		"KY_DATABASE_DEFAULT_USER":     containerDbUser,
+		"KY_DATABASE_DEFAULT_PASSWORD": containerDbPassword,
+		"KY_DATABASE_DEFAULT_DATABASE": containerDbName,
 	}
 }
 

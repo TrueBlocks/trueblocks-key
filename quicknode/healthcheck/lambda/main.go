@@ -7,11 +7,11 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	awshelper "trueblocks.io/awshelper/pkg"
-	qnConfig "trueblocks.io/config/pkg"
+	keyConfig "trueblocks.io/config/pkg"
 	database "trueblocks.io/database/pkg"
 )
 
-var cnf *qnConfig.ConfigFile
+var cnf *keyConfig.ConfigFile
 var dbConn *database.Connection
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
@@ -37,7 +37,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func loadConfig() (err error) {
-	cnf, err = qnConfig.Get("")
+	cnf, err = keyConfig.Get("")
 	return
 }
 

@@ -9,7 +9,7 @@ test:
 # docker pull command is here to ensure that PostgreSQL image is downloaded before we run the tests
 	docker pull --quiet postgres:15.4
 	sam build
-	go test -timeout 1m -tags integration ./test/integration
+	go test -timeout 5m -tags integration ./test/integration
 
 deploy:
 # deploys the whole stack to AWS. It uses settings saved in `samconfig.toml`.

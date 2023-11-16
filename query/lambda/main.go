@@ -10,27 +10,25 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	awshelper "trueblocks.io/awshelper/pkg"
-	qnConfig "trueblocks.io/config/pkg"
+	keyConfig "trueblocks.io/config/pkg"
 	database "trueblocks.io/database/pkg"
 	"trueblocks.io/query/pkg/query"
 )
 
 var ErrInternal = errors.New(http.StatusText(http.StatusInternalServerError))
 
-var cnf *qnConfig.ConfigFile
+var cnf *keyConfig.ConfigFile
 var dbConn *database.Connection
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	rpcRequest := &query.RpcRequest{}
 	if err = json.Unmarshal([]byte(request.Body), rpcRequest); err != nil {
 		response.StatusCode = http.StatusBadRequest
-		// response.Body = "invalid JSON"
 		err = errors.New("invalid JSON")
 		return
 	}
 	if err = rpcRequest.Validate(); err != nil {
 		response.StatusCode = http.StatusBadRequest
-		// response.Body = err.Error()
 		return
 	}
 
@@ -98,7 +96,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func loadConfig() (err error) {
-	cnf, err = qnConfig.Get("")
+	cnf, err = keyConfig.Get("")
 	return
 }
 

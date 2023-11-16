@@ -1,4 +1,4 @@
-package qnDynamodb
+package keyDynamodb
 
 import "os"
 
