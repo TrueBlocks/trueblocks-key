@@ -31,6 +31,15 @@ func (f *FileQueue) Add(app *appearance.Appearance) (msgId string, err error) {
 	return
 }
 
+func (f *FileQueue) AddBatch(apps []*appearance.Appearance) (err error) {
+	for _, app := range apps {
+		if _, err = f.Add(app); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (f *FileQueue) Close() error {
 	return f.file.Close()
 }

@@ -19,6 +19,15 @@ func (m *MockQueue) Add(app *appearance.Appearance) (string, error) {
 	return fmt.Sprintf("%d", m.Len()), nil
 }
 
+func (m *MockQueue) AddBatch(apps []*appearance.Appearance) (err error) {
+	for _, app := range apps {
+		if _, err = m.Add(app); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (m *MockQueue) Len() int {
 	return len(m.items)
 }
