@@ -47,3 +47,58 @@ func TestServer_Add(t *testing.T) {
 		t.Fatalf("expected %+v, but got %+v", expected, result)
 	}
 }
+
+func TestServer_AddBatch(t *testing.T) {
+	mockQueue := &queuetest.MockQueue{}
+	q, _ := queue.NewQueue(mockQueue)
+	svr := New(q)
+	ts := httptest.NewServer(http.HandlerFunc(svr.batchHandler))
+	defer ts.Close()
+
+	payload := Notification{
+		Payload: NotificationPayload{
+			{
+				Address:          "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+				BlockNumber:      "18540199",
+				TransactionIndex: 1,
+			},
+			{
+				Address:          "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+				BlockNumber:      "18540199",
+				TransactionIndex: 2,
+			},
+			{
+				Address:          "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+				BlockNumber:      "18540199",
+				TransactionIndex: 3,
+			},
+		},
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := http.Post(ts.URL, "application/json", bytes.NewReader(encoded))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.StatusCode != 200 {
+		t.Fatal("wrong status code:", res.StatusCode)
+	}
+
+	apps, err := payload.Appearances()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := make([]*appearance.Appearance, 0, len(apps))
+	for _, appearance := range apps {
+		appearance.SetAppearanceId()
+		expected = append(expected, appearance)
+	}
+
+	for index, exp := range expected {
+		if result := mockQueue.Get(index); !reflect.DeepEqual(result, exp) {
+			t.Fatalf("expected %+v, but got %+v", exp, result)
+		}
+	}
+}

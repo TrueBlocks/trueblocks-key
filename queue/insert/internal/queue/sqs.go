@@ -48,8 +48,6 @@ func (s *SqsQueue) Add(app *appearance.Appearance) (msgId string, err error) {
 	}
 
 	msgInput := &sqs.SendMessageInput{
-		// Allows batching messages for consumers
-		DelaySeconds: 10,
 		MessageAttributes: map[string]types.MessageAttributeValue{
 			"Range": {
 				DataType:    aws.String("String"),
@@ -64,5 +62,50 @@ func (s *SqsQueue) Add(app *appearance.Appearance) (msgId string, err error) {
 		return
 	}
 	msgId = *output.MessageId
+	return
+}
+
+func (s *SqsQueue) AddBatch(apps []*appearance.Appearance) (err error) {
+
+	entries := make([]types.SendMessageBatchRequestEntry, 0, 10)
+	send := func() error {
+		msgInput := &sqs.SendMessageBatchInput{
+			// Allows batching messages for consumers
+			Entries:  entries,
+			QueueUrl: &queueUrl,
+		}
+		_, err := s.awsClient.SendMessageBatch(context.TODO(), msgInput)
+		return err
+	}
+
+	for _, app := range apps {
+		app := app
+		if len(entries) == 10 {
+			if err := send(); err != nil {
+				return err
+			}
+			entries = make([]types.SendMessageBatchRequestEntry, 0, 10)
+		}
+		encoded, err := json.Marshal(apps)
+		if err != nil {
+			return err
+		}
+		entries = append(entries, types.SendMessageBatchRequestEntry{
+			MessageAttributes: map[string]types.MessageAttributeValue{
+				"Range": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String(fmt.Sprintf("%d-%d", app.BlockRangeStart, app.BlockRangeEnd)),
+				},
+			},
+			MessageBody: aws.String(string(encoded)),
+		})
+	}
+
+	if len(entries) > 0 {
+		if err = send(); err != nil {
+			return
+		}
+	}
+
 	return
 }
