@@ -83,3 +83,66 @@ footer {
     bottom: 0; /* Ensures it stays at the bottom */
     width: 100%;
 }
+
+.faq-item {
+    margin-bottom: 20px;
+}
+
+.faq-question {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.faq-answer {
+    margin-left: 20px;
+}
+
+.beta-form {
+    font-family: Arial, sans-serif;
+    color: #333;
+    padding: 20px;
+    background-color: #f4f4f4;
+    border-radius: 8px;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+.beta-form label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.beta-form input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.beta-form button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.beta-form button:hover {
+    background-color: #45a049;
+}
+
+.marketing-material h3 {
+    color: #4a4a4a; /* Dark gray for subheadings */
+    margin-top: 20px;
+}
+
+.marketing-material ul {
+    list-style: disc; /* Bullet points for features */
+    margin-left: 20px;
+}
+
+.marketing-material p {
+    color: #333; /* Dark text color */
+}

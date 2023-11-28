@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Website</title>
+    <title>Key - Powered by TrueBlocks</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/htmx.org" defer></script>
 </head>
@@ -24,15 +24,68 @@
     </section>
     <section id="marketplace" class="top-aligned">
         <h2>MarketPlace</h2>
-        <p class="placeholder">This is a placeholder for the MarketPlace section.</p>
+        <div class="marketing-material">
+            <h3>Key Features</h3>
+            <ul>
+                <li><strong>Ease of Use:</strong> Access detailed EVM chain data without managing your own nodes.</li>
+                <li><strong>Accessibility:</strong> Available in the QuikNode Marketplace for easy integration.</li>
+                <li><strong>Comprehensive Data:</strong> Full transactional history for any address on EVM chains.</li>
+                <li><strong>Reliability and Speed:</strong> Constant access to data with high performance and uptime.
+                </li>
+                <li><strong>Security and Privacy:</strong> Secured user data and transactions.</li>
+            </ul>
+
+            <h3>Target Audience</h3>
+            <p>Developers, Small to Medium Enterprises, Blockchain Enthusiasts and Analysts.</p>
+
+            <h3>Marketing Channels</h3>
+            <p>Social Media Campaigns, Blog Posts and Articles, Webinars and Online Demos.</p>
+
+            <h3>Promotional Content</h3>
+            <p>"Unlock Blockchain Insights with Ease: Your Gateway to Comprehensive EVM Chain Data"</p>
+
+            <h3>Visuals</h3>
+            <p>Infographics, Comparative visuals, etc.</p>
+        </div>
     </section>
     <section id="beta" class="top-aligned">
         <h2>Beta</h2>
         <p class="placeholder">This is a placeholder for the Beta section.</p>
+        <form class="beta-form" id="betaForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="eth-address">Ethereum Address or ENS Name:</label>
+            <input type="text" id="eth-address" name="ethAddress" required
+                pattern="^0x[a-fA-F0-9]{40}$|^[a-zA-Z0-9.-]*\.eth$">
+            <button type="submit">Submit</button>
+        </form>
+        <div id="submissionMessage" style="display: none;">
+            Thank you for your submission. We will contact you soon.
+        </div>
     </section>
     <section id="faq" class="top-aligned">
         <h2>FAQ</h2>
         <p class="placeholder">This is a placeholder for the FAQ section.</p>
+        <div class="faq-item">
+            <h3 class="faq-question">Question 1</h3>
+            <p class="faq-answer">Answer to question 1.</p>
+        </div>
+        <div class="faq-item">
+            <h3 class="faq-question">Question 2</h3>
+            <p class="faq-answer">Answer to question 2.</p>
+        </div>
+        <div class="faq-item">
+            <h3 class="faq-question">Question 3</h3>
+            <p class="faq-answer">Answer to question 3.</p>
+        </div>
+        <div class="faq-item">
+            <h3 class="faq-question">Question 4</h3>
+            <p class="faq-answer">Answer to question 4.</p>
+        </div>
     </section>
     <section id="privacy" class="top-aligned">
         <h2>Privacy Policy</h2>
@@ -72,10 +125,20 @@
         </div>
     </section>
     <footer>
-        <p>&copy; 2023 Company Name. All rights reserved.</p>
+        <p>&copy; 2023 TrueBlocks, LLC. All rights reserved.</p>
         <p><a href="#privacy" style="color: white;">Privacy Policy</a> | <a href="#terms" style="color: white;">Terms of
-                Service</a> | <a href="mailto:info@trueblocks.io" style="color: white;">Contact Us</a></p>
+                Service</a> | <a href="mailto:info@trueblocks.io" target="_blank" style="color: white;">Contact Us</a>
+        </p>
     </footer>
+    <!-- JavaScript at the end -->
+    <script>
+        document.getElementById('betaForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevents the default form submission action
+            document.getElementById('submissionMessage').style.display = 'block';
+            // Here you can also add code to handle the form data,
+            // like sending it to a server or processing it further
+        });
+    </script>
 </body>
 
 </html>
