@@ -23,8 +23,9 @@ h2 {
     justify-content: center;
     gap: 20px;
     padding: 10px;
-    background-color: #7A4183;
+    background-color: #873d93;
     z-index: 1000;
+    border-bottom: 2px solid #4B2348;
 }
 
 .menu a {
@@ -145,4 +146,30 @@ footer {
 
 .marketing-material p {
     color: #333; /* Dark text color */
+}
+
+.gpt-credit {
+    color: white;
+    text-align: right;
+    font-size: smaller;
+    font-style: italic;
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+}
+
+.frilly-scroll {
+    position: fixed; /* Change position to fixed */
+    top: 40px; /* Move down by 100px */
+    width: 125px; /* Assuming previous size adjustment */
+    height: auto;
+    z-index: 10;
+}
+
+.left-scroll {
+    left: 0;
+}
+
+.right-scroll {
+    right: 0;
 }
