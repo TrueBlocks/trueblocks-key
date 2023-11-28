@@ -1,0 +1,85 @@
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding-top: 60px;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+h2 {
+    margin-top: 40px;
+}
+
+.menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 10px;
+    background-color: #7A4183;
+    z-index: 1000;
+}
+
+.menu a {
+    text-decoration: none;
+    color: #FFF;
+    font-weight: bold;
+}
+
+.logo {
+    text-align: center;
+    margin: 20px 0;
+    border: 2px solid #0A0A8A;
+    display: block;
+}
+
+.logo img {
+    max-width: 100%;
+    height: auto;
+}
+
+.tagline {
+    font-family: 'Lato', cursive, sans-serif; /* Example of a 'fun' font */
+    color: #333; /* Adjust the color as needed */
+    font-size: 1.5em; /* Adjust size as needed */
+    margin-top: 10px; /* Space between the logo and the tagline */
+    text-align: center; /* Aligns the tagline to center */
+}
+
+section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 20px;
+    margin: 0;
+    /* border: 1px solid #ccc;
+    box-sizing: border-box; */
+}
+
+section.top-aligned {
+    justify-content: flex-start; /* Aligns content to the start (top) of the container */
+    margin-top: 200px; /* Keeps the existing top margin */
+}
+
+.placeholder {
+    color: #666;
+}
+
+footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 5px 0;
+    position: fixed; /* Changed from absolute to fixed */
+    bottom: 0; /* Ensures it stays at the bottom */
+    width: 100%;
+}
