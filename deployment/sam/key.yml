@@ -5,13 +5,13 @@ Description: AWS SAM template with a simple API definition
 Parameters:
   RDSMasterUserName:
     Type: String
-    Default: tbqnadmin
+    Default: key_admin
   RDSDBName:
     Type: String
-    Default: tbqnindex
+    Default: key_index
   UsersQnTableName:
     Type: String
-    Default: key-users-qn
+    Default: !Sub ${AWS::StackName}-users-qn
   AppearancesQueueBatchSize:
     Type: Number
     Default: "10"
@@ -42,8 +42,8 @@ Resources:
       - RDSSecurityGroup
       - RDSSubnetGroup
     Properties:
+      DBInstanceIdentifier: !Sub ${AWS::StackName}-index
       DBInstanceClass: db.t3.micro
-      DBInstanceIdentifier: indexdatabase
       Engine: postgres
       AllocatedStorage: "20"
       DBName: !Ref RDSDBName
@@ -52,6 +52,8 @@ Resources:
       DBSubnetGroupName: !Ref RDSSubnetGroup
       VPCSecurityGroups:
         - !Ref RDSSecurityGroup
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   ### DynamoDB QN users
   UsersQn:
@@ -61,6 +63,8 @@ Resources:
         Name: QuicknodeId
         Type: String
       TableName: !Ref UsersQnTableName
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   ###
   # Appearances Queue
@@ -108,9 +112,14 @@ Resources:
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
               Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   AppearancesQueue:
     Type: AWS::SQS::Queue
+    Properties:
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   ###
   # API
@@ -123,6 +132,8 @@ Resources:
         - '-'
         - - !Ref QnApi
           - access-logs
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   QnApi:
     Type: AWS::Serverless::Api
@@ -176,6 +187,8 @@ Resources:
                 - x-instance-id
                 - x-qn-chain
                 - x-qn-network
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   # CloudWatch logging policies
 
@@ -184,6 +197,8 @@ Resources:
     Type: AWS::ApiGateway::Account
     Properties:
       CloudWatchRoleArn: !GetAtt QnApiCloudWatchRole.Arn
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   # IAM Role with 'AmazonAPIGatewayPushToCloudWatchLogs' managed policy
   QnApiCloudWatchRole:
@@ -199,10 +214,12 @@ Resources:
         Path: /
         ManagedPolicyArns:
           - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+        Tags:
+          KeyStack: !Ref AWS::StackName
 
   # For QuickNode, we need to override the default MISSING_AUTHENTICATION_TOKEN
   # status code. QN expects it to be 401, not 403
-  GatewayResponseMissingAuthToken:
+  QnGatewayResponseMissingAuthToken:
     Type: 'AWS::ApiGateway::GatewayResponse'
     Properties:
       ResponseParameters:
@@ -211,12 +228,14 @@ Resources:
       ResponseType: MISSING_AUTHENTICATION_TOKEN
       RestApiId: !Ref QnApi
       StatusCode: "401"
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   # ### QN Authorizer
   QnAuthorizer:
     Type: AWS::Serverless::Function
     DependsOn:
-      - ProvisionQnSecret
+      - QnProvisionSecret
     Properties:
       MemorySize: 512
       Runtime: go1.x
@@ -224,7 +243,7 @@ Resources:
       CodeUri: quicknode/authorizer/lambda
       Environment:
         Variables:
-          KY_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
+          KY_QNPROVISION_AWSSECRET: !Ref QnProvisionSecret
           KY_QNPROVISION_TABLENAME: !Ref UsersQnTableName
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
@@ -237,11 +256,13 @@ Resources:
                 - secretsmanager:GetSecretValue
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
-              Resource: !Ref ProvisionQnSecret
+              Resource: !Ref QnProvisionSecret
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   # ### QN healthcheck
 
-  ApiHealthCheckFunction:
+  QnHealthCheckFunction:
     Type: AWS::Serverless::Function
     Properties:
       MemorySize: 512
@@ -283,15 +304,19 @@ Resources:
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
               Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   # ### QN Provision
-  ProvisionQnSecret:
+  QnProvisionSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
       Description: QN Provision username and password
       SecretString: '{"username":"Placeholder","password":"placeholder"}'
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
-  ApiProvisionFunction:
+  QnProvisionFunction:
     Type: AWS::Serverless::Function
     Properties:
       MemorySize: 1024
@@ -341,7 +366,7 @@ Resources:
               Authorizer: NONE
       Environment:
         Variables:
-          KY_QNPROVISION_AWSSECRET: !Ref ProvisionQnSecret
+          KY_QNPROVISION_AWSSECRET: !Ref QnProvisionSecret
           KY_QNPROVISION_TABLENAME: !Ref UsersQnTableName
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
@@ -354,13 +379,15 @@ Resources:
                 - secretsmanager:GetSecretValue
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
-              Resource: !Ref ProvisionQnSecret
+              Resource: !Ref QnProvisionSecret
         - Version: '2012-10-17' # Policy Document
           Statement:
             - Effect: Allow
               Action:
                 - apigateway:GET
               Resource: "*"
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   # ### RPC route
   RpcFunction:
@@ -409,6 +436,8 @@ Resources:
                 - secretsmanager:DescribeSecret
                 - secretsmanager:ListSecretVersionIds
               Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   ###
   # Plans
@@ -432,6 +461,8 @@ Resources:
             BurstLimit: 100
             RateLimit: 10
       UsagePlanName: qn-beta-test
+      Tags:
+        KeyStack: !Ref AWS::StackName
   ApiKeyQnBetaTest:
     Type: 'AWS::ApiGateway::ApiKey'
     DependsOn:
@@ -441,12 +472,16 @@ Resources:
       # as plan slug defined in QN
       Name: !Ref QnBetaTestApiKeyName
       Enabled: true
+      Tags:
+        KeyStack: !Ref AWS::StackName
   LinkUsagePlanApiKeyQnBetaTest:
     Type: 'AWS::ApiGateway::UsagePlanKey'
     Properties:
       KeyId: !Ref ApiKeyQnBetaTest
       KeyType: API_KEY
       UsagePlanId: !Ref UsagePlanQnBetaTest
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   ###
   # S3 object storage
@@ -466,9 +501,11 @@ Resources:
   RDSVPC:
     Type: AWS::EC2::VPC
     Properties:
-        CidrBlock: 172.32.0.0/16
-        EnableDnsSupport: true
-        EnableDnsHostnames: true
+      CidrBlock: 172.32.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   # create subnets
   privateDBSubnet1:
@@ -477,6 +514,8 @@ Resources:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.0.0/20
       AvailabilityZone: !Select [ 0, !GetAZs ]
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   privateDBSubnet2:
     Type: AWS::EC2::Subnet
@@ -484,6 +523,8 @@ Resources:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.16.0/20
       AvailabilityZone: !Select [ 1, !GetAZs ]
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   privateLambdaSubnet1:
     Type: AWS::EC2::Subnet
@@ -491,6 +532,8 @@ Resources:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.32.0/20
       AvailabilityZone: !Select [ 0, !GetAZs ]
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   privateLambdaSubnet2:
     Type: AWS::EC2::Subnet
@@ -498,6 +541,8 @@ Resources:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.48.0/20
       AvailabilityZone: !Select [ 1, !GetAZs ]
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   RDSSubnetGroup:
     Type: "AWS::RDS::DBSubnetGroup"
@@ -506,6 +551,8 @@ Resources:
       SubnetIds:
         - !Ref privateDBSubnet1
         - !Ref privateDBSubnet2
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   # Security groups
   # https://repost.aws/knowledge-center/connect-lambda-to-an-rds-instance
@@ -528,6 +575,8 @@ Resources:
         FromPort: 5432
         ToPort: 5432
         SourceSecurityGroupId : !Ref DebugInstanceSecurityGroup
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -546,6 +595,8 @@ Resources:
           ToPort: 65535
           FromPort: 0
           CidrIp: !GetAtt privateLambdaSubnet2.CidrBlock
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
 
   ### VPC Endpoints
@@ -563,6 +614,8 @@ Resources:
         - !Ref privateLambdaSubnet2
       SecurityGroupIds:
         - !Ref LambdaSecurityGroup
+      Tags:
+        KeyStack: !Ref AWS::StackName
 
   ###
   # Debug
@@ -575,6 +628,9 @@ Resources:
       Type: AWS::EC2::KeyPair
       Properties:
         KeyName: debug-instance-keypair
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug
 
   # Public internet connection configuration. It should only allow SSH and PostgreSQL connections
   PublicDevOpsSubnet:
@@ -584,28 +640,47 @@ Resources:
       CidrBlock: 172.32.64.0/20
       AvailabilityZone: !Select [ 0, !GetAZs ]
       MapPublicIpOnLaunch: true
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug
   InternetGateway:
     Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref RDSVPC
       InternetGatewayId: !Ref InternetGateway
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref RDSVPC
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug
   RoutePublicSubnet:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicDevOpsSubnet
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug
   RouteIG:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug
   DebugInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -621,6 +696,9 @@ Resources:
           FromPort: 5432
           ToPort: 5432
           CidrIp: 0.0.0.0/0
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug
 
   # Debug EC2 instance. Remember that SAM and CF are always turning on the instances
   # their create, so if you comment the instance out, deploy (removing it) and uncomment
@@ -638,3 +716,6 @@ Resources:
         |
           #!/bin/sh
           sudo amazon-linux-extras install postgresql15
+      Tags:
+        KeyStack: !Ref AWS::StackName
+        Debug: debug

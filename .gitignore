@@ -1,3 +1,4 @@
 uploader.bak
 .aws-sam
 key.toml
+packaged_key_template.yml

@@ -1,18 +1,18 @@
 version = 0.1
 [default.deploy.parameters]
-stack_name = "trueblocks-qn"
+stack_name = "key-dev"
 resolve_s3 = true
-s3_prefix = "trueblocks-qn"
+s3_prefix = "key-dev"
 region = "us-west-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
 
 
-[samqndeployer.deploy.parameters]
-stack_name = "trueblocks-qn"
+[production.deploy.parameters]
+stack_name = "key-prod"
 resolve_s3 = true
-s3_prefix = "trueblocks-qn"
+s3_prefix = "key-prod"
 region = "us-east-1"
 profile = "samqndeployer"
 confirm_changeset = true

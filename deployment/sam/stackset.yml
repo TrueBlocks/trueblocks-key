@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM template with a simple API definition
+
+Resources:
+  KeyStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: !Sub ${AWS::StackName}-stackset
+      PermissionModel: SERVICE_MANAGED
+      ManagedExecution:
+        Active: true
+      Capabilities:
+        - CAPABILITY_AUTO_EXPAND
+        - CAPABILITY_IAM
+      TemplateURL: ./packaged_key_template.yml
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts: [ou-tlap-1pemr15f]
+          Regions:
+            - !Ref AWS::Region
