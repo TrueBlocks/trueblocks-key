@@ -1,6 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: AWS SAM template with a simple API definition
+Description: Deploy stack set
 
 Resources:
   KeyStackSet:
@@ -8,14 +7,19 @@ Resources:
     Properties:
       StackSetName: !Sub ${AWS::StackName}-stackset
       PermissionModel: SERVICE_MANAGED
+      CallAs: DELEGATED_ADMIN
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
       ManagedExecution:
         Active: true
       Capabilities:
         - CAPABILITY_AUTO_EXPAND
         - CAPABILITY_IAM
-      TemplateURL: ./packaged_key_template.yml
+      TemplateURL: ../cf_template.json
       StackInstancesGroup:
         - DeploymentTargets:
-            Accounts: [ou-tlap-1pemr15f]
+            OrganizationalUnitIds:
+            - ou-tlap-1pemr15f
           Regions:
             - !Ref AWS::Region

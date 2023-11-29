@@ -1,0 +1,80 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS SAM template with a simple API definition",
+    "Parameters": {
+        "RDSMasterUserName": {
+            "Type": "String",
+            "Default": "key_admin"
+        },
+        "RDSDBName": {
+            "Type": "String",
+            "Default": "key_index"
+        },
+        "UsersQnTableName": {
+            "Type": "String",
+            "Default": "users-qn"
+        },
+        "AppearancesQueueBatchSize": {
+            "Type": "Number",
+            "Default": "10"
+        },
+        "QnApiStageName": {
+            "Type": "String",
+            "Default": "prod"
+        },
+        "QnBetaTestApiKeyName": {
+            "Type": "String",
+            "Default": "qn-beta-test"
+        }
+    },
+    "Resources": {
+        "AppearancesQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "KeyStack",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "SamResourceId": "AppearancesQueue"
+            }
+        },
+        "UsersQn": {
+            "Type": "AWS::DynamoDB::Table",
+            "Metadata": {
+                "SamResourceId": "UsersQn"
+            },
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "QuicknodeId",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "QuicknodeId",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "TableName": {
+                    "Fn::Sub": "${AWS::StackName}-${UsersQnTableName}"
+                },
+                "Tags": [
+                    {
+                        "Key": "KeyStack",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ],
+                "BillingMode": "PAY_PER_REQUEST"
+            }
+        }
+    }
+}
