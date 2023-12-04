@@ -5,7 +5,7 @@ Resources:
   KeyStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
-      StackSetName: !Sub ${AWS::StackName}-stackset
+      StackSetName: !Ref AWS::StackName
       PermissionModel: SERVICE_MANAGED
       CallAs: DELEGATED_ADMIN
       AutoDeployment:
@@ -16,7 +16,7 @@ Resources:
       Capabilities:
         - CAPABILITY_AUTO_EXPAND
         - CAPABILITY_IAM
-      TemplateURL: ../cf_template.json
+      TemplateURL: ../cloudformation/template.json
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds:
