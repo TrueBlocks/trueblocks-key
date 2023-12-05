@@ -4,14 +4,15 @@
 package integration_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"testing"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
-	"github.com/TrueBlocks/trueblocks-key/database/pkg/dbtest"
 	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	"github.com/TrueBlocks/trueblocks-key/test/dbtest"
 	"github.com/TrueBlocks/trueblocks-key/test/integration/helpers"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
@@ -67,7 +68,6 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 		BlockNumber:   11154177,
 		TransactionId: 1,
 	}
-	appearance.SetAppearanceId()
 
 	client := helpers.NewLambdaClient(t)
 	var request helpers.LambdaPayloadSerializer
@@ -84,7 +84,7 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 
 	// Make sure the appearance has been added to the db
 
-	err = dbConn.Db().Where(&database.Appearance{Address: appearance.Address}).Find(&dbAppearances).Error
+	dbAppearances, err = database.FetchAppearances(context.TODO(), dbConn, appearance.Address, 1, 0)
 	if err != nil {
 		t.Fatal("fetching appearances from db:", err)
 	}
@@ -93,7 +93,11 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 		t.Fatal("wrong number of appearances:", l)
 	}
 
-	if appId := dbAppearances[0].AppearanceId; appId != appearance.AppearanceId {
+	if appId := dbAppearances[0].BlockNumber; appId != appearance.BlockNumber {
+		t.Fatal("mismatched AppearanceId:", appId)
+	}
+
+	if appId := dbAppearances[0].TransactionId; appId != appearance.TransactionId {
 		t.Fatal("mismatched AppearanceId:", appId)
 	}
 
@@ -128,8 +132,8 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 
 	// Number of records in the DB should not change
 
-	var count int64
-	err = dbConn.Db().Model(&database.Appearance{}).Count(&count).Error
+	var count int
+	count, err = dbConn.CountAppearances()
 	if err != nil {
 		t.Fatal("fetching appearances from db:", err)
 	}

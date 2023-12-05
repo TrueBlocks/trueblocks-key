@@ -226,7 +226,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
-	output = helpers.InvokeLambda(t, client, "ApiProvisionFunction", request)
+	output = helpers.InvokeLambda(t, client, "QnProvisionFunction", request)
 	helpers.AssertLambdaSuccessful(t, output)
 	expectProvisionRequestSuccess(t, output)
 
@@ -243,7 +243,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
-	output = helpers.InvokeLambda(t, client, "ApiProvisionFunction", request)
+	output = helpers.InvokeLambda(t, client, "QnProvisionFunction", request)
 	helpers.AssertLambdaSuccessful(t, output)
 	expectProvisionRequestSuccess(t, output)
 
@@ -260,7 +260,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
-	output = helpers.InvokeLambda(t, client, "ApiProvisionFunction", request)
+	output = helpers.InvokeLambda(t, client, "QnProvisionFunction", request)
 	helpers.AssertLambdaSuccessful(t, output)
 	expectProvisionRequestSuccess(t, output)
 
@@ -277,7 +277,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
-	output = helpers.InvokeLambda(t, client, "ApiProvisionFunction", request)
+	output = helpers.InvokeLambda(t, client, "QnProvisionFunction", request)
 	helpers.AssertLambdaSuccessful(t, output)
 	expectProvisionRequestSuccess(t, output)
 
@@ -294,7 +294,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
-	output = helpers.InvokeLambda(t, client, "ApiProvisionFunction", request)
+	output = helpers.InvokeLambda(t, client, "QnProvisionFunction", request)
 	helpers.AssertLambdaSuccessful(t, output)
 	expectProvisionRequestSuccess(t, output)
 

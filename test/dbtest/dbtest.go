@@ -2,6 +2,7 @@ package dbtest
 
 import (
 	"context"
+	"fmt"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/docker/go-connections/nat"
@@ -30,12 +31,19 @@ func ConnectionEnvs() map[string]string {
 	}
 }
 
+type TestLogConsumer struct{}
+
+func (g *TestLogConsumer) Accept(l testcontainers.Log) {
+	fmt.Println("== container log ==", string(l.Content))
+}
+
 func NewTestConnection() (conn *database.Connection, done func() error, err error) {
 	dockerNetwork := ContainerNetwork()
 	conn = &database.Connection{
 		Database: containerDbName,
 		User:     containerDbUser,
 		Password: containerDbPassword,
+		Chain:    "mainnet",
 	}
 	ctx := context.Background()
 	dbContainer, err := testcontainers.GenericContainer(
@@ -53,6 +61,8 @@ func NewTestConnection() (conn *database.Connection, done func() error, err erro
 					"POSTGRES_PASSWORD": conn.Password,
 				},
 				Networks: []string{dockerNetwork},
+				// For logging only:
+				// Cmd: []string{"postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"},
 			},
 			Started: true,
 		},
@@ -63,6 +73,10 @@ func NewTestConnection() (conn *database.Connection, done func() error, err erro
 	terminateContainer := func() error {
 		return dbContainer.Terminate(ctx)
 	}
+
+	// lc := &TestLogConsumer{}
+	// dbContainer.FollowOutput(lc)
+	// _ = dbContainer.StartLogProducer(ctx)
 
 	port, err := dbContainer.MappedPort(context.Background(), nat.Port(containerPort))
 	if err != nil {
@@ -75,12 +89,15 @@ func NewTestConnection() (conn *database.Connection, done func() error, err erro
 		terminateContainer()
 		return
 	}
-	if err = conn.Connect(); err != nil {
+	if err = conn.Connect(ctx); err != nil {
 		terminateContainer()
 		return
 	}
 
-	err = conn.AutoMigrate()
-	done = terminateContainer
+	err = conn.Setup()
+	done = func() error {
+		defer conn.Close(context.TODO())
+		return terminateContainer()
+	}
 	return
 }

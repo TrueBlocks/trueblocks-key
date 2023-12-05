@@ -24,10 +24,11 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 
 	if dbConn == nil {
-		if err = setupDbConnection(); err != nil {
+		if err = setupDbConnection(ctx); err != nil {
 			return
 		}
 	}
+	defer dbConn.Close(ctx)
 
 	response = events.APIGatewayProxyResponse{
 		Body:       `{ "status": "ok" }`,
@@ -41,7 +42,7 @@ func loadConfig() (err error) {
 	return
 }
 
-func setupDbConnection() (err error) {
+func setupDbConnection(ctx context.Context) (err error) {
 	var user string
 	var password string
 	secretId := cnf.Database["default"].AwsSecret
@@ -60,6 +61,7 @@ func setupDbConnection() (err error) {
 	}
 
 	dbConn = &database.Connection{
+		Chain:    "mainnet",
 		Host:     cnf.Database["default"].Host,
 		Port:     cnf.Database["default"].Port,
 		Database: cnf.Database["default"].Database,
@@ -69,7 +71,7 @@ func setupDbConnection() (err error) {
 
 	log.Println(dbConn.String())
 
-	return dbConn.Connect()
+	return dbConn.Connect(ctx)
 }
 
 func main() {

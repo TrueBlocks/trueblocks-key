@@ -1,6 +1,7 @@
 package export
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -8,22 +9,27 @@ import (
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
-func Export(dbConn *database.Connection, destPath string) error {
+func ExportAddresses(dbConn *database.Connection, destPath string) error {
+	return export(dbConn, destPath, dbConn.AddressesTableName())
+}
+
+func ExportAppearances(dbConn *database.Connection, destPath string) error {
+	return export(dbConn, destPath, dbConn.AppearancesTableName())
+}
+
+func export(dbConn *database.Connection, destPath string, tableName string) error {
 	if destPath == "" {
 		return errors.New("export: destination path required")
 	}
 
-	tableName, err := database.TableName[database.Appearance](dbConn)
-	if err != nil {
-		return fmt.Errorf("export: %w", err)
-	}
-
 	log.Println("Exporting", tableName, "table, destination:", destPath)
 
-	dbtx := dbConn.Db().Exec(
-		fmt.Sprintf("COPY (SELECT * FROM %s) TO PROGRAM '%s' (FORMAT 'csv')", tableName, "split -b 1G -d - "+destPath),
+	_, err := dbConn.Db().Exec(
+		context.TODO(),
+		"COPY (SELECT * FROM $1) TO PROGRAM '$2' (FORMAT 'csv')",
+		tableName, "split -b 1G -d - "+destPath,
 	)
-	if err := dbtx.Error; err != nil {
+	if err != nil {
 		return fmt.Errorf("export: copy SQL: %w", err)
 	}
 

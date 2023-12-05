@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/TrueBlocks/trueblocks-key/database/pkg/dbtest"
+	"github.com/TrueBlocks/trueblocks-key/test/dbtest"
 )
 
 var cancelSam context.CancelFunc
@@ -32,7 +32,19 @@ func StartSam() (cancelSam context.CancelFunc, wait func() error) {
 
 	var samCtx context.Context
 	samCtx, cancelSam = context.WithCancel(context.Background())
-	samCmd := exec.CommandContext(samCtx, "sam", "local", "start-lambda", "--profile", awsProfile, "--docker-network", dockerNetwork, "--skip-pull-image")
+	samCmd := exec.CommandContext(
+		samCtx,
+		"sam",
+		"local",
+		"start-lambda",
+		"--profile",
+		awsProfile,
+		"--config-env",
+		"production",
+		"--docker-network",
+		dockerNetwork,
+		"--skip-pull-image",
+	)
 	samReady := make(chan bool)
 
 	_, sourceFileName, _, ok := runtime.Caller(0)

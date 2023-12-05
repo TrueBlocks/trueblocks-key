@@ -1,6 +1,7 @@
 package query
 
 import (
+	"context"
 	"fmt"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
@@ -16,29 +17,13 @@ type Query struct {
 	Connection *database.Connection
 }
 
-type Item struct {
-	Address       string
-	BlockNumber   uint32
-	TransactionId uint32
-}
-
-func (q *Query) Do() (results []Item, err error) {
+func (q *Query) Do() (results []database.Appearance, err error) {
 	if q.Limit > maxLimit {
 		q.Limit = maxLimit
 	}
 
-	if err := q.Connection.Connect(); err != nil {
-		return nil, fmt.Errorf("query.Do: connecting: %w", err)
-	}
-
-	results = make([]Item, 0, q.Limit)
-	query := q.Connection.Db().Where("address like ?", q.Address)
-	query.Model(&database.Appearance{})
-	query.Limit(q.Limit)
-	query.Offset(q.Offset)
-	query.Order("block_number desc")
-	dbtx := query.Find(&results)
-	if err = dbtx.Error; err != nil {
+	results, err = database.FetchAppearances(context.TODO(), q.Connection, q.Address, uint(q.Limit), uint(q.Offset))
+	if err != nil {
 		return nil, fmt.Errorf("query.Do: executing: %w", err)
 	}
 

@@ -144,7 +144,7 @@ func TestLambdaQnAuthorizer(t *testing.T) {
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
-	output = helpers.InvokeLambda(t, client, "ApiProvisionFunction", provisionRequest)
+	output = helpers.InvokeLambda(t, client, "QnProvisionFunction", provisionRequest)
 	helpers.AssertLambdaSuccessful(t, output)
 	expectProvisionRequestSuccess(t, output)
 

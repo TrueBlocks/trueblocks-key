@@ -19,10 +19,11 @@ var dbConn *database.Connection
 
 func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 	if dbConn == nil {
-		if err = setupDbConnection(); err != nil {
+		if err = setupDbConnection(ctx); err != nil {
 			return
 		}
 	}
+	defer dbConn.Close(ctx)
 
 	recordCount := len(sqsEvent.Records)
 	models := make([]appearance.Appearance, 0, recordCount)
@@ -36,20 +37,17 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 			err = errors.New("invalid JSON")
 			return
 		}
-		app.SetAppearanceId()
 		models = append(models, app)
 	}
 
-	batchSize := recordCount
-	if batchSize > maxBatchSize {
-		batchSize = maxBatchSize
-	}
+	// batchSize := recordCount
+	// if batchSize > maxBatchSize {
+	// 	batchSize = maxBatchSize
+	// }
 
 	log.Println("Creating database items")
-	// With GORM we cannot get a list of failed inserts, so we can't use
-	// events.SQSEventResponse.BatchItemFailures (marking only some queue items as failed)
-	err = dbConn.Db().CreateInBatches(&models, batchSize).Error
 
+	err = database.InsertAppearanceBatch(ctx, dbConn, models)
 	if err == nil {
 		log.Println("Success:", recordCount, "items inserted")
 	}
@@ -57,7 +55,7 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 	return
 }
 
-func setupDbConnection() (err error) {
+func setupDbConnection(ctx context.Context) (err error) {
 	cnf, err := config.Get("")
 	if err != nil {
 		return err
@@ -84,16 +82,15 @@ func setupDbConnection() (err error) {
 	}
 
 	dbConn = &database.Connection{
+		Chain:    "mainnet",
 		Host:     cnf.Database["default"].Host,
 		Port:     cnf.Database["default"].Port,
 		Database: cnf.Database["default"].Database,
 		User:     user,
 		Password: password,
 	}
-	if err = dbConn.Connect(); err != nil {
-		return
-	}
-	return dbConn.AutoMigrate()
+	err = dbConn.Connect(ctx)
+	return
 }
 
 func main() {

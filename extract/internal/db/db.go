@@ -1,6 +1,8 @@
 package db
 
 import (
+	"context"
+
 	extractConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
@@ -18,13 +20,14 @@ func Connection(configPath string, dbConfigKey string) (*database.Connection, er
 	}
 
 	dbConnection := &database.Connection{
+		Chain:    "mainnet",
 		Host:     config.Database[dbConfigKey].Host,
 		Port:     config.Database[dbConfigKey].Port,
 		User:     config.Database[dbConfigKey].User,
 		Password: config.Database[dbConfigKey].Password,
 		Database: config.Database[dbConfigKey].Database,
 	}
-	if err := dbConnection.Connect(); err != nil {
+	if err := dbConnection.Connect(context.TODO()); err != nil {
 		return nil, err
 	}
 

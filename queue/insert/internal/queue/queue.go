@@ -23,14 +23,9 @@ func NewQueue(remoteQueue RemoteQueuer) (q *Queue, err error) {
 }
 
 func (q *Queue) Add(app *appearance.Appearance) (msgId string, err error) {
-	app.SetAppearanceId()
 	return q.remote.Add(app)
 }
 
 func (q *Queue) AddBatch(apps []*appearance.Appearance) (err error) {
-	for _, item := range apps {
-		item := item
-		item.SetAppearanceId()
-	}
 	return q.remote.AddBatch(apps)
 }

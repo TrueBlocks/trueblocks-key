@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -42,15 +43,17 @@ func main() {
 	}
 
 	dbConnection := &database.Connection{
+		Chain:    "mainnet",
 		Host:     config.Database[dbConfigKey].Host,
 		Port:     config.Database[dbConfigKey].Port,
 		User:     config.Database[dbConfigKey].User,
 		Password: config.Database[dbConfigKey].Password,
 		Database: config.Database[dbConfigKey].Database,
 	}
-	if err := dbConnection.Connect(); err != nil {
+	if err := dbConnection.Connect(context.TODO()); err != nil {
 		log.Fatalln(err)
 	}
+	defer dbConnection.Close(context.TODO())
 
 	q := query.Query{
 		Limit:      limit,
@@ -65,6 +68,6 @@ func main() {
 	}
 
 	for _, appearance := range results {
-		fmt.Println(appearance.Address, appearance.BlockNumber, appearance.TransactionId)
+		fmt.Println(appearance.BlockNumber, appearance.TransactionId)
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
-	"github.com/TrueBlocks/trueblocks-key/database/pkg/dbtest"
 	"github.com/TrueBlocks/trueblocks-key/quicknode/keyDynamodb"
+	"github.com/TrueBlocks/trueblocks-key/test/dbtest"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"

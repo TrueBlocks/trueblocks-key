@@ -47,11 +47,12 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 			return
 		}
 	}
+	defer dbConn.Close(context.TODO())
 
 	limit := rpcRequest.Params.PerPage
 	if limit == 0 {
 		// Just in case we forgot to define the limit in configuration
-		limit = 500
+		limit = 20
 	}
 
 	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {
@@ -66,8 +67,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 	offset = offset * limit
 
-	items := make([]query.PublicAppearance, 0, limit)
-	err = dbConn.Db().Where(&database.Appearance{Address: rpcRequest.Address()}).Limit(limit).Offset(offset).Model(&database.Appearance{}).Find(&items).Error
+	items, err := database.FetchAppearances(ctx, dbConn, rpcRequest.Address(), uint(limit), uint(offset))
 	if err != nil {
 		log.Println("database query:", err)
 		err = ErrInternal
@@ -119,6 +119,7 @@ func setupDbConnection() (err error) {
 	}
 
 	dbConn = &database.Connection{
+		Chain:    "mainnet",
 		Host:     cnf.Database["default"].Host,
 		Port:     cnf.Database["default"].Port,
 		Database: cnf.Database["default"].Database,
@@ -128,7 +129,7 @@ func setupDbConnection() (err error) {
 
 	log.Println(dbConn.String())
 
-	return dbConn.Connect()
+	return dbConn.Connect(context.TODO())
 }
 
 func main() {

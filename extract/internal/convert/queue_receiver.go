@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"sync"
 
-	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
 )
 
@@ -25,7 +24,7 @@ type QueueReceiver struct {
 }
 
 // SendBatch sends given batch of items to `insert` tool
-func (q *QueueReceiver) SendBatch(batch []*database.Appearance) (err error) {
+func (q *QueueReceiver) SendBatch(batch []appearance.Appearance) (err error) {
 	q.sendMutex.Lock()
 	defer q.sendMutex.Unlock()
 
@@ -45,7 +44,7 @@ func (q *QueueReceiver) SendBatch(batch []*database.Appearance) (err error) {
 	return
 }
 
-func (q *QueueReceiver) encodeBatch(batch []*database.Appearance, results chan<- []byte, errs chan<- error) {
+func (q *QueueReceiver) encodeBatch(batch []appearance.Appearance, results chan<- []byte, errs chan<- error) {
 	defer close(results)
 	for _, item := range batch {
 		item := item

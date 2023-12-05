@@ -28,9 +28,6 @@ func TestQueueAdd(t *testing.T) {
 	}
 
 	item := mock.Get(0)
-	if item.AppearanceId != app.AppearanceId {
-		t.Fatal("wrong AppearanceId")
-	}
 	if item.BlockNumber != app.BlockNumber {
 		t.Fatal("wrong BlockNumber")
 	}

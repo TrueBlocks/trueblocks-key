@@ -4,6 +4,9 @@ local:
 # to S3 bucket
 	sam local start-api
 
+test-unit:
+	find . -name go.mod -execdir go test ./... \;
+
 test:
 # runs integration tests
 # docker pull command is here to ensure that PostgreSQL image is downloaded before we run the tests

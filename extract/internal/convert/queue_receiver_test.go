@@ -10,10 +10,11 @@ import (
 	"testing"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
 )
 
 func TestQueueReceiver_SendBatch(t *testing.T) {
-	batch := []*database.Appearance{
+	batch := []appearance.Appearance{
 		{
 			Address:         "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
 			BlockNumber:     18540199,
@@ -69,7 +70,15 @@ func TestQueueReceiver_SendBatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(batch, results) {
+	expected := make([]*database.Appearance, 0, len(batch))
+	for _, item := range batch {
+		expected = append(expected, &database.Appearance{
+			BlockNumber:   item.BlockNumber,
+			TransactionId: item.TransactionId,
+		})
+	}
+
+	if !reflect.DeepEqual(expected, results) {
 		t.Fatal("wrong results")
 	}
 }

@@ -1,11 +1,11 @@
 package database
 
 import (
+	"context"
 	"fmt"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"github.com/TrueBlocks/trueblocks-key/database/pkg/sql"
+	"github.com/jackc/pgx/v5"
 )
 
 type Connection struct {
@@ -14,29 +14,31 @@ type Connection struct {
 	User      string
 	Password  string
 	Database  string
-	db        *gorm.DB
+	Chain     string
+	conn      *pgx.Conn
 	batchSize int
 }
 
-func (c *Connection) Connect() (err error) {
+func (c *Connection) Connect(ctx context.Context) (err error) {
 	if err := c.validate(); err != nil {
 		return err
 	}
 	if c.batchSize == 0 {
 		c.batchSize = 5000
 	}
-	c.db, err = gorm.Open(postgres.Open(c.dsn()), &gorm.Config{
-		CreateBatchSize: c.batchSize,
-		Logger:          logger.Default.LogMode(logger.Error),
-	})
+	c.conn, err = pgx.Connect(ctx, c.dsn())
 	if err != nil {
 		return fmt.Errorf("connection.Connect: %w", err)
 	}
 	return
 }
 
-func (c *Connection) Db() *gorm.DB {
-	return c.db
+func (c *Connection) Close(ctx context.Context) error {
+	return c.conn.Close(ctx)
+}
+
+func (c *Connection) Db() *pgx.Conn {
+	return c.conn
 }
 
 func (c *Connection) String() string {
@@ -47,14 +49,36 @@ func (c *Connection) String() string {
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d", c.Host, c.User, pass, c.Database, c.Port)
 }
 
-func (c *Connection) AutoMigrate() error {
-	return c.db.AutoMigrate(
-		&Appearance{},
-	)
-}
-
 func (c *Connection) BatchSize() int {
 	return c.batchSize
+}
+
+func (c *Connection) Setup() (err error) {
+	if _, err = c.conn.Exec(context.TODO(), sql.CreateTableAddresses(c.AddressesTableName())); err != nil {
+		return fmt.Errorf("creating address table (%s): %w", c.Chain, err)
+	}
+	if _, err = c.conn.Exec(context.TODO(), sql.CreateTableAppearances(c.AppearancesTableName(), c.AddressesTableName())); err != nil {
+		return fmt.Errorf("creating appearances table (%s): %w", c.Chain, err)
+	}
+	if _, err = c.conn.Exec(context.TODO(), sql.CreateAppearancesOrderIndex(c.AppearancesTableName())); err != nil {
+		return fmt.Errorf("creating appearances order index (%s): %w", c.Chain, err)
+	}
+	return nil
+}
+
+func (c *Connection) CountAppearances() (count int, err error) {
+	rows, err := c.conn.Query(
+		context.TODO(),
+		fmt.Sprintf(
+			"select count(*) from %s",
+			pgx.Identifier.Sanitize(pgx.Identifier{c.AppearancesTableName()}),
+		),
+	)
+	if err != nil {
+		return
+	}
+	count, err = pgx.CollectOneRow[int](rows, pgx.RowTo[int])
+	return
 }
 
 func (c *Connection) dsn() string {
@@ -76,6 +100,10 @@ func (c *Connection) validate() error {
 	// We need database name
 	if c.Database == "" {
 		return fmt.Errorf("database name missing")
+	}
+
+	if c.Chain == "" {
+		return fmt.Errorf("chain empty")
 	}
 
 	return nil

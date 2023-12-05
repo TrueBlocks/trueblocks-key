@@ -1,16 +1,9 @@
 package database
 
-import (
-	"fmt"
+func (c *Connection) AddressesTableName() string {
+	return c.Chain + "_addresses"
+}
 
-	"gorm.io/gorm"
-)
-
-func TableName[Model any](dbConn *Connection) (string, error) {
-	db := dbConn.Db()
-	stmt := &gorm.Statement{DB: db}
-	if err := stmt.Parse(new(Model)); err != nil {
-		return "", fmt.Errorf("get model table name: %w", err)
-	}
-	return stmt.Schema.Table, nil
+func (c *Connection) AppearancesTableName() string {
+	return c.Chain + "_appearances"
 }

@@ -5,6 +5,7 @@ use (
 	./awshelper
 	./config
 	./database
+	./dbadmin
 	./extract
 	./query
 	./queue/consume
@@ -14,5 +15,6 @@ use (
 	./quicknode/healthcheck
 	./quicknode/provision
 	./scanner/
+	./test/dbtest
 	./test/integration
 )

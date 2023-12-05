@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
+var ErrInvalidMethod = errors.New("invalid method")
 var ErrAddressIncorrect = errors.New("incorrect address")
 var ErrIncorrectPagePerPage = errors.New("incorrect page or perPage")
 
@@ -35,6 +38,11 @@ func (r *RpcRequest) Address() string {
 }
 
 func (r *RpcRequest) Validate() error {
+	// Validate method
+	if r.Method != "tb_getAppearances" {
+		return ErrInvalidMethod
+	}
+
 	// Validate address
 	if len(r.Params.Address) != 42 {
 		return ErrAddressIncorrect
@@ -66,16 +74,8 @@ func (r *RpcRequest) LambdaPayload() (string, error) {
 	return fmt.Sprintf(`{"body": %s}`, strconv.Quote(string(encoded))), nil
 }
 
-// PublicAppearance has only members that we want to share with
-// the outside world
-type PublicAppearance struct {
-	Address       string
-	BlockNumber   uint32
-	TransactionId uint32
-}
-
 type RpcResponse struct {
-	JsonRpc string             `json:"jsonrpc"`
-	Id      int                `json:"id"`
-	Result  []PublicAppearance `json:"result"`
+	JsonRpc string                `json:"jsonrpc"`
+	Id      int                   `json:"id"`
+	Result  []database.Appearance `json:"result"`
 }

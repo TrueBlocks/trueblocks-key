@@ -4,14 +4,16 @@
 package integration_test
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
-	"github.com/TrueBlocks/trueblocks-key/database/pkg/dbtest"
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
+	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	"github.com/TrueBlocks/trueblocks-key/test/dbtest"
 	"github.com/TrueBlocks/trueblocks-key/test/integration/helpers"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
@@ -32,12 +34,12 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	defer helpers.KillSamOnPanic()
 
 	// Prepate test data
+	address := "0x0000000000000281526004018083600019166000"
 	appearance := &database.Appearance{
-		Address:       "0x0000000000000281526004018083600019166000",
 		BlockNumber:   1,
 		TransactionId: 5,
 	}
-	if err = dbConn.Db().Create(appearance).Error; err != nil {
+	if err = appearance.Insert(context.TODO(), dbConn, address); err != nil {
 		t.Fatal("inserting test data:", err)
 	}
 
@@ -52,7 +54,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		Id:     1,
 		Method: "tb_getAppearances",
 		Params: query.RpcRequestParams{
-			Address: appearance.Address,
+			Address: address,
 		},
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -65,9 +67,9 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if l := len(response.Result); l != 1 {
 		t.Fatal("wrong result count:", l)
 	}
-	if addr := response.Result[0].Address; addr != appearance.Address {
-		t.Fatal("wrong address:", addr)
-	}
+	// if addr := response.Result[0].Address; addr != appearance.Address {
+	// 	t.Fatal("wrong address:", addr)
+	// }
 	if bn := response.Result[0].BlockNumber; bn != appearance.BlockNumber {
 		t.Fatal("wrong block number:", bn)
 	}
@@ -159,7 +161,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	outOfIntRange.SetString(fmt.Sprint(int((^uint(0))>>1)), 10)
 	// Now make it out of range
 	outOfIntRange.Add(outOfIntRange, big.NewInt(1))
-	rp := rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"test_method\",\"params\":{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}}"}`, outOfIntRange.String()))
+	rp := rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"tb_getAppearances\",\"params\":{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}}"}`, outOfIntRange.String()))
 	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
 
 	t.Logf("result: %+v", response)
@@ -168,7 +170,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	// Invalid request: insane number as parameter
 
 	insane := big.NewInt(1 << 60)
-	rp = rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"test_method\",\"params\":{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}}"}`, insane.String()))
+	rp = rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"tb_getAppearances\",\"params\":{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}}"}`, insane.String()))
 	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
 
 	t.Logf("result: %+v", response)
@@ -184,7 +186,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	defer helpers.KillSamOnPanic()
 
 	// Prepate test data
-	appearances := []database.Appearance{
+	appearances := []appearance.Appearance{
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 1},
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 2},
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 3},
@@ -192,7 +194,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 5},
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 6},
 	}
-	if err = dbConn.Db().Create(&appearances).Error; err != nil {
+	if err = database.InsertAppearanceBatch(context.TODO(), dbConn, appearances); err != nil {
 		t.Fatal("inserting test data:", err)
 	}
 
@@ -222,19 +224,18 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			t.Fatal(i, "-- wrong result count:", l)
 		}
 
-		pa := query.PublicAppearance{
-			Address:       appearances[i-1].Address,
+		pa := database.Appearance{
 			BlockNumber:   appearances[i-1].BlockNumber,
 			TransactionId: appearances[i-1].TransactionId,
 		}
-		if r := response.Result; !reflect.DeepEqual(r, []query.PublicAppearance{pa}) {
+		if r := response.Result; !reflect.DeepEqual(r, []database.Appearance{pa}) {
 			t.Fatal(i, "-- wrong result:", r)
 		}
 	}
 
 	// Check items
 
-	var pagingResults = make([]query.PublicAppearance, 0, len(appearances))
+	var pagingResults = make([]database.Appearance, 0, len(appearances))
 	perPage := 3
 	for i := 1; i < (len(appearances)/perPage)+1; i++ {
 		request = &query.RpcRequest{
@@ -262,9 +263,9 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	}
 
 	for index, pa := range pagingResults {
-		if addr := pa.Address; addr != appearances[index].Address {
-			t.Fatal("wrong address", addr, "expected", appearances[index].Address)
-		}
+		// if addr := pa.Address; addr != appearances[index].Address {
+		// 	t.Fatal("wrong address", addr, "expected", appearances[index].Address)
+		// }
 		if bn := pa.BlockNumber; bn != appearances[index].BlockNumber {
 			t.Fatal("wrong block number", bn, "expected", appearances[index].BlockNumber)
 		}

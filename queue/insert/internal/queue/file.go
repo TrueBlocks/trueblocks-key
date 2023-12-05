@@ -26,8 +26,7 @@ func (f *FileQueue) Init() (err error) {
 }
 
 func (f *FileQueue) Add(app *appearance.Appearance) (msgId string, err error) {
-	app.SetAppearanceId()
-	_, err = f.file.WriteString(app.AppearanceId + "\n")
+	_, err = f.file.WriteString(app.String() + "\n")
 	return
 }
 

@@ -4,6 +4,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"errors"
 	"log"
 
@@ -52,6 +53,7 @@ func runConvert(cmd *cobra.Command, args []string) error {
 	if insertServerUrl == "" {
 		dbRecv := &convert.DatabaseReceiver{
 			DbConn: &database.Connection{
+				Chain:    "mainnet",
 				Host:     cnf.Database[dbConfigKey].Host,
 				Port:     cnf.Database[dbConfigKey].Port,
 				Database: cnf.Database[dbConfigKey].Database,
@@ -60,10 +62,11 @@ func runConvert(cmd *cobra.Command, args []string) error {
 			},
 		}
 		log.Println(dbRecv.DbConn)
-		if err := dbRecv.DbConn.Connect(); err != nil {
+		if err := dbRecv.DbConn.Connect(context.TODO()); err != nil {
 			return err
 		}
-		if err := dbRecv.DbConn.AutoMigrate(); err != nil {
+		defer dbRecv.DbConn.Close(context.TODO())
+		if err := dbRecv.DbConn.Setup(); err != nil {
 			return err
 		}
 		receiver = dbRecv

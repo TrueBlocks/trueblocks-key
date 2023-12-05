@@ -4,6 +4,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"errors"
 	"log"
 
 	"github.com/TrueBlocks/trueblocks-key/extract/internal/db"
@@ -19,7 +20,13 @@ var exportCmd = &cobra.Command{
 	RunE:  runExport,
 }
 
+var exportAddresses bool
+var exportAppearances bool
+
 func init() {
+	exportCmd.Flags().BoolVar(&exportAddresses, "addresses", false, "export addresses table")
+	exportCmd.Flags().BoolVar(&exportAppearances, "appearances", false, "export appearances table")
+
 	rootCmd.AddCommand(exportCmd)
 }
 
@@ -33,6 +40,10 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if exportAddresses && exportAppearances {
+		return errors.New("cannot export two tables at the same time")
+	}
+
 	conn, err := db.Connection(configPath, dbConfigKey)
 	if err != nil {
 		return err
@@ -40,5 +51,13 @@ func runExport(cmd *cobra.Command, args []string) error {
 
 	log.Println(conn)
 
-	return export.Export(conn, args[0])
+	if exportAddresses {
+		return export.ExportAddresses(conn, args[0])
+	}
+
+	if exportAppearances {
+		return export.ExportAppearances(conn, args[0])
+	}
+
+	return errors.New("specify which table to export")
 }

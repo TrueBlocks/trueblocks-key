@@ -11,7 +11,7 @@ Parameters:
     Default: key_index
   UsersQnTableName:
     Type: String
-    Default: users-qn
+    Default: key-prod-users-qn
   AppearancesQueueBatchSize:
     Type: Number
     Default: "10"

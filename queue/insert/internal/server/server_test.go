@@ -41,8 +41,6 @@ func TestServer_Add(t *testing.T) {
 		t.Fatal("wrong status code:", res.StatusCode)
 	}
 
-	expected.SetAppearanceId()
-
 	if result := mockQueue.Get(0); !reflect.DeepEqual(result, expected) {
 		t.Fatalf("expected %+v, but got %+v", expected, result)
 	}
@@ -92,7 +90,6 @@ func TestServer_AddBatch(t *testing.T) {
 	}
 	expected := make([]*appearance.Appearance, 0, len(apps))
 	for _, appearance := range apps {
-		appearance.SetAppearanceId()
 		expected = append(expected, appearance)
 	}
 
