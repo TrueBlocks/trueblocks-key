@@ -225,7 +225,7 @@ Resources:
       Environment:
         Variables:
           KY_QNPROVISION_AWSSECRET: !Ref QnProvisionSecret
-          KY_QNPROVISION_TABLENAME: !Ref UsersQnTableName
+          KY_QNPROVISION_TABLENAME: !Ref UsersQn
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - AmazonDynamoDBReadOnlyAccess
@@ -342,7 +342,7 @@ Resources:
       Environment:
         Variables:
           KY_QNPROVISION_AWSSECRET: !Ref QnProvisionSecret
-          KY_QNPROVISION_TABLENAME: !Ref UsersQnTableName
+          KY_QNPROVISION_TABLENAME: !Ref UsersQn
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - AmazonDynamoDBFullAccess
