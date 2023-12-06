@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Key - Powered by TrueBlocks</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/htmx.org" defer></script>
+</head>
+
+<body>
+    <img src="scroll-left.png" alt="Left Scroll" class="frilly-scroll left-scroll">
+    <img src="scroll-right.png" alt="Right Scroll" class="frilly-scroll right-scroll">
+    <div class="menu">
+        <a href="#home">Home</a>
+        <a href="#marketplace">Marketplace</a>
+        <a href="#beta">Beta</a>
+        <a href="#faq">FAQ</a>
+    </div>
+    <section id="home">
+        <div class="logo">
+            <img src="logo.png" alt="Company Logo">
+        </div>
+        <p class="tagline">Everything That Ever Happened to Your Address™</p>
+    </section>
+    <section id="marketplace" class="top-aligned">
+        <h2>MarketPlace</h2>
+        <div class="marketing-material">
+            <h3>Key Features</h3>
+            <ul>
+                <li><strong>Ease of Use:</strong> Access detailed EVM chain data without managing your own nodes.</li>
+                <li><strong>Accessibility:</strong> Available in the QuikNode Marketplace for easy integration.</li>
+                <li><strong>Comprehensive Data:</strong> Full transactional history for any address on EVM chains.</li>
+                <li><strong>Reliability and Speed:</strong> Constant access to data with high performance and uptime.
+                </li>
+                <li><strong>Security and Privacy:</strong> Secured user data and transactions.</li>
+            </ul>
+
+            <h3>Target Audience</h3>
+            <p>Developers, Small to Medium Enterprises, Blockchain Enthusiasts and Analysts.</p>
+
+            <h3>Marketing Channels</h3>
+            <p>Social Media Campaigns, Blog Posts and Articles, Webinars and Online Demos.</p>
+
+            <h3>Promotional Content</h3>
+            <p>"Unlock Blockchain Insights with Ease: Your Gateway to Comprehensive EVM Chain Data"</p>
+
+            <h3>Visuals</h3>
+            <p>Infographics, Comparative visuals, etc.</p>
+        </div>
+    </section>
+    <section id="beta" class="top-aligned">
+        <h2>Beta</h2>
+        <p class="placeholder">This is a placeholder for the Beta section.</p>
+        <form class="beta-form" id="betaForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="eth-address">Ethereum Address or ENS Name:</label>
+            <input type="text" id="eth-address" name="ethAddress" required
+                pattern="^0x[a-fA-F0-9]{40}$|^[a-zA-Z0-9.-]*\.eth$">
+            <button type="submit">Submit</button>
+        </form>
+        <div id="submissionMessage" style="display: none;">
+            Thank you for your submission. We will contact you soon.
+        </div>
+    </section>
+    <section id="faq" class="top-aligned">
+        <h2>FAQ</h2>
+        <p class="placeholder">This is a placeholder for the FAQ section.</p>
+        <div class="faq-item">
+            <h3 class="faq-question">What is Key?</h3>
+            <p class="faq-answer">
+                TrueBlocks Key is an old-fashioned Web 2.0 that solves the same problem<br>
+                as TrueBlocks Core, but does so through an AWS-based Web API. This<br>
+                makes it easy to use, but it also means we will capture your data and use<br>
+                it for our own purposes. In that sense, it's not Web 3.0 at all. Your<br>
+                call though.
+            </p>
+        </div>
+        <div class="faq-item">
+            <h3 class="faq-question">What is TrueBlocks Core?</h3>
+            <p class="faq-answer">
+                TrueBlocks Core is a 100% local-first, fully-open source EVM-compatible<br>
+                blockchain indexing solution. It runs on your laptop without relience on<br>
+                any third-party (including us!).
+            </p>
+        </div>
+        <div class="faq-item">
+            <h3 class="faq-question">Why is Key important? Why should I care?</h3>
+            <p class="faq-answer">
+                It's better to ask, "Why can't I get perfect accounting from an<br>
+                18-decimal-place accurate digital ledger." Come back to us when you<br>
+                have the answer to that. We'll wait.
+            </p>
+        </div>
+        <div class="faq-item">
+            <h3 class="faq-question">I thought TrueBlocks was anti-Web 2.0. What's up?</h3>
+            <p class="faq-answer">Answer to question 3.</p>
+        </div>
+        <div class="faq-item">
+            <h3 class="faq-question">Is Key Decentralized?</h3>
+            <p class="faq-answer">Answer to question 4.</p>
+        </div>
+    </section>
+    <section id="privacy" class="top-aligned">
+        <h2>Privacy Policy</h2>
+        <div class="privacy-content">
+            <p>We're not going to take any of your shit, but we reserve the right to do so later.</p>
+        </div>
+    </section>
+    <section id="terms" class="top-aligned">
+        <h2>Terms of Service</h2>
+        <div class="terms-content">
+            <h3>1. Introduction</h3>
+            <p>Welcome to [Your Website Name]. By accessing our website, you agree to these terms and conditions. Please
+                read them carefully.</p>
+            <h3>2. Use of Website</h3>
+            <p>This website provides [brief description of services]. The services are provided "as is" without warranty
+                of
+                any kind.</p>
+            <h3>3. User Responsibilities</h3>
+            <p>Users are responsible for their actions on the site. Prohibited activities include [list of prohibited
+                activities].</p>
+            <h3>4. Privacy Policy</h3>
+            <p>Our Privacy Policy explains how we handle your personal data. By using our services, you agree to our
+                Privacy
+                Policy.</p>
+            <h3>5. Intellectual Property</h3>
+            <p>All content on this site is the property of [Your Company Name] or its content suppliers and protected by
+                international copyright laws.</p>
+            <h3>6. Termination of Use</h3>
+            <p>We may terminate or suspend access to our service immediately, without prior notice, for any reason
+                whatsoever.</p>
+            <h3>7. Governing Law</h3>
+            <p>These terms shall be governed by [your country/state's laws] without regard to its conflict of law
+                provisions.</p>
+            <h3>8. Changes to Terms</h3>
+            <p>We reserve the right to modify these terms at any time. Your continued use of the site will signify your
+                acceptance of the changes.</p>
+        </div>
+    </section>
+    <footer>
+        <p>&copy; 2023 TrueBlocks, LLC. All rights reserved.</p>
+        <p><a href="#privacy" style="color: white;">Privacy Policy</a> | <a href="#terms" style="color: white;">Terms of
+                Service</a> | <a href="mailto:info@trueblocks.io" target="_blank" style="color: white;">Contact Us</a>
+        </p>
+        <div class="gpt-credit">Made in the loving &#x2764;&#xFE0F;<br>embrace of
+            ChatGPT &#x2764;&#xFE0F;</div>
+    </footer>
+    <!-- JavaScript at the end -->
+    <script>
+        document.getElementById('betaForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevents the default form submission action
+            document.getElementById('submissionMessage').style.display = 'block';
+            // Here you can also add code to handle the form data,
+            // like sending it to a server or processing it further
+        });
+    </script>
+</body>
+
+</html>
