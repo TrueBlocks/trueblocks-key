@@ -1,4 +1,3 @@
-/* styles.css */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -56,18 +55,16 @@ h2 {
 section {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: start;
     align-items: center;
     height: 100vh;
     padding: 20px;
     margin: 0;
-    /* border: 1px solid #ccc;
-    box-sizing: border-box; */
 }
 
 section.top-aligned {
-    justify-content: flex-start; /* Aligns content to the start (top) of the container */
-    margin-top: 200px; /* Keeps the existing top margin */
+    justify-content: flex-start;
+    margin-top: 200px;
 }
 
 .placeholder {
@@ -79,8 +76,8 @@ footer {
     color: white;
     text-align: center;
     padding: 5px 0;
-    position: fixed; /* Changed from absolute to fixed */
-    bottom: 0; /* Ensures it stays at the bottom */
+    position: fixed;
+    bottom: 0;
     width: 100%;
 }
 
@@ -147,17 +144,17 @@ footer {
 }
 
 .apis-material h3 {
-    color: #4a4a4a; /* Dark gray for subheadings */
+    color: #4a4a4a;
     margin-top: 20px;
 }
 
 .apis-material ul {
-    list-style: disc; /* Bullet points for features */
+    list-style: disc;
     margin-left: 20px;
 }
 
 .apis-material p {
-    color: #333; /* Dark text color */
+    color: #333;
 }
 
 .gpt-credit {
