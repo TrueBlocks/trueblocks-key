@@ -23,7 +23,7 @@ h2 {
     justify-content: center;
     gap: 20px;
     padding: 10px;
-    background-color: #873d93;
+    background-color: #641e82;
     z-index: 1000;
     border-bottom: 2px solid #4B2348;
 }
@@ -37,7 +37,6 @@ h2 {
 .logo {
     text-align: center;
     margin: 20px 0;
-    border: 2px solid #0A0A8A;
     display: block;
 }
 
@@ -47,11 +46,11 @@ h2 {
 }
 
 .tagline {
-    font-family: 'Lato', cursive, sans-serif; /* Example of a 'fun' font */
-    color: #333; /* Adjust the color as needed */
-    font-size: 1.5em; /* Adjust size as needed */
-    margin-top: 10px; /* Space between the logo and the tagline */
-    text-align: center; /* Aligns the tagline to center */
+    font-family: Arial, sans-serif;
+    color: #333;
+    font-size: 1.5em;
+    margin-top: 10px;
+    text-align: center;
 }
 
 section {
@@ -83,6 +82,19 @@ footer {
     position: fixed; /* Changed from absolute to fixed */
     bottom: 0; /* Ensures it stays at the bottom */
     width: 100%;
+}
+
+.docs-item {
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.faq-body {
+    justify-content: flex-start;
+    margin-top: 200px;
+    align-items: flex-start;
+    margin-left: 30%;
+    margin-bottom: 1%;
 }
 
 .faq-item {
@@ -134,17 +146,17 @@ footer {
     background-color: #45a049;
 }
 
-.marketing-material h3 {
+.apis-material h3 {
     color: #4a4a4a; /* Dark gray for subheadings */
     margin-top: 20px;
 }
 
-.marketing-material ul {
+.apis-material ul {
     list-style: disc; /* Bullet points for features */
     margin-left: 20px;
 }
 
-.marketing-material p {
+.apis-material p {
     color: #333; /* Dark text color */
 }
 
@@ -156,20 +168,4 @@ footer {
     position: absolute;
     right: 10px;
     bottom: 10px;
-}
-
-.frilly-scroll {
-    position: fixed; /* Change position to fixed */
-    top: 40px; /* Move down by 100px */
-    width: 125px; /* Assuming previous size adjustment */
-    height: auto;
-    z-index: 10;
-}
-
-.left-scroll {
-    left: 0;
-}
-
-.right-scroll {
-    right: 0;
 }
