@@ -15,7 +15,6 @@
         <a href="#apis">APIs</a>
         <a href="#docs">Docs</a>
         <a href="#faq">FAQ</a>
-        <a href="#beta">Other</a>
     </div>
     <section id="home">
         <div class="logo">
@@ -787,39 +786,12 @@
                             <div class="ml-form-formContent">
                                 <div class="ml-form-fieldRow ml-last-item">
                                     <div class="ml-field-group ml-field-email ml-validate-email ml-validate-required">
-                                        <!-- input -->
                                         <input aria-label="email" aria-required="true" type="email" class="form-control"
                                             data-inputmask="" name="fields[email]" placeholder="Email"
                                             autocomplete="email">
-                                        <!-- /input -->
-
-                                        <!-- textarea -->
-
-                                        <!-- /textarea -->
-
-                                        <!-- select -->
-
-                                        <!-- /select -->
-
-                                        <!-- checkboxes -->
-
-                                        <!-- /checkboxes -->
-
-                                        <!-- radio -->
-
-                                        <!-- /radio -->
-
-                                        <!-- countries -->
-
-                                        <!-- /countries -->
                                     </div>
                                 </div>
-
                             </div>
-
-                            <!-- Privacy policy -->
-
-                            <!-- /Privacy policy -->
                             <input type="hidden" name="ml-submit" value="1">
                             <div class="ml-form-embedSubmit">
                                 <button type="submit" class="primary">Join Our Closed Beta</button>
@@ -862,7 +834,14 @@
         <h2>APIs</h2>
         <div class="apis-material">
             <div class="list-div">
-                <h3 class="list-header">Appearance Index API (<a href="#beta">currently in beta</a>)</h3>
+                Note that each of these APIs is already availble through TrueBlocks Core, which is
+                100% decentralized and fully Web 3.0 native. We solved the hard part first, allowing
+                us to offer you the easy way without fear (on your part) of centralization risk.
+            </div>
+        </div>
+        <div class="apis-material">
+            <div class="list-div">
+                <h3 class="list-header">Appearance Index API (<a href="#home">currently in beta</a>)</h3>
                 <p class="list-item">
                     This endpoint returns a complete historical list of "appearances" (<i>&lt;bn&gt;&lt;tx_id&gt;</i>)
                     for a given address. This includes regular transactions, internal transactions, token
@@ -872,11 +851,20 @@
                 </p>
             </div>
             <div class="list-div">
-                <h3 class="list-header">Date / Time Index API (coming next)</h3>
+                <h3 class="list-header">Date / Time API (coming next)</h3>
                 <p class="list-item">
                     This endpoint returns the timestamp associated with a block (or transaction),
                     making it possible to query by date ranges. (<a target=_blank href="https://trueblocks.io">More
                         info...</a>)
+                </p>
+            </div>
+            <div class="list-div">
+                <h3 class="list-header">Neighbors API (coming next)</h3>
+                <p class="list-item">
+                    Given any Ethereum address, this endpoint returns a list of all other addresses
+                    that appeared in the same transactions as the given address. If one were to ever
+                    solve the Sybil problem, the solution would start with this list. (<a target=_blank
+                        href="https://trueblocks.io">More info...</a>)
                 </p>
             </div>
             <div class="list-div">
@@ -900,14 +888,17 @@
                     fourbyte signatures. We then attach a frequency count to the number times
                     each of these NxM fourbytes are found in the wild (on-chain). This allows
                     us to decode call data and event topics without hard-to-find ABIs or
-                    a reliance on a contract's address. (<a target=_blank href="https://trueblocks.io">More
+                    a reliance on a contract's ABI or address. We've generated many 100s
+                    of millions of fourbytes. (<a target=_blank href="https://trueblocks.io">More
                         info...</a>)
                 </p>
             </div>
             <div class="list-div">
-                <h3 class="list-header">Applications (coming mide-2024)</h3>
+                <h3 class="list-header">Applications (coming mid-2024)</h3>
                 <p class="list-item">A collection of local-first, blazingly-fast, perfectly-private
-                    desktop applications demonstrating the power of TrueBlocks.</p>
+                    desktop applications demonstrating the power of TrueBlocks. (Including
+                    18-decimal-place, perfect accounting off-chain.)
+                </p>
             </div>
         </div>
     </section>
@@ -962,43 +953,6 @@ Steal the docs from TrueBlocks Core
         <div class="list-div">
             <h3 class="list-header">How Can You Do Both?</h3>
             <p class="list-item">We're magicians.</p>
-        </div>
-        <!-- div>
-            <b>Save from old Product Page</b>
-        </div>
-        <pre>
-Key Features
-Ease of Use: Access detailed EVM chain data without managing your own nodes.
-Accessibility: Available in the QuikNode Marketplace for easy integration.
-Comprehensive Data: Full transactional history for any address on EVM chains.
-Reliability and Speed: Constant access to data with high performance and uptime.
-Security and Privacy: Secured user data and transactions.
-
-Target Audience
-Developers, Small to Medium Enterprises, Blockchain Enthusiasts and Analysts.
-
-Marketing Channels
-Social Media Campaigns, Blog Posts and Articles, Webinars and Online Demos.
-
-Promotional Content
-"Unlock Blockchain Insights with Ease: Your Gateway to Comprehensive EVM Chain Data"
-
-Visuals
-Infographics, Comparative visuals, etc.
-        </pre -->
-    </section>
-    <section id="beta" class="top-aligned">
-        <div>
-            <br>
-            <h4>Announcement for Data Advent Calendar:</h4>
-            <hr>
-            <p><strong>Announcing TrueBlocks Key</strong></p>
-            <p>We're excited to introduce 'TrueBlocks Key,' a groundbreaking web 2.0 API that mimics<br>
-                our fully-local TrueBlocks Core API. Either version enables end-users to reconcile<br>
-                their complete transactional histories off-chain. We can do this because our indexing<br>
-                (powered by the Unchained Index) is more complete than any other. With TrueBlocks Key,<br>
-                users gain 18-decimal-place insight into their own on-chain history. Excellent for<br>
-                blockchain enthusiasts and researchers alike.</p>
         </div>
     </section>
     <section id="privacy" class="top-aligned">
@@ -1111,11 +1065,10 @@ This is about us
         <p>&copy; 2023 TrueBlocks, LLC. All rights reserved.</p>
         <p>
             <a href="#privacy" style="color: white;">Privacy Policy</a> |
-            <a href="#terms" style="color: white;">Terms of Service</a> |
-            <a href="#about" style="color: white;">About Us</a>
+            <a href="#terms" style="color: white;">Terms of Service</a> <!-- |
+            <a href="#about" style="color: white;">About Us</a> -->
         </p>
-        <div class="gpt-credit">Made in the loving &#x2764;&#xFE0F;<br>embrace of
-            ChatGPT &#x2764;&#xFE0F;</div>
+        <div class="gpt-credit">&#x2764;&#xFE0F; Made with love using ChatGPT &#x2764;&#xFE0F;</div>
     </footer>
     <!-- JavaScript at the end -->
     <script>
