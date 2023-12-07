@@ -35,7 +35,7 @@ h2 {
 
 .logo {
     text-align: center;
-    margin: 20px 0;
+    margin: 100px 0 20px 0;
     display: block;
 }
 
@@ -94,16 +94,17 @@ footer {
     margin-bottom: 1%;
 }
 
-.faq-item {
-    margin-bottom: 20px;
+.list-div {
+    margin-bottom: 0px;
+    width: 50%;
 }
 
-.faq-question {
+.list-header {
     font-weight: bold;
     margin-bottom: 5px;
 }
 
-.faq-answer {
+.list-item {
     margin-left: 20px;
 }
 
@@ -113,7 +114,6 @@ footer {
     padding: 20px;
     background-color: #f4f4f4;
     border-radius: 8px;
-    max-width: 400px;
     margin: 20px auto;
 }
 

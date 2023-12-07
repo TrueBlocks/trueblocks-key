@@ -858,23 +858,57 @@
         </script>
         <p class="tagline">Everything That Ever Happened to Your Address™</p>
     </section>
-    <section id="apis" class="top-aligned">
+    <section id="apis" class="faq-body">
         <h2>APIs</h2>
         <div class="apis-material">
-            <h3>Appearance API via QuickNode (<a href="#beta">in beta</a>)</h3>
-            <p>description</p>
-            <h3>Unchained Index API (mid-2024)</h3>
-            <p>description</p>
-            <h3>Date / Time API (mid-2024)</h3>
-            <p>description</p>
-            <h3>FourByte API (mid-2024)</h3>
-            <p>description</p>
-            <h3>Names API (mid-2024)</h3>
-            <p>description</p>
-            <h3>Dalle-dress API (mid-2024)</h3>
-            <p>description</p>
-            <h3>Applications (coming 2024)</h3>
-            <p>Applications demonstrating the power of the Unchained Index</p>
+            <div class="list-div">
+                <h3 class="list-header">Appearance Index API (<a href="#beta">currently in beta</a>)</h3>
+                <p class="list-item">
+                    This endpoint returns a complete historical list of "appearances" (<i>&lt;bn&gt;&lt;tx_id&gt;</i>)
+                    for a given address. This includes regular transactions, internal transactions, token
+                    transfers, withdrawals, etc. Basically "Everything that ever happened."
+                    (<a target=_blank href="https://trueblocks.io">More
+                        info...</a>)
+                </p>
+            </div>
+            <div class="list-div">
+                <h3 class="list-header">Date / Time Index API (coming next)</h3>
+                <p class="list-item">
+                    This endpoint returns the timestamp associated with a block (or transaction),
+                    making it possible to query by date ranges. (<a target=_blank href="https://trueblocks.io">More
+                        info...</a>)
+                </p>
+            </div>
+            <div class="list-div">
+                <h3 class="list-header">Unchained Index API (coming early-2024)</h3>
+                <p class="list-item">
+                    The Unchained Index is a novel way to distribute immutable databases
+                    such as blockchain data and our Appearance API data using IPFS. This endpoint
+                    returns a list of IPFS hashes for indexed data, making it impossible for anyone
+                    to censor your access to this data. (<a target=_blank href="https://trueblocks.io">More
+                        info...</a>)
+                </p>
+            </div>
+            <div class="list-div">
+                <h3 class="list-header">Dalle-dress API (coming mid-2024)</h3>
+                <img width="100%" src="dalle.png" alt="Company Logo">
+            </div>
+            <div class="list-div">
+                <h3 class="list-header">FourByte Index API (coming mid-2024)</h3>
+                <p class="list-item">
+                    Given N function names and M function signatures, this API generates NxM
+                    fourbyte signatures. We then attach a frequency count to the number times
+                    each of these NxM fourbytes are found in the wild (on-chain). This allows
+                    us to decode call data and event topics without hard-to-find ABIs or
+                    a reliance on a contract's address. (<a target=_blank href="https://trueblocks.io">More
+                        info...</a>)
+                </p>
+            </div>
+            <div class="list-div">
+                <h3 class="list-header">Applications (coming mide-2024)</h3>
+                <p class="list-item">A collection of local-first, blazingly-fast, perfectly-private
+                    desktop applications demonstrating the power of TrueBlocks.</p>
+            </div>
         </div>
     </section>
     <section id="docs" class="top-aligned">
@@ -888,50 +922,46 @@ Steal the docs from TrueBlocks Core
     </section>
     <section id="faq" class="faq-body">
         <h2>FAQ</h2>
-        <div class="faq-item">
-            <h3 class="faq-question">What is TrueBlocks Key?</h3>
-            <p class="faq-answer">
-                TrueBlocks Key is an old-fashioned Web 2.0 that solves the same problem<br>
-                as TrueBlocks Core, but does so through an AWS-based Web API. This<br>
-                makes it easy to use, but it also means we will capture your data and use<br>
-                it for our own purposes. In that sense, it's not Web 3.0 at all. Your<br>
-                call though.
+        <div class="list-div">
+            <h3 class="list-header">What is TrueBlocks Key?</h3>
+            <p class="list-item">
+                TrueBlocks Key is old-fashioned Web 2.0 that provides TrueBlocks Core's
+                unique indexing through an AWS-based Web API.
             </p>
         </div>
-        <div class="faq-item">
-            <h3 class="faq-question">What is TrueBlocks Core?</h3>
-            <p class="faq-answer">
-                TrueBlocks Core is a 100% local-first, fully-open source EVM-compatible<br>
-                blockchain indexing solution. It runs on your laptop without relience on<br>
-                any third-party (including us!).
+        <div class="list-div">
+            <h3 class="list-header">What is TrueBlocks Core?</h3>
+            <p class="list-item">
+                TrueBlocks Core is a 100% local-first, fully-open source, EVM-compatible, Web 3.0
+                native blockchain indexing solution that includes an account-optimized index
+                distributed for the public good through Unchained Index, and decentralized data
+                access via user-grade hardware.
             </p>
         </div>
-        <div class="faq-item">
-            <h3 class="faq-question">I thought TrueBlocks was anti-Web 2.0. What's up?</h3>
-            <p class="faq-answer">We were never anti- anything. We always tried to<br>
-                make the the point that building the hard part (i.e. the decentralized<br>
-                part) should be done first. We've done that. It's called TrueBlocks Core.</p>
-        </div>
-        <div class="faq-item">
-            <h3 class="faq-question">Is TrueBlocks shifting its focus away from decentralization?</h3>
-            <p class="faq-answer">
-                No, TrueBlocks remains committed to decentralization. The introduction of TrueBlocks<br>
-                Key is part of our effort to provide users with diverse options for their specific<br>
-                needs. TrueBlocks Core, with its 100% local-first and decentralized nature, remains at the<br>
-                heart of our commitment to empowering users with secure and independent blockchain solutions.
+        <div class="list-div">
+            <h3 class="list-header">I thought TrueBlocks was anti-Web 2.0. What's up?</h3>
+            <p class="list-item">
+                We were never <i>anti-</i> anything. We always tried to make the the point
+                that building the hard part (i.e. the decentralized part) should be done
+                first. We've done that. It's called TrueBlocks Core.
             </p>
         </div>
-        <div class="faq-item">
-            <h3 class="faq-question">Is Key Decentralized?</h3>
-            <p class="faq-answer">No.</p>
+        <div class="list-div">
+            <h3 class="list-header">Is TrueBlocks shifting its focus away from decentralization?</h3>
+            <p class="list-item">
+                No, TrueBlocks remains as committed to decentralization as ever. The introduction
+                of TrueBlocks Key is part of our effort to provide users with another way to access
+                its unique index. TrueBlocks Core, with its 100% local-first and decentralized
+                nature, remains at the heart of our commitment.
+            </p>
         </div>
-        <div class="faq-item">
-            <h3 class="faq-question">Is Core Decentralized?</h3>
-            <p class="faq-answer">100%.</p>
+        <div class="list-div">
+            <h3 class="list-header">Is Key Decentralized? Is Core Decentralized?</h3>
+            <p class="list-item">No.<br>Yes.</p>
         </div>
-        <div class="faq-item">
-            <h3 class="faq-question">How Can You Do Both</h3>
-            <p class="faq-answer">We are magicians.</p>
+        <div class="list-div">
+            <h3 class="list-header">How Can You Do Both?</h3>
+            <p class="list-item">We're magicians.</p>
         </div>
         <!-- div>
             <b>Save from old Product Page</b>
