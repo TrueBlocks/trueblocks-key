@@ -39,19 +39,83 @@ Resources:
   IndexDatabase:
     Type: AWS::RDS::DBInstance
     DependsOn:
+      - RDSImportFromS3Role
       - RDSSecurityGroup
       - RDSSubnetGroup
     Properties:
+      # Setting BackupRetentionPeriod to 0 DISABLES BACKUPS
+      BackupRetentionPeriod: 4
       DBInstanceIdentifier: !Sub ${AWS::StackName}-index
-      DBInstanceClass: db.t3.micro
+      DBInstanceClass: db.t4g.medium # db.t3.micro
+      DBParameterGroupName: !Ref IndexDatabaseParameterGroup
       Engine: postgres
-      AllocatedStorage: "20"
+      AllocatedStorage: "400"
+      StorageType: "gp3"
       DBName: !Ref RDSDBName
       MasterUsername: !Ref RDSMasterUserName
       ManageMasterUserPassword: true
       DBSubnetGroupName: !Ref RDSSubnetGroup
       VPCSecurityGroups:
         - !Ref RDSSecurityGroup
+      MonitoringInterval: 10
+      MonitoringRoleArn: !GetAtt IndexDatabaseEnhancedMonitoringRole.Arn
+      AssociatedRoles:
+      - FeatureName: s3Import
+        RoleArn: !GetAtt RDSImportFromS3Role.Arn
+
+  IndexDatabaseParameterGroup:
+    Type: 'AWS::RDS::DBParameterGroup'
+    Properties:
+      Description: Index database parameters
+      Family: postgres15
+      Parameters:
+        work_mem: 16384 # 16 MB
+        # Below settings are useful when uploading large dataset
+        # maintenance_work_mem: 'GREATEST({DBInstanceClassMemory/63963136*1024},65536)'
+        # maintenance_work_mem: 3145728 # 3 GB in kB
+        # autovacuum: false
+        # max_wal_size: 10240
+        # checkpoint_timeout: 600 # 10 min
+        # synchronous_commit: 'off'
+
+
+  # Index database enhanced monitoring role
+  IndexDatabaseEnhancedMonitoringRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      ManagedPolicyArns:
+      - 'arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole'
+      AssumeRolePolicyDocument:
+        Version: '2008-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'monitoring.rds.amazonaws.com'
+          Action: 'sts:AssumeRole'
+
+  # Allow importing db from S3
+  RDSImportFromS3Role:
+    Type: AWS::IAM::Role
+    DependsOn:
+      - DevOpsDbUploadBucket
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service: rds.amazonaws.com
+      Policies:
+        - PolicyName: rdsImportFromS3
+          PolicyDocument:
+            Version: '2012-10-17' # Policy Document
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource: !GetAtt DevOpsDbUploadBucket.Arn
 
   ### DynamoDB QN users
   UsersQn:
@@ -567,6 +631,12 @@ Resources:
   ###
   # DevOps
   ###
+
+  # DevOps buckets
+  DevOpsDbUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: key-devops-db-upload
 
   # DevOps EC2 instance and resources it needs
 

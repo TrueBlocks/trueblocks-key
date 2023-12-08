@@ -23,7 +23,6 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 			return
 		}
 	}
-	defer dbConn.Close(ctx)
 
 	recordCount := len(sqsEvent.Records)
 	models := make([]appearance.Appearance, 0, recordCount)
@@ -94,5 +93,7 @@ func setupDbConnection(ctx context.Context) (err error) {
 }
 
 func main() {
+	defer dbConn.Close(context.TODO())
+
 	lambda.Start(HandleRequest)
 }

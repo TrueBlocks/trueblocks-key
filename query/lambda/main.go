@@ -47,7 +47,6 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 			return
 		}
 	}
-	defer dbConn.Close(context.TODO())
 
 	limit := rpcRequest.Parameters().PerPage
 	if limit == 0 {
@@ -133,5 +132,7 @@ func setupDbConnection() (err error) {
 }
 
 func main() {
+	defer dbConn.Close(context.TODO())
+
 	lambda.Start(HandleRequest)
 }

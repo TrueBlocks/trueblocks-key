@@ -7,6 +7,7 @@ import (
 	"log"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
+	"github.com/jackc/pgx/v5"
 )
 
 func ExportAddresses(dbConn *database.Connection, destPath string) error {
@@ -26,8 +27,11 @@ func export(dbConn *database.Connection, destPath string, tableName string) erro
 
 	_, err := dbConn.Db().Exec(
 		context.TODO(),
-		"COPY (SELECT * FROM $1) TO PROGRAM '$2' (FORMAT 'csv')",
-		tableName, "split -b 1G -d - "+destPath,
+		fmt.Sprintf(
+			"COPY (SELECT * FROM %s) TO PROGRAM %s (FORMAT 'csv')",
+			pgx.Identifier.Sanitize(pgx.Identifier{tableName}),
+			pgx.Identifier.Sanitize(pgx.Identifier{"split -b 1G -d - " + destPath}),
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("export: copy SQL: %w", err)
