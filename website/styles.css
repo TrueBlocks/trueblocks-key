@@ -161,3 +161,12 @@ footer {
     right: 10px;
     bottom: 10px;
 }
+
+.docs-item ol ul {
+    margin: 0;
+    padding: 0;
+}
+
+.docs-item figure {
+    margin: 0;
+}
