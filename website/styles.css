@@ -62,11 +62,6 @@ section {
     margin: 0;
 }
 
-section.top-aligned {
-    justify-content: flex-start;
-    margin-top: 200px;
-}
-
 .placeholder {
     color: #666;
 }
