@@ -158,10 +158,63 @@
     <section id="docs" class="faq-body">
         <h2>Docs</h2>
         <div class="docs-item">
-            <pre>
-Steal the docs from TrueBlocks Core
-            </pre>
-            <a href="https://trueblocks.io/api/#operation/accounts-list">API Docs</a>
+            <h3 class="list-header">Appearance Index API</h3>
+
+            <h4><code>tb_getAppearances</code></h4>
+            Returns appearances of the given address.
+
+            <h5>Parameters</h5>
+            <ol>
+                <li>
+                    <code>Object</code>
+                    <ul>
+                <li><code>address</code>: Address - address for which to return the appearances</li>
+                <li><code>page</code>: Uint - (optional) data page to return</li>
+                <li><code>perPage</code>: Uint - (optional) number of items per page</li>
+                </ul>
+                </li>
+            </ol>
+
+            <figure>
+                <code>
+                    <pre>
+"params": {
+  "address": "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5",
+  "page": 1,
+  "perPage": 100
+}
+                    </pre>
+                </code>
+            </figure>
+
+            <h5>Returns</h5>
+            An array of appearances
+
+            <h5>Example</h5>
+
+            <figure>
+                <code>
+                    <pre>
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"tb_getAppearances","params":{see above},"id":1}'
+// Result
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "blockNumber": 4053179,
+      "transactionId": 1
+    },
+    {
+      "blockNumber": 4053179,
+      "transactionId": 2
+    }
+  ]
+}
+                    </pre>
+                </code>
+            </figure>
+
         </div>
     </section>
 
