@@ -178,11 +178,11 @@
             <figure>
                 <code>
                     <pre>
-"params": {
+"params": [{
   "address": "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5",
   "page": 1,
   "perPage": 100
-}
+}]
                     </pre>
                 </code>
             </figure>
@@ -196,7 +196,7 @@
                 <code>
                     <pre>
 // Request
-curl -X POST --data '{"jsonrpc":"2.0","method":"tb_getAppearances","params":{see above},"id":1}'
+curl -X POST --data '{"jsonrpc":"2.0","method":"tb_getAppearances","params":[{see above}],"id":1}'
 // Result
 {
   "jsonrpc": "2.0",
