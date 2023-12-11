@@ -1,7 +1,6 @@
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    padding-top: 60px;
     box-sizing: border-box;
 }
 
@@ -14,10 +13,8 @@ h2 {
 }
 
 .menu {
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
     display: flex;
     justify-content: center;
     gap: 20px;
@@ -53,27 +50,41 @@ h2 {
 }
 
 section {
-    display: flex;
-    flex-direction: column;
-    justify-content: start;
-    align-items: center;
+    padding-top: 40px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+section#home {
     height: 100vh;
-    padding: 20px;
-    margin: 0;
+}
+
+@media screen and (min-width: 900px) {
+    section {
+        padding-left: 15%;
+        padding-right: 15%;
+    }
 }
 
 .placeholder {
     color: #666;
 }
 
+pre {
+    line-break: anywhere;
+    white-space: pre-wrap;
+    margin: 0;
+}
+
 footer {
+    box-sizing: border-box;
     background-color: #333;
     color: white;
     text-align: center;
-    padding: 5px 0;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
+    padding: 5px 10px;
+
+    display: flex;
+    flex-direction: column;
 }
 
 .docs-item {
@@ -81,26 +92,13 @@ footer {
     align-items: center;
 }
 
-.faq-body {
-    justify-content: flex-start;
-    margin-top: 200px;
-    align-items: flex-start;
-    margin-left: 30%;
-    margin-bottom: 1%;
-}
-
 .list-div {
     margin-bottom: 0px;
-    width: 50%;
 }
 
 .list-header {
     font-weight: bold;
     margin-bottom: 5px;
-}
-
-.list-item {
-    margin-left: 20px;
 }
 
 .beta-form {
@@ -157,9 +155,7 @@ footer {
     text-align: right;
     font-size: smaller;
     font-style: italic;
-    position: absolute;
-    right: 10px;
-    bottom: 10px;
+    align-self: flex-end;
 }
 
 .docs-item ol ul {
