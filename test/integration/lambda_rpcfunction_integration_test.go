@@ -53,10 +53,8 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
-			{
-				Address: address,
-			},
+		Params: query.RpcRequestParams{
+			Address: address,
 		},
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -84,10 +82,8 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
-			{
-				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-			},
+		Params: query.RpcRequestParams{
+			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
 		},
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -101,27 +97,25 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		t.Fatal("wrong result count:", l)
 	}
 
-	// Invalid request: exactly 1 parameter object required
+	// Invalid request: no address
 
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{},
+		Params: query.RpcRequestParams{},
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaError(t, string(output.Payload), "exactly 1 parameter object required")
+	helpers.AssertLambdaError(t, string(output.Payload), "incorrect address")
 
 	// Invalid request: invalid address
 
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
-			{
-				Address: "0000000000000281526004018083600019166000",
-			},
+		Params: query.RpcRequestParams{
+			Address: "0000000000000281526004018083600019166000",
 		},
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -134,11 +128,9 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
-			{
-				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-				Page:    -1,
-			},
+		Params: query.RpcRequestParams{
+			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+			Page:    -1,
 		},
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -151,12 +143,10 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
-			{
-				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-				Page:    10,
-				PerPage: -1,
-			},
+		Params: query.RpcRequestParams{
+			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+			Page:    10,
+			PerPage: -1,
 		},
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -180,7 +170,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	// Invalid request: insane number as parameter
 
 	insane := big.NewInt(1 << 60)
-	rp = rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"tb_getAppearances\",\"params\":[{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}]}"}`, insane.String()))
+	rp = rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"tb_getAppearances\",\"params\":{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}}"}`, insane.String()))
 	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
 
 	t.Logf("result: %+v", response)
@@ -219,12 +209,10 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",
-			Params: []query.RpcRequestParams{
-				{
-					Address: appearances[0].Address,
-					PerPage: 1,
-					Page:    i,
-				},
+			Params: query.RpcRequestParams{
+				Address: appearances[0].Address,
+				PerPage: 1,
+				Page:    i,
 			},
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -253,12 +241,10 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",
-			Params: []query.RpcRequestParams{
-				{
-					Address: appearances[0].Address,
-					PerPage: perPage,
-					Page:    i,
-				},
+			Params: query.RpcRequestParams{
+				Address: appearances[0].Address,
+				PerPage: perPage,
+				Page:    i,
 			},
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)

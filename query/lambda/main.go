@@ -49,7 +49,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 	defer dbConn.Close(context.TODO())
 
-	limit := rpcRequest.Parameters().PerPage
+	limit := rpcRequest.Params.PerPage
 	if limit == 0 {
 		// Just in case we forgot to define the limit in configuration
 		limit = 20
@@ -61,7 +61,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		}
 	}
 
-	offset := rpcRequest.Parameters().Page - 1
+	offset := rpcRequest.Params.Page - 1
 	if offset < 0 {
 		offset = 0
 	}

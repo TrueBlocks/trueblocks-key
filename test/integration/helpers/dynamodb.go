@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
 	"github.com/TrueBlocks/trueblocks-key/quicknode/keyDynamodb"
 	"github.com/TrueBlocks/trueblocks-key/test/dbtest"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -53,7 +54,13 @@ func NewDynamoConnection() (done func() error, err error) {
 		terminateContainer()
 		return
 	}
-	dynamoTableName := "UsersQn"
+	var dynamoTableName string
+	if cnf, err := keyConfig.Get(""); err == nil {
+		dynamoTableName = cnf.QnProvision.TableName
+	} else {
+		terminateContainer()
+		return done, err
+	}
 	dynamoClient := dynamodb.NewFromConfig(awsConfig, func(o *dynamodb.Options) {
 		// When running inside sam local (in tests), use local endpoint
 		o.BaseEndpoint = aws.String(endpoint)
