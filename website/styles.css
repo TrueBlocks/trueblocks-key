@@ -88,6 +88,37 @@ footer {
     flex-direction: column;
 }
 
+.social-links {
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    display: flex;
+    justify-content: space-around;
+    width: 400px;
+}
+
+footer .social-links a {
+    color: white;
+    text-decoration: none;
+}
+
+#home .social-links svg {
+    height: 26px;
+}
+
+footer .social-links svg {
+    height: 20px;
+}
+
+#home .social-links {
+    padding-top: 20px;
+    margin: auto;
+}
+
+#home .social-links a {
+    color: black;
+}
+
 .docs-item {
     margin-bottom: 20px;
     align-items: center;
