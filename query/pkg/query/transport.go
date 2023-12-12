@@ -14,6 +14,7 @@ import (
 var ErrInvalidMethod = errors.New("invalid method")
 var ErrAddressIncorrect = errors.New("incorrect address")
 var ErrIncorrectPagePerPage = errors.New("incorrect page or perPage")
+var ErrWrongNumOfParameters = errors.New("exactly 1 parameter object required")
 
 // MaxSafePerPage is the largest sane value of PerPage that we would allow users to use
 const MaxSafePerPage = 10000
@@ -22,9 +23,9 @@ const MaxSafePerPage = 10000
 const MaxSafePage = 100000
 
 type RpcRequest struct {
-	Id     int              `json:"id"`
-	Method string           `json:"method"`
-	Params RpcRequestParams `json:"params"`
+	Id     int                `json:"id"`
+	Method string             `json:"method"`
+	Params []RpcRequestParams `json:"params"`
 }
 
 type RpcRequestParams struct {
@@ -33,8 +34,12 @@ type RpcRequestParams struct {
 	PerPage int    `json:"perPage"`
 }
 
+func (r *RpcRequest) Parameters() RpcRequestParams {
+	return r.Params[0]
+}
+
 func (r *RpcRequest) Address() string {
-	return strings.ToLower(r.Params.Address)
+	return strings.ToLower(r.Params[0].Address)
 }
 
 func (r *RpcRequest) Validate() error {
@@ -43,23 +48,27 @@ func (r *RpcRequest) Validate() error {
 		return ErrInvalidMethod
 	}
 
+	if len(r.Params) != 1 {
+		return ErrWrongNumOfParameters
+	}
+
 	// Validate address
-	if len(r.Params.Address) != 42 {
+	if len(r.Parameters().Address) != 42 {
 		return ErrAddressIncorrect
 	}
-	if r.Params.Address[:2] != "0x" {
+	if r.Parameters().Address[:2] != "0x" {
 		return ErrAddressIncorrect
 	}
-	if _, err := hex.DecodeString(r.Params.Address[2:]); err != nil {
+	if _, err := hex.DecodeString(r.Parameters().Address[2:]); err != nil {
 		return ErrAddressIncorrect
 	}
 
 	// Validate pagination
-	if r.Params.Page < 0 || r.Params.PerPage < 0 {
+	if r.Parameters().Page < 0 || r.Parameters().PerPage < 0 {
 		return ErrIncorrectPagePerPage
 	}
 
-	if r.Params.Page > MaxSafePage || r.Params.PerPage > MaxSafePerPage {
+	if r.Parameters().Page > MaxSafePage || r.Parameters().PerPage > MaxSafePerPage {
 		return ErrIncorrectPagePerPage
 	}
 
