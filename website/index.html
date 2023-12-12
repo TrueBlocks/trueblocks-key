@@ -87,10 +87,14 @@
             <div class="list-div">
                 <h3 class="list-header">Appearance Index API (<a href="#home">currently in beta</a>)</h3>
                 <p class="list-item">
-                    This endpoint returns a complete historical list of "appearances" (<b>block number,
-                        transaction Id</b>) for a given address. This includes regular transactions,
-                    internal transactions, token transfers, withdrawals, etc. Basically
-                    "Everything that ever happened." Includes date/time queries.
+                    This endpoint returns a complete historical list of "appearances"
+                    (<b>block number, transaction Id</b>) for a given address. This includes
+                    regular transactions, internal transactions, token transfers, withdrawals,
+                    etc. We find more appearances than both <a
+                        href="https://tjayrush.medium.com/how-accurate-is-etherscan-83dab12eeedd"
+                        target=_blank>EtherScan</a>
+                    and <a href="https://medium.com/coinmonks/trueblocks-covalent-comparison-7b42f3d1e6f7"
+                        target=_blank>Covalent</a> (combined!). Includes date/time queries.
                     (<a target=_blank href="https://trueblocks.io">More
                         info...</a>)
                 </p>
@@ -100,8 +104,8 @@
                 <p class="list-item">
                     Given any Ethereum address, this endpoint returns a list of all other addresses
                     that appeared in the same transactions as the given address. If one were to ever
-                    solve the Sybil problem, the solution would start with this list of neighbors.
-                    (<a target=_blank href="https://trueblocks.io">More info...</a>)
+                    solve the Sybil problem, the solution would start with this list of neighbors. (<a target=_blank
+                        href="https://www.tokenomics.io/gitcoin">More info...</a>)
                 </p>
             </div>
             <div class="list-div">
@@ -122,8 +126,8 @@
                 <h3 class="list-header">Custom APIs (coming mid-2024)</h3>
                 <p class="list-item">
                     Do you have a need in mind that doesn't appear here? We have you covered.
-                    We can index anything including custom data extraction customized for your
-                    smart contract (or any needs). (<a target=_blank href="https://trueblocks.io">More
+                    We can index anything including data extraction customized for your
+                    smart contract (or any) needs. (<a target=_blank href="https://trueblocks.io">More
                         info...</a>)
                 </p>
             </div>
@@ -357,13 +361,6 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"tb_getAppearances","params":[{se
             </p>
 
         </div>
-    </section>
-
-    <section id="about" class="faq-body">
-        <h2>About</h2>
-        <pre>
-This is about us
-        </pre>
     </section>
 
     <section id="terms" class="faq-body">
