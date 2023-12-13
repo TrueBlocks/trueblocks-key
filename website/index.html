@@ -23,9 +23,11 @@
         </div>
 
         <p class="tagline">
-            TrueBlocks unique indexing through an API
+            Why do we have a perfect on-chain ledger and a broken off-chain one?
         </p>
-
+        <p class="tagline">
+            "Everything that ever happened anywhere on the chain!"
+        </p>
         <div id="mlb2-10007238" class="ml-form-embedContainer ml-subscribe-form ml-subscribe-form-10007238">
             <div class="ml-form-align-center ">
                 <div class="ml-form-embedWrapper embedForm">
@@ -44,7 +46,7 @@
                             </div>
                             <input type="hidden" name="ml-submit" value="1">
                             <div class="ml-form-embedSubmit">
-                                <button type="submit" class="primary">Join Our Closed Beta</button>
+                                <button type="submit" class="primary">Join Closed Beta</button>
                                 <button disabled="disabled" style="display: none;" type="button" class="loading">
                                     <div class="ml-form-embedSubmitLoad"></div>
                                     <span class="sr-only">Loading...</span>
@@ -133,7 +135,7 @@
                 <h3 class="list-header">Appearance Index API (<a href="#home">currently in beta</a>)</h3>
                 <p class="list-item">
                     This endpoint returns a complete historical list of "appearances"
-                    (<b>block number, transaction Id</b>) for a given address. This includes
+                    (<b>block number, transaction Id</b>) for a given Ethereum address. This includes
                     regular transactions, internal transactions, token transfers, withdrawals,
                     etc. We find more appearances than both <a
                         href="https://tjayrush.medium.com/how-accurate-is-etherscan-83dab12eeedd"
@@ -328,8 +330,9 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"tb_getAppearances","params":[{se
         <div class="list-div">
             <h3 class="list-header">What is Unique about TrueBlocks Core/Unchained Index?</h3>
             <p class="list-item">
-                The Unchained Index is optimized for address-based queries. (In this sense, it's NOT
-                a block explorer--it's an account explorer.) This comes with a number of unique qualities:
+                The Unchained Index is optimized for address-based queries on consumer-grade
+                hardware. (In this sense, it's NOT a block explorer--it's an account explorer.)
+                This comes with a number of unique qualities:
                 - it can produce a complete, reconciliable history of activity for any address
                 - it runs locally against a locall-running node, there it provides trustless access to the data
                 - it's small which means it runs on consumer-grade hardware
