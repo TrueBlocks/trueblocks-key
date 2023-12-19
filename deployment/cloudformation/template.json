@@ -148,10 +148,10 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "88aeed42f63be831093fc13b63d9ad40"
+                    "S3Key": "e16720102ee1c23630481725eb2209d9"
                 },
                 "Handler": "healthcheck",
-                "MemorySize": 512,
+                "MemorySize": 128,
                 "Role": {
                     "Fn::GetAtt": [
                         "QnHealthCheckFunctionRole",
@@ -362,10 +362,10 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "c34714a740a0bc2a5d3989a4f6533ee1"
+                    "S3Key": "bc0b32907c30cc3317075f72e30921aa"
                 },
                 "Handler": "authorizer",
-                "MemorySize": 512,
+                "MemorySize": 128,
                 "Role": {
                     "Fn::GetAtt": [
                         "QnAuthorizerRole",
@@ -607,10 +607,10 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "1700f2f6832029cd1362fa5f7bf18c6c"
+                    "S3Key": "ca656ef194316d36fa0fcbd7ab7ac76f"
                 },
                 "Handler": "provision",
-                "MemorySize": 1024,
+                "MemorySize": 128,
                 "Role": {
                     "Fn::GetAtt": [
                         "QnProvisionFunctionRole",
@@ -813,10 +813,10 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "9e02fa70ca2dd6e021968da5aeb2ff95"
+                    "S3Key": "349a743ea00b057584bc61cfc67adfe9"
                 },
                 "Handler": "query",
-                "MemorySize": 1024,
+                "MemorySize": 128,
                 "Role": {
                     "Fn::GetAtt": [
                         "RpcFunctionRole",
@@ -1236,10 +1236,10 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "7144e26c30c827a2310a27b184eb7bdb"
+                    "S3Key": "c885bb5c6b65c382b2c908a91f0ca2a1"
                 },
                 "Handler": "consume",
-                "MemorySize": 512,
+                "MemorySize": 128,
                 "Role": {
                     "Fn::GetAtt": [
                         "AppearancesQueueConsumeRole",

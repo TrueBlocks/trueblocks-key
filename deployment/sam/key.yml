@@ -136,7 +136,7 @@ Resources:
       - IndexDatabase
       - AppearancesQueue
     Properties:
-      MemorySize: 512
+      MemorySize: 128
       Runtime: go1.x
       Handler: consume
       CodeUri: ../../queue/consume/lambda
@@ -282,7 +282,7 @@ Resources:
     DependsOn:
       - QnProvisionSecret
     Properties:
-      MemorySize: 512
+      MemorySize: 128
       Runtime: go1.x
       Handler: authorizer
       CodeUri: ../../quicknode/authorizer/lambda
@@ -308,7 +308,7 @@ Resources:
   QnHealthCheckFunction:
     Type: AWS::Serverless::Function
     Properties:
-      MemorySize: 512
+      MemorySize: 128
       Runtime: go1.x
       Handler: healthcheck
       CodeUri: ../../quicknode/healthcheck/lambda
@@ -358,7 +358,7 @@ Resources:
   QnProvisionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      MemorySize: 1024
+      MemorySize: 128
       Runtime: go1.x
       Handler: provision
       CodeUri: ../../quicknode/provision/lambda
@@ -430,7 +430,7 @@ Resources:
   RpcFunction:
     Type: AWS::Serverless::Function
     Properties:
-      MemorySize: 1024
+      MemorySize: 128
       Runtime: go1.x
       Handler: query
       CodeUri: ../../query/lambda
