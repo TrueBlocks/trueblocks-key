@@ -148,7 +148,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "6d8eed6fe0934796959edac0596cdac4"
+                    "S3Key": "88aeed42f63be831093fc13b63d9ad40"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 512,
@@ -342,6 +342,15 @@
                 "SamResourceId": "RoutePublicSubnet"
             }
         },
+        "DevOpsDbUploadBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": "key-devops-db-upload"
+            },
+            "Metadata": {
+                "SamResourceId": "DevOpsDbUploadBucket"
+            }
+        },
         "QnAuthorizer": {
             "Type": "AWS::Lambda::Function",
             "DependsOn": [
@@ -353,7 +362,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "852e82416e274c2bfcd1ca59e16b0943"
+                    "S3Key": "c34714a740a0bc2a5d3989a4f6533ee1"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 512,
@@ -546,6 +555,50 @@
                 "BillingMode": "PAY_PER_REQUEST"
             }
         },
+        "RDSImportFromS3Role": {
+            "Type": "AWS::IAM::Role",
+            "DependsOn": [
+                "DevOpsDbUploadBucket"
+            ],
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": {
+                        "Action": "sts:AssumeRole",
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": "rds.amazonaws.com"
+                        }
+                    }
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "rdsImportFromS3",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:GetObject",
+                                        "s3:ListBucket"
+                                    ],
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "DevOpsDbUploadBucket",
+                                            "Arn"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "SamResourceId": "RDSImportFromS3Role"
+            }
+        },
         "QnProvisionFunction": {
             "Type": "AWS::Lambda::Function",
             "Metadata": {
@@ -554,7 +607,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "8b737fc6fe7bc86844dda521508e6b25"
+                    "S3Key": "1700f2f6832029cd1362fa5f7bf18c6c"
                 },
                 "Handler": "provision",
                 "MemorySize": 1024,
@@ -729,6 +782,29 @@
                 "SamResourceId": "privateLambdaSubnet2"
             }
         },
+        "IndexDatabaseEnhancedMonitoringRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2008-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "monitoring.rds.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "IndexDatabaseEnhancedMonitoringRole"
+            }
+        },
         "RpcFunction": {
             "Type": "AWS::Lambda::Function",
             "Metadata": {
@@ -737,7 +813,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "835b40b5981daf45d45db24699c076e6"
+                    "S3Key": "9e02fa70ca2dd6e021968da5aeb2ff95"
                 },
                 "Handler": "query",
                 "MemorySize": 1024,
@@ -1160,7 +1236,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "93cb3ccf69b86a6fa7757986ffd16b89"
+                    "S3Key": "7144e26c30c827a2310a27b184eb7bdb"
                 },
                 "Handler": "consume",
                 "MemorySize": 512,
@@ -1235,19 +1311,38 @@
                 ]
             }
         },
+        "IndexDatabaseParameterGroup": {
+            "Type": "AWS::RDS::DBParameterGroup",
+            "Properties": {
+                "Description": "Index database parameters",
+                "Family": "postgres15",
+                "Parameters": {
+                    "work_mem": 16384
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "IndexDatabaseParameterGroup"
+            }
+        },
         "IndexDatabase": {
             "Type": "AWS::RDS::DBInstance",
             "DependsOn": [
+                "RDSImportFromS3Role",
                 "RDSSecurityGroup",
                 "RDSSubnetGroup"
             ],
             "Properties": {
+                "BackupRetentionPeriod": 4,
                 "DBInstanceIdentifier": {
                     "Fn::Sub": "${AWS::StackName}-index"
                 },
-                "DBInstanceClass": "db.t3.micro",
+                "DBInstanceClass": "db.t4g.medium",
+                "DBParameterGroupName": {
+                    "Ref": "IndexDatabaseParameterGroup"
+                },
                 "Engine": "postgres",
-                "AllocatedStorage": "20",
+                "AllocatedStorage": "400",
+                "StorageType": "gp3",
                 "DBName": {
                     "Ref": "RDSDBName"
                 },
@@ -1261,6 +1356,24 @@
                 "VPCSecurityGroups": [
                     {
                         "Ref": "RDSSecurityGroup"
+                    }
+                ],
+                "MonitoringInterval": 10,
+                "MonitoringRoleArn": {
+                    "Fn::GetAtt": [
+                        "IndexDatabaseEnhancedMonitoringRole",
+                        "Arn"
+                    ]
+                },
+                "AssociatedRoles": [
+                    {
+                        "FeatureName": "s3Import",
+                        "RoleArn": {
+                            "Fn::GetAtt": [
+                                "RDSImportFromS3Role",
+                                "Arn"
+                            ]
+                        }
                     }
                 ]
             },

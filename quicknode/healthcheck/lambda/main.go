@@ -28,7 +28,6 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 			return
 		}
 	}
-	defer dbConn.Close(ctx)
 
 	response = events.APIGatewayProxyResponse{
 		Body:       `{ "status": "ok" }`,
@@ -75,5 +74,7 @@ func setupDbConnection(ctx context.Context) (err error) {
 }
 
 func main() {
+	defer dbConn.Close(context.TODO())
+
 	lambda.Start(HandleRequest)
 }

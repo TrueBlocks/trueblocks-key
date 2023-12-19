@@ -10,8 +10,8 @@ import (
 )
 
 type Appearance struct {
-	BlockNumber   uint32
-	TransactionId uint32
+	BlockNumber   uint32 `json:"blockNumber"`
+	TransactionId uint32 `json:"transactionId"`
 }
 
 func FetchAppearances(ctx context.Context, c *Connection, address string, limit uint, offset uint) (results []Appearance, err error) {
