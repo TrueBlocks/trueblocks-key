@@ -51,7 +51,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	limit := rpcRequest.Parameters().PerPage
 	if limit == 0 {
 		// Just in case we forgot to define the limit in configuration
-		limit = 20
+		limit = 1000
 	}
 
 	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {
