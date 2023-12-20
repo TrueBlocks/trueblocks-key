@@ -450,6 +450,7 @@ Resources:
               Ref: QnApi
       Environment:
         Variables:
+          KY_QUERY_MAXLIMIT: 1000
           KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
           KY_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
           KY_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName

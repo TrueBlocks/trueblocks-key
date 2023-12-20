@@ -148,7 +148,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "e16720102ee1c23630481725eb2209d9"
+                    "S3Key": "9aeabc68e51b60b7690dca817f8352f6"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 128,
@@ -362,7 +362,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "bc0b32907c30cc3317075f72e30921aa"
+                    "S3Key": "e5883ab7f187a5f29750b334047c3474"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 128,
@@ -607,7 +607,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "ca656ef194316d36fa0fcbd7ab7ac76f"
+                    "S3Key": "281dbb01491fa70f77f8fe06de688b91"
                 },
                 "Handler": "provision",
                 "MemorySize": 128,
@@ -813,7 +813,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "349a743ea00b057584bc61cfc67adfe9"
+                    "S3Key": "6342ccc8c4ad5ad20d5d481adae5d6d4"
                 },
                 "Handler": "query",
                 "MemorySize": 128,
@@ -842,6 +842,7 @@
                 },
                 "Environment": {
                     "Variables": {
+                        "KY_QUERY_MAXLIMIT": 1000,
                         "KY_DATABASE_DEFAULT_HOST": {
                             "Fn::GetAtt": [
                                 "IndexDatabase",
@@ -1236,7 +1237,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "c885bb5c6b65c382b2c908a91f0ca2a1"
+                    "S3Key": "b83bc7d652ea7fff098291c12e2e1d33"
                 },
                 "Handler": "consume",
                 "MemorySize": 128,

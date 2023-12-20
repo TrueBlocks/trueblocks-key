@@ -15,6 +15,8 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
+const defaultLimit = 100
+
 var ErrInternal = errors.New(http.StatusText(http.StatusInternalServerError))
 
 var cnf *keyConfig.ConfigFile
@@ -51,11 +53,11 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	limit := rpcRequest.Parameters().PerPage
 	if limit == 0 {
 		// Just in case we forgot to define the limit in configuration
-		limit = 1000
+		limit = defaultLimit
 	}
 
 	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {
-		if int(confLimit) < limit {
+		if limit > int(confLimit) {
 			limit = int(confLimit)
 		}
 	}
