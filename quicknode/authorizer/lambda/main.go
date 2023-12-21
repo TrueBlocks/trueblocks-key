@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
 	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
 	qnaccount "github.com/TrueBlocks/trueblocks-key/quicknode/account"
 	keyDynamodb "github.com/TrueBlocks/trueblocks-key/quicknode/keyDynamodb"
@@ -52,34 +51,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		})
 	}
 
-	// Create dummy request only so we can use its BasicAuth method
-	// to check if QN Basic Auth is correct
-	r, err := http.NewRequest("get", "/", nil)
-	if err != nil {
-		log.Println("creating dummy request:", err)
-		return
-	}
-	r.Header.Add("Authorization", headers.Get("Authorization"))
-	username, password, ok := r.BasicAuth()
-	if !ok {
-		err = errors.New("cannot parse auth header")
-		log.Println(err.Error())
-		return
-	}
-
-	secret, err := awshelper.FetchUsernamePasswordSecret(cnf.QnProvision.AwsSecret)
-	if err != nil {
-		log.Println("cannot read secret")
-		return
-	}
-
-	if secret.Username != username || secret.Password != password {
-		log.Println("QN auth header invalid")
-		err = errUnauthorized
-		return
-	}
-
-	// QN Basic Auth is correct, we can now check account credentials
+	// check account credentials
 
 	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
 	account.QuicknodeId = headers.Get("x-quicknode-id")

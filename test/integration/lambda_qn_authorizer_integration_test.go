@@ -99,38 +99,10 @@ func TestLambdaQnAuthorizer(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *authorizerRequest
 	var output *lambda.InvokeOutput
-	var basicAuth string
-
-	// Invalid: missing Authorization header
-
-	request = newAuthorizerRequest(map[string]string{})
-	output = helpers.InvokeLambda(t, client, "QnAuthorizer", request)
-	helpers.AssertLambdaError(t, string(output.Payload), "cannot parse auth header")
-
-	// Invalid: wrong Authorization header
-
-	basicAuth, err = basicAuthValue(&awshelper.UsernamePasswordSecret{
-		Username: "wrong",
-		Password: "value",
-	})
-	if err != nil {
-		t.Fatal("getting basic auth value:", err)
-	}
-	request = newAuthorizerRequest(map[string]string{
-		"Authorization": basicAuth,
-	})
-	output = helpers.InvokeLambda(t, client, "QnAuthorizer", request)
-	helpers.AssertLambdaError(t, string(output.Payload), "Unauthorized")
 
 	// Invalid: missing x-quicknode-id header
 
-	basicAuth, err = basicAuthValue(awshelper.TestSecret)
-	if err != nil {
-		t.Fatal("getting basic auth value:", err)
-	}
-	request = newAuthorizerRequest(map[string]string{
-		"Authorization": basicAuth,
-	})
+	request = newAuthorizerRequest(map[string]string{})
 	output = helpers.InvokeLambda(t, client, "QnAuthorizer", request)
 	helpers.AssertLambdaError(t, string(output.Payload), "Unauthorized")
 
@@ -152,12 +124,7 @@ func TestLambdaQnAuthorizer(t *testing.T) {
 
 	// Invalid: non-existing account
 
-	basicAuth, err = basicAuthValue(awshelper.TestSecret)
-	if err != nil {
-		t.Fatal("getting basic auth value:", err)
-	}
 	request = newAuthorizerRequest(map[string]string{
-		"Authorization":  basicAuth,
 		"x-quicknode-id": "not-found",
 	})
 	output = helpers.InvokeLambda(t, client, "QnAuthorizer", request)
@@ -165,12 +132,7 @@ func TestLambdaQnAuthorizer(t *testing.T) {
 
 	// Valid
 
-	basicAuth, err = basicAuthValue(awshelper.TestSecret)
-	if err != nil {
-		t.Fatal("getting basic auth value:", err)
-	}
 	request = newAuthorizerRequest(map[string]string{
-		"Authorization":  basicAuth,
 		"x-quicknode-id": provisionRequest.Account.QuicknodeId,
 		"x-instance-id":  provisionRequest.Account.EndpointId,
 		"x-qn-chain":     provisionRequest.Account.Chain,

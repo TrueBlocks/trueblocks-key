@@ -14,6 +14,9 @@ test:
 	sam build --template deployment/sam/key.yml
 	go test -timeout 5m -tags integration ./test/integration
 
+build:
+	sam build --config-env production --template deployment/sam/key.yml
+
 deploy:
 # deploys the whole stack to AWS. It uses settings saved in `samconfig.toml`.
 # If that file is missing, you have to call `sam deploy --guided` first.
