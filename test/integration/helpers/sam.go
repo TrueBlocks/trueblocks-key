@@ -39,8 +39,6 @@ func StartSam() (cancelSam context.CancelFunc, wait func() error) {
 		"start-lambda",
 		"--profile",
 		awsProfile,
-		"--config-env",
-		"production",
 		"--docker-network",
 		dockerNetwork,
 		"--skip-pull-image",
