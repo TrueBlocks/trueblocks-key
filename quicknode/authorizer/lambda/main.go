@@ -23,6 +23,12 @@ var dynamoClient *dynamodb.Client
 var errUnauthorized = errors.New("Unauthorized")
 
 func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerRequestTypeRequest) (result events.APIGatewayCustomAuthorizerResponse, err error) {
+	// https://github.com/aws/aws-lambda-go/issues/117
+	headers := http.Header{}
+	for header, value := range event.Headers {
+		headers.Add(header, value)
+	}
+
 	if cnf == nil {
 		if cnf, err = keyConfig.Get(""); err != nil {
 			log.Println("cannot read configuration")
@@ -53,7 +59,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		log.Println("creating dummy request:", err)
 		return
 	}
-	r.Header.Add("Authorization", event.Headers["Authorization"])
+	r.Header.Add("Authorization", headers.Get("Authorization"))
 	username, password, ok := r.BasicAuth()
 	if !ok {
 		err = errors.New("cannot parse auth header")
@@ -76,7 +82,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 	// QN Basic Auth is correct, we can now check account credentials
 
 	account := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
-	account.QuicknodeId = event.Headers["x-quicknode-id"]
+	account.QuicknodeId = headers.Get("x-quicknode-id")
 
 	if account.QuicknodeId == "" {
 		log.Println("empty QuicknodeId")
@@ -97,9 +103,9 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		return
 	}
 
-	endpoint := event.Headers["x-instance-id"]
-	chain := event.Headers["x-qn-chain"]
-	network := event.Headers["x-qn-network"]
+	endpoint := headers.Get("x-instance-id")
+	chain := headers.Get("x-qn-chain")
+	network := headers.Get("x-qn-network")
 
 	if chain == "" || network == "" {
 		log.Println("empty chain or network", chain, network)
