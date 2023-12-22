@@ -6,6 +6,7 @@ services:
     image: postgres
     restart: always
     environment:
+      POSTGRES_DB: index
       POSTGRES_PASSWORD: example
     volumes:
       - import:/import
