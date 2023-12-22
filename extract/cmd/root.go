@@ -25,7 +25,7 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringP("config_path", "C", "", "directory with configuration file")
+	rootCmd.PersistentFlags().StringP("config_path", "C", "", "configuration file")
 	rootCmd.PersistentFlags().StringP("database", "D", "default", "database configuration to use")
 }
 
