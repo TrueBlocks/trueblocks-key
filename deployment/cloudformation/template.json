@@ -27,6 +27,23 @@
             "Default": "key_index"
         }
     },
+    "Outputs": {
+        "AppearancesQueueIngestUserAccessKey": {
+            "Description": "Access key to ingest new queue items",
+            "Value": {
+                "Ref": "AppearancesQueueIngestUserKey"
+            }
+        },
+        "AppearancesQueueIngestUserSecretKey": {
+            "Description": "Secret key to ingest new queue items",
+            "Value": {
+                "Fn::GetAtt": [
+                    "AppearancesQueueIngestUserKey",
+                    "SecretAccessKey"
+                ]
+            }
+        }
+    },
     "Resources": {
         "QnApiCloudWatchRole": {
             "Type": "AWS::IAM::Role",
@@ -130,14 +147,35 @@
                 }
             }
         },
-        "QnApiDeploymentb12035651d": {
-            "Type": "AWS::ApiGateway::Deployment",
+        "AppearancesQueueIngestUser": {
+            "Type": "AWS::IAM::User",
             "Properties": {
-                "Description": "RestApi deployment id: b12035651deadc74233ff535b31c439848714eb3",
-                "RestApiId": {
-                    "Ref": "QnApi"
-                },
-                "StageName": "Stage"
+                "UserName": "appearances-queue-ingester",
+                "Policies": [
+                    {
+                        "PolicyName": "appearances-queue-ingest-policy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "sqs:SendMessage"
+                                    ],
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "AppearancesQueue",
+                                            "Arn"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "SamResourceId": "AppearancesQueueIngestUser"
             }
         },
         "QnHealthCheckFunction": {
@@ -148,7 +186,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "ed0fbf493fc4e371a26008475acd8915"
+                    "S3Key": "689dcdf7a36662284e0726bf38bdf09d"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 128,
@@ -351,6 +389,41 @@
                 "SamResourceId": "DevOpsDbUploadBucket"
             }
         },
+        "AppearancesQueueStuckMessageAlert": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmName": "Appearances Queue Message Stuck",
+                "AlarmDescription": "Alarms if the SQS Queue has messages in it for too long",
+                "AlarmActions": [
+                    {
+                        "Ref": "AppearancesQueueStuckMessageAlertNotification"
+                    }
+                ],
+                "ComparisonOperator": "GreaterThanThreshold",
+                "Dimensions": [
+                    {
+                        "Name": "QueueName",
+                        "Value": {
+                            "Fn::GetAtt": [
+                                "AppearancesQueue",
+                                "QueueName"
+                            ]
+                        }
+                    }
+                ],
+                "EvaluationPeriods": 1,
+                "MetricName": "ApproximateAgeOfOldestMessage",
+                "Namespace": "AWS/SQS",
+                "Period": 3600,
+                "Statistic": "Maximum",
+                "Threshold": 14400,
+                "TreatMissingData": "notBreaching",
+                "Unit": "Seconds"
+            },
+            "Metadata": {
+                "SamResourceId": "AppearancesQueueStuckMessageAlert"
+            }
+        },
         "QnAuthorizer": {
             "Type": "AWS::Lambda::Function",
             "DependsOn": [
@@ -362,7 +435,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "2fe1ad0fe55ca7fcba59a7a4a57a33e7"
+                    "S3Key": "366df3ffaadf9ee775734253ff7eb69c"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 128,
@@ -398,6 +471,30 @@
                 "Architectures": [
                     "x86_64"
                 ]
+            }
+        },
+        "QnApiDeployment6bca1c444c": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+                "Description": "RestApi deployment id: 6bca1c444cc4645ace89679b99f4f13165146259",
+                "RestApiId": {
+                    "Ref": "QnApi"
+                },
+                "StageName": "Stage"
+            }
+        },
+        "AppearancesQueueStuckMessageAlertNotification": {
+            "Type": "AWS::SNS::Topic",
+            "Properties": {
+                "Subscription": [
+                    {
+                        "Protocol": "email",
+                        "Endpoint": "dawid@quickblocks.io"
+                    }
+                ]
+            },
+            "Metadata": {
+                "SamResourceId": "AppearancesQueueStuckMessageAlertNotification"
             }
         },
         "RpcFunctionApiEventPermissionStage": {
@@ -514,7 +611,7 @@
                     "Format": "$context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] \"$context.httpMethod $context.resourcePath $context.protocol\" $context.status $context.responseLength $context.requestId"
                 },
                 "DeploymentId": {
-                    "Ref": "QnApiDeploymentb12035651d"
+                    "Ref": "QnApiDeployment6bca1c444c"
                 },
                 "RestApiId": {
                     "Ref": "QnApi"
@@ -607,7 +704,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "b51cfea60edac2778c4fe6fa8abdb04c"
+                    "S3Key": "ffd9736be42eac883e6bce1b9fa78cda"
                 },
                 "Handler": "provision",
                 "MemorySize": 128,
@@ -813,7 +910,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "25ab939196f83c073851626bc172688e"
+                    "S3Key": "5bd012efa7efd4fb3dd0a16aa5b63e47"
                 },
                 "Handler": "query",
                 "MemorySize": 128,
@@ -1237,7 +1334,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "b1a3aadbd329569c02b441780c336464"
+                    "S3Key": "899ae5d4c5b3fda1673230baf9c68f11"
                 },
                 "Handler": "consume",
                 "MemorySize": 128,
@@ -1312,19 +1409,6 @@
                 ]
             }
         },
-        "IndexDatabaseParameterGroup": {
-            "Type": "AWS::RDS::DBParameterGroup",
-            "Properties": {
-                "Description": "Index database parameters",
-                "Family": "postgres15",
-                "Parameters": {
-                    "work_mem": 16384
-                }
-            },
-            "Metadata": {
-                "SamResourceId": "IndexDatabaseParameterGroup"
-            }
-        },
         "IndexDatabase": {
             "Type": "AWS::RDS::DBInstance",
             "DependsOn": [
@@ -1380,6 +1464,19 @@
             },
             "Metadata": {
                 "SamResourceId": "IndexDatabase"
+            }
+        },
+        "IndexDatabaseParameterGroup": {
+            "Type": "AWS::RDS::DBParameterGroup",
+            "Properties": {
+                "Description": "Index database parameters",
+                "Family": "postgres15",
+                "Parameters": {
+                    "work_mem": 16384
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "IndexDatabaseParameterGroup"
             }
         },
         "QnAuthorizerRole": {
@@ -1695,7 +1792,7 @@
                             "name": "Unused",
                             "x-amazon-apigateway-authorizer": {
                                 "type": "request",
-                                "identitySource": "method.request.header.Authorization, method.request.header.x-quicknode-id, method.request.header.x-instance-id, method.request.header.x-qn-chain, method.request.header.x-qn-network",
+                                "identitySource": "method.request.header.x-quicknode-id, method.request.header.x-instance-id, method.request.header.x-qn-chain, method.request.header.x-qn-network",
                                 "authorizerUri": {
                                     "Fn::Sub": [
                                         "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${__FunctionArn__}/invocations",
@@ -1757,6 +1854,18 @@
                     }
                 },
                 "ApiKeySourceType": "AUTHORIZER"
+            }
+        },
+        "AppearancesQueueIngestUserKey": {
+            "Type": "AWS::IAM::AccessKey",
+            "Properties": {
+                "Status": "Active",
+                "UserName": {
+                    "Ref": "AppearancesQueueIngestUser"
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "AppearancesQueueIngestUserKey"
             }
         }
     }

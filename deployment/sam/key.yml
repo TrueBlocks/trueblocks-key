@@ -30,6 +30,14 @@ Globals:
     Layers:
       - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
 
+Outputs:
+  AppearancesQueueIngestUserAccessKey:
+    Description: Access key to ingest new queue items
+    Value: !Ref AppearancesQueueIngestUserKey
+  AppearancesQueueIngestUserSecretKey:
+    Description: Secret key to ingest new queue items
+    Value: !GetAtt AppearancesQueueIngestUserKey.SecretAccessKey
+
 Resources:
   ###
   # Databases
@@ -130,6 +138,9 @@ Resources:
   # Appearances Queue
   ###
 
+  AppearancesQueue:
+    Type: AWS::SQS::Queue
+
   AppearancesQueueConsume:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -173,8 +184,60 @@ Resources:
                 - secretsmanager:ListSecretVersionIds
               Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
 
-  AppearancesQueue:
-    Type: AWS::SQS::Queue
+  # User used to ingest queue items programmatically
+
+  AppearancesQueueIngestUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: appearances-queue-ingester
+      Policies:
+        - PolicyName: appearances-queue-ingest-policy
+          PolicyDocument:
+            Version: '2012-10-17' # Policy Document
+            Statement:
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource: !GetAtt AppearancesQueue.Arn
+
+  # User's keys (secret key can be fetched using !GetAtt SecretAccessKey)
+
+  AppearancesQueueIngestUserKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      Status: Active
+      UserName: !Ref AppearancesQueueIngestUser
+
+  # Queue alerts
+
+  AppearancesQueueStuckMessageAlert:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: Appearances Queue Message Stuck
+      AlarmDescription: Alarms if the SQS Queue has messages in it for too long
+      AlarmActions:
+        - !Ref AppearancesQueueStuckMessageAlertNotification
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AppearancesQueue.QueueName
+      EvaluationPeriods: 1
+      MetricName: ApproximateAgeOfOldestMessage
+      Namespace: AWS/SQS
+      Period: 3600 # 1 hour
+      Statistic: Maximum
+      Threshold: 14400 # 4 hours
+      TreatMissingData: notBreaching
+      Unit: Seconds
+
+  # Queue alerts notifications
+
+  AppearancesQueueStuckMessageAlertNotification:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: "email"
+          Endpoint: "dawid@quickblocks.io"
 
   ###
   # API

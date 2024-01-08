@@ -31,7 +31,7 @@ deploy:
 # creating the resources (we just want to translate the template, nothing more). We also have to store the translated template's
 # ARN in a temp file
 	@echo "Translating SAM template to CloudFormation..."
-	sam deploy --template deployment/sam/packaged_key_template.yml  --config-env production --profile key-stackset-deployer --region us-east-1 --no-execute-changeset --stack-name key-test --resolve-s3 --capabilities CAPABILITY_IAM \
+	sam deploy --template deployment/sam/packaged_key_template.yml  --config-env production --profile key-stackset-deployer --region us-east-1 --no-execute-changeset --stack-name key-test --resolve-s3 --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
 	| tee \
 	| grep --only-matching 'arn:aws:cloudformation:[a-z0-9\-]\+:\d\+:changeSet.*' - \
 	> /tmp/key_cf_arn.txt

@@ -5,7 +5,7 @@ resolve_s3 = true
 s3_prefix = "key-dev"
 region = "us-east-1"
 confirm_changeset = true
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 image_repositories = []
 
 
@@ -16,5 +16,5 @@ s3_prefix = "key-prod"
 region = "us-east-1"
 profile = "key-stackset-deployer"
 confirm_changeset = true
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 image_repositories = []

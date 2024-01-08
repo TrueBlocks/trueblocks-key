@@ -16,6 +16,7 @@ Resources:
       Capabilities:
         - CAPABILITY_AUTO_EXPAND
         - CAPABILITY_IAM
+        - CAPABILITY_NAMED_IAM
       TemplateURL: ../cloudformation/template.json
       StackInstancesGroup:
         - DeploymentTargets:
