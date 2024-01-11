@@ -538,6 +538,65 @@ Resources:
               Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
 
   ###
+  # Stats JSON API (feeds Grafana)
+  ###
+
+  StatsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref QnApiStageName
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Quota:
+            Period: MONTH
+            Limit: 44640 # every minute in a month
+
+  StatsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      MemorySize: 128
+      Runtime: go1.x
+      Handler: stats
+      CodeUri: ../../stats/lambda
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /stats
+            Method: get
+            RestApiId:
+              Ref: StatsApi
+      Environment:
+        Variables:
+          KY_QNPROVISION_TABLENAME: !Ref UsersQn
+          KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
+          KY_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          KY_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          KY_DATABASE_DEFAULT_PASSWORD: "" # Used only in integration tests
+          KY_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+          KY_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
+      VpcConfig: # For accessing RDS instance
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref privateLambdaSubnet1
+          - !Ref privateLambdaSubnet2
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+        - AmazonDynamoDBReadOnlyAccess
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetResourcePolicy
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+                - secretsmanager:ListSecretVersionIds
+              Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+
+  ###
   # Plans
   ###
 
@@ -598,6 +657,11 @@ Resources:
       EnableDnsSupport: true
       EnableDnsHostnames: true
 
+  RDSVPCRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RDSVPC
+
   # create subnets
   privateDBSubnet1:
     Type: AWS::EC2::Subnet
@@ -606,12 +670,24 @@ Resources:
       CidrBlock: 172.32.0.0/20
       AvailabilityZone: !Select [ 0, !GetAZs ]
 
+  PrivateDbRouteTableSubnet1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RDSVPCRouteTable
+      SubnetId: !Ref privateDBSubnet1
+
   privateDBSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.16.0/20
       AvailabilityZone: !Select [ 1, !GetAZs ]
+
+  PrivateDbRouteTableSubnet2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RDSVPCRouteTable
+      SubnetId: !Ref privateDBSubnet2
 
   privateLambdaSubnet1:
     Type: AWS::EC2::Subnet
@@ -620,12 +696,24 @@ Resources:
       CidrBlock: 172.32.32.0/20
       AvailabilityZone: !Select [ 0, !GetAZs ]
 
+  PrivateLambdaRouteTableSubnet1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RDSVPCRouteTable
+      SubnetId: !Ref privateLambdaSubnet1
+
   privateLambdaSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref RDSVPC
       CidrBlock: 172.32.48.0/20
       AvailabilityZone: !Select [ 1, !GetAZs ]
+
+  PrivateLambdaRouteTableSubnet2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RDSVPCRouteTable
+      SubnetId: !Ref privateLambdaSubnet2
 
   RDSSubnetGroup:
     Type: "AWS::RDS::DBSubnetGroup"
@@ -690,6 +778,38 @@ Resources:
         - !Ref privateLambdaSubnet2
       SecurityGroupIds:
         - !Ref LambdaSecurityGroup
+
+  # Used only by stats API (but will be useful for any lambda that
+  # uses both Dynamo and RDS)
+  DynamoDbEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn:
+      - LambdaSecurityGroup
+    Properties:
+      VpcEndpointType: Gateway
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.dynamodb'
+      # PrivateDnsEnabled: true
+      VpcId: !Ref RDSVPC
+      RouteTableIds:
+        - !Ref RDSVPCRouteTable
+      # SubnetIds:
+      #   - !Ref privateLambdaSubnet1
+      #   - !Ref privateLambdaSubnet2
+      # SecurityGroupIds:
+      #   - !Ref LambdaSecurityGroup
+      # PolicyDocument:
+      #     Version: '2012-10-17' # Policy Document
+      #     Statement:
+      #       - Effect: Allow
+      #         Action:
+      #           - dynamodb:GetItem
+      #           - dynamodb:BatchGetItem
+      #           - dynamodb:Scan
+      #           - dynamodb:Query
+      #           - dynamodb:ConditionCheckItem
+      #         Resource: !Sub
+      #           - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
+      #           - TableName: !Ref UsersQn
 
   ###
   # DevOps

@@ -42,3 +42,13 @@ OFFSET $3;
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
 	)
 }
+
+func SelectAppearancesCount(appearancesTableName string) string {
+	return fmt.Sprintf(`
+SELECT reltuples::bigint AS estimate
+FROM   pg_class
+WHERE  oid = 'public.%[1]s'::regclass;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}

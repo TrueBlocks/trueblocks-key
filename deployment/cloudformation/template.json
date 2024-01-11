@@ -124,6 +124,107 @@
                 ]
             }
         },
+        "StatsApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Metadata": {
+                "SamResourceId": "StatsApi"
+            },
+            "Properties": {
+                "Body": {
+                    "info": {
+                        "version": "1.0",
+                        "title": {
+                            "Ref": "AWS::StackName"
+                        }
+                    },
+                    "paths": {
+                        "/stats": {
+                            "get": {
+                                "x-amazon-apigateway-integration": {
+                                    "httpMethod": "POST",
+                                    "type": "aws_proxy",
+                                    "uri": {
+                                        "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StatsFunction.Arn}/invocations"
+                                    }
+                                },
+                                "security": [
+                                    {
+                                        "api_key": []
+                                    }
+                                ],
+                                "responses": {}
+                            }
+                        }
+                    },
+                    "swagger": "2.0",
+                    "securityDefinitions": {
+                        "api_key": {
+                            "type": "apiKey",
+                            "name": "x-api-key",
+                            "in": "header"
+                        }
+                    }
+                }
+            }
+        },
+        "StatsFunctionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+                    "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy",
+                    "arn:aws:iam::aws:policy/AmazonDynamoDBReadOnlyAccess"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "StatsFunctionRolePolicy2",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "secretsmanager:GetResourcePolicy",
+                                        "secretsmanager:GetSecretValue",
+                                        "secretsmanager:DescribeSecret",
+                                        "secretsmanager:ListSecretVersionIds"
+                                    ],
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "IndexDatabase",
+                                            "MasterUserSecret.SecretArn"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "lambda:createdBy",
+                        "Value": "SAM"
+                    }
+                ]
+            }
+        },
         "AppearancesQueue": {
             "Type": "AWS::SQS::Queue",
             "Metadata": {
@@ -178,6 +279,88 @@
                 "SamResourceId": "AppearancesQueueIngestUser"
             }
         },
+        "AppearancesQueueConsumeRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+                    "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy",
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "AppearancesQueueConsumeRolePolicy1",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "secretsmanager:GetResourcePolicy",
+                                        "secretsmanager:GetSecretValue",
+                                        "secretsmanager:DescribeSecret",
+                                        "secretsmanager:ListSecretVersionIds"
+                                    ],
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "IndexDatabase",
+                                            "MasterUserSecret.SecretArn"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "lambda:createdBy",
+                        "Value": "SAM"
+                    }
+                ]
+            }
+        },
+        "StatsApiDeployment59e230b779": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+                "Description": "RestApi deployment id: 59e230b779d3a002a98a087fae2e815f2f352e9c",
+                "RestApiId": {
+                    "Ref": "StatsApi"
+                },
+                "StageName": "Stage"
+            }
+        },
+        "StatsApiStage": {
+            "Type": "AWS::ApiGateway::Stage",
+            "Properties": {
+                "DeploymentId": {
+                    "Ref": "StatsApiDeployment59e230b779"
+                },
+                "RestApiId": {
+                    "Ref": "StatsApi"
+                },
+                "StageName": {
+                    "Ref": "QnApiStageName"
+                }
+            }
+        },
         "QnHealthCheckFunction": {
             "Type": "AWS::Lambda::Function",
             "Metadata": {
@@ -186,7 +369,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "689dcdf7a36662284e0726bf38bdf09d"
+                    "S3Key": "b18a5a8ca2a76760e0c351c3f503d41d"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 128,
@@ -257,60 +440,42 @@
                 ]
             }
         },
-        "AppearancesQueueConsumeRole": {
-            "Type": "AWS::IAM::Role",
+        "StatsFunctionApiEventPermissionStage": {
+            "Type": "AWS::Lambda::Permission",
             "Properties": {
-                "AssumeRolePolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "StatsFunction"
+                },
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/GET/stats",
                         {
-                            "Action": [
-                                "sts:AssumeRole"
-                            ],
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": [
-                                    "lambda.amazonaws.com"
-                                ]
-                            }
+                            "__ApiId__": {
+                                "Ref": "StatsApi"
+                            },
+                            "__Stage__": "*"
                         }
                     ]
-                },
-                "ManagedPolicyArns": [
-                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-                    "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
-                    "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy",
-                    "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
-                ],
-                "Policies": [
+                }
+            }
+        },
+        "StatsApiApiKey": {
+            "Type": "AWS::ApiGateway::ApiKey",
+            "DependsOn": [
+                "StatsApiUsagePlan"
+            ],
+            "Properties": {
+                "Enabled": true,
+                "StageKeys": [
                     {
-                        "PolicyName": "AppearancesQueueConsumeRolePolicy1",
-                        "PolicyDocument": {
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "secretsmanager:GetResourcePolicy",
-                                        "secretsmanager:GetSecretValue",
-                                        "secretsmanager:DescribeSecret",
-                                        "secretsmanager:ListSecretVersionIds"
-                                    ],
-                                    "Resource": {
-                                        "Fn::GetAtt": [
-                                            "IndexDatabase",
-                                            "MasterUserSecret.SecretArn"
-                                        ]
-                                    }
-                                }
-                            ]
+                        "RestApiId": {
+                            "Ref": "StatsApi"
+                        },
+                        "StageName": {
+                            "Ref": "StatsApiStage"
                         }
-                    }
-                ],
-                "Tags": [
-                    {
-                        "Key": "lambda:createdBy",
-                        "Value": "SAM"
                     }
                 ]
             }
@@ -435,7 +600,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "366df3ffaadf9ee775734253ff7eb69c"
+                    "S3Key": "6738f9b24fdcfa584e669af731533ba0"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 128,
@@ -471,6 +636,49 @@
                 "Architectures": [
                     "x86_64"
                 ]
+            }
+        },
+        "StatsApiUsagePlan": {
+            "Type": "AWS::ApiGateway::UsagePlan",
+            "DependsOn": [
+                "StatsApi"
+            ],
+            "Properties": {
+                "ApiStages": [
+                    {
+                        "ApiId": {
+                            "Ref": "StatsApi"
+                        },
+                        "Stage": {
+                            "Ref": "StatsApiStage"
+                        }
+                    }
+                ],
+                "Quota": {
+                    "Limit": 44640,
+                    "Period": "MONTH"
+                }
+            }
+        },
+        "QnProvisionFunctionDeprovisionPermissionStage": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "QnProvisionFunction"
+                },
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/DELETE/deprovision",
+                        {
+                            "__ApiId__": {
+                                "Ref": "QnApi"
+                            },
+                            "__Stage__": "*"
+                        }
+                    ]
+                }
             }
         },
         "QnApiDeployment6bca1c444c": {
@@ -548,6 +756,27 @@
             },
             "Metadata": {
                 "SamResourceId": "DevOpsInstanceKeyPair"
+            }
+        },
+        "QnProvisionFunctionUpdatePermissionStage": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "QnProvisionFunction"
+                },
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/PUT/update",
+                        {
+                            "__ApiId__": {
+                                "Ref": "QnApi"
+                            },
+                            "__Stage__": "*"
+                        }
+                    ]
+                }
             }
         },
         "DevOpsInstance": {
@@ -704,7 +933,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "ffd9736be42eac883e6bce1b9fa78cda"
+                    "S3Key": "2bee458f949639a23d4b783500eda4dc"
                 },
                 "Handler": "provision",
                 "MemorySize": 128,
@@ -742,25 +971,18 @@
                 ]
             }
         },
-        "QnProvisionFunctionUpdatePermissionStage": {
-            "Type": "AWS::Lambda::Permission",
+        "PrivateLambdaRouteTableSubnet2": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
             "Properties": {
-                "Action": "lambda:InvokeFunction",
-                "FunctionName": {
-                    "Ref": "QnProvisionFunction"
+                "RouteTableId": {
+                    "Ref": "RDSVPCRouteTable"
                 },
-                "Principal": "apigateway.amazonaws.com",
-                "SourceArn": {
-                    "Fn::Sub": [
-                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/PUT/update",
-                        {
-                            "__ApiId__": {
-                                "Ref": "QnApi"
-                            },
-                            "__Stage__": "*"
-                        }
-                    ]
+                "SubnetId": {
+                    "Ref": "privateLambdaSubnet2"
                 }
+            },
+            "Metadata": {
+                "SamResourceId": "PrivateLambdaRouteTableSubnet2"
             }
         },
         "LambdaSecurityGroup": {
@@ -910,7 +1132,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "5bd012efa7efd4fb3dd0a16aa5b63e47"
+                    "S3Key": "65e3b4d8569186f0f1485d608e2d3863"
                 },
                 "Handler": "query",
                 "MemorySize": 128,
@@ -1210,25 +1432,115 @@
                 ]
             }
         },
-        "QnProvisionFunctionDeprovisionPermissionStage": {
-            "Type": "AWS::Lambda::Permission",
+        "PrivateDbRouteTableSubnet1": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
             "Properties": {
-                "Action": "lambda:InvokeFunction",
-                "FunctionName": {
-                    "Ref": "QnProvisionFunction"
+                "RouteTableId": {
+                    "Ref": "RDSVPCRouteTable"
                 },
-                "Principal": "apigateway.amazonaws.com",
-                "SourceArn": {
-                    "Fn::Sub": [
-                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/DELETE/deprovision",
+                "SubnetId": {
+                    "Ref": "privateDBSubnet1"
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "PrivateDbRouteTableSubnet1"
+            }
+        },
+        "PrivateDbRouteTableSubnet2": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "RDSVPCRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "privateDBSubnet2"
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "PrivateDbRouteTableSubnet2"
+            }
+        },
+        "StatsFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Metadata": {
+                "SamResourceId": "StatsFunction"
+            },
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
+                    "S3Key": "b566bb2aafd51314177f92c1e6cbecb3"
+                },
+                "Handler": "stats",
+                "MemorySize": 128,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "StatsFunctionRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "go1.x",
+                "Timeout": 30,
+                "VpcConfig": {
+                    "SecurityGroupIds": [
                         {
-                            "__ApiId__": {
-                                "Ref": "QnApi"
-                            },
-                            "__Stage__": "*"
+                            "Ref": "LambdaSecurityGroup"
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Ref": "privateLambdaSubnet1"
+                        },
+                        {
+                            "Ref": "privateLambdaSubnet2"
                         }
                     ]
-                }
+                },
+                "Environment": {
+                    "Variables": {
+                        "KY_QNPROVISION_TABLENAME": {
+                            "Ref": "UsersQn"
+                        },
+                        "KY_DATABASE_DEFAULT_HOST": {
+                            "Fn::GetAtt": [
+                                "IndexDatabase",
+                                "Endpoint.Address"
+                            ]
+                        },
+                        "KY_DATABASE_DEFAULT_PORT": {
+                            "Fn::GetAtt": [
+                                "IndexDatabase",
+                                "Endpoint.Port"
+                            ]
+                        },
+                        "KY_DATABASE_DEFAULT_USER": {
+                            "Ref": "RDSMasterUserName"
+                        },
+                        "KY_DATABASE_DEFAULT_PASSWORD": "",
+                        "KY_DATABASE_DEFAULT_AWSSECRET": {
+                            "Fn::GetAtt": [
+                                "IndexDatabase",
+                                "MasterUserSecret.SecretArn"
+                            ]
+                        },
+                        "KY_DATABASE_DEFAULT_DATABASE": {
+                            "Ref": "RDSDBName"
+                        }
+                    }
+                },
+                "Tags": [
+                    {
+                        "Key": "lambda:createdBy",
+                        "Value": "SAM"
+                    }
+                ],
+                "Layers": [
+                    {
+                        "Fn::Sub": "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
+                    }
+                ],
+                "Architectures": [
+                    "x86_64"
+                ]
             }
         },
         "DevOpsInstanceSecurityGroup": {
@@ -1256,6 +1568,21 @@
             },
             "Metadata": {
                 "SamResourceId": "DevOpsInstanceSecurityGroup"
+            }
+        },
+        "StatsApiUsagePlanKey": {
+            "Type": "AWS::ApiGateway::UsagePlanKey",
+            "DependsOn": [
+                "StatsApiApiKey"
+            ],
+            "Properties": {
+                "KeyId": {
+                    "Ref": "StatsApiApiKey"
+                },
+                "KeyType": "API_KEY",
+                "UsagePlanId": {
+                    "Ref": "StatsApiUsagePlan"
+                }
             }
         },
         "LinkUsagePlanApiKeyQnBetaTest": {
@@ -1334,7 +1661,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "899ae5d4c5b3fda1673230baf9c68f11"
+                    "S3Key": "ed7d9b44825135c589bc1b0724dfd322"
                 },
                 "Handler": "consume",
                 "MemorySize": 128,
@@ -1558,6 +1885,20 @@
                 "SamResourceId": "RouteIG"
             }
         },
+        "PrivateLambdaRouteTableSubnet1": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "RDSVPCRouteTable"
+                },
+                "SubnetId": {
+                    "Ref": "privateLambdaSubnet1"
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "PrivateLambdaRouteTableSubnet1"
+            }
+        },
         "SecretsManagerEndpoint": {
             "Type": "AWS::EC2::VPCEndpoint",
             "DependsOn": [
@@ -1603,6 +1944,29 @@
             },
             "Metadata": {
                 "SamResourceId": "ApiKeyQnBetaTest"
+            }
+        },
+        "DynamoDbEndpoint": {
+            "Type": "AWS::EC2::VPCEndpoint",
+            "DependsOn": [
+                "LambdaSecurityGroup"
+            ],
+            "Properties": {
+                "VpcEndpointType": "Gateway",
+                "ServiceName": {
+                    "Fn::Sub": "com.amazonaws.${AWS::Region}.dynamodb"
+                },
+                "VpcId": {
+                    "Ref": "RDSVPC"
+                },
+                "RouteTableIds": [
+                    {
+                        "Ref": "RDSVPCRouteTable"
+                    }
+                ]
+            },
+            "Metadata": {
+                "SamResourceId": "DynamoDbEndpoint"
             }
         },
         "InternetGatewayAttachment": {
@@ -1854,6 +2218,17 @@
                     }
                 },
                 "ApiKeySourceType": "AUTHORIZER"
+            }
+        },
+        "RDSVPCRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "RDSVPC"
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "RDSVPCRouteTable"
             }
         },
         "AppearancesQueueIngestUserKey": {
