@@ -63,6 +63,10 @@ func (c *Connection) Setup() (err error) {
 	if _, err = c.conn.Exec(context.TODO(), sql.CreateAppearancesOrderIndex(c.AppearancesTableName())); err != nil {
 		return fmt.Errorf("creating appearances order index (%s): %w", c.Chain, err)
 	}
+
+	if _, err = c.conn.Exec(context.TODO(), sql.CreateTableChunks(c.ChunksTableName())); err != nil {
+		return fmt.Errorf("creating chunks table (%s): %w", c.Chain, err)
+	}
 	return nil
 }
 

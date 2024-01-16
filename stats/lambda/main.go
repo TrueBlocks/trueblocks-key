@@ -59,6 +59,24 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	log.Println("appearances:", appCount)
 
+	chunksCount, err := database.CountChunks(ctx, dbConn)
+	if err != nil {
+		log.Println("fetching chunks count:", err)
+		err = ErrInternal
+		return
+	}
+
+	log.Println("chunks:", chunksCount)
+
+	dupChunksCount, err := database.FetchDuplicatedChunks(ctx, dbConn)
+	if err != nil {
+		log.Println("fetching duplicated chunks count:", err)
+		err = ErrInternal
+		return
+	}
+
+	log.Println("duplicated chunks:", dupChunksCount)
+
 	describeOutput, err := dynamoClient.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(cnf.QnProvision.TableName),
 	})
@@ -72,8 +90,10 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	log.Println("user count:", userCount)
 
 	body, err := json.Marshal(map[string]any{
-		"appearances": appCount,
-		"users":       userCount,
+		"appearances":      appCount,
+		"chunks":           chunksCount,
+		"chunksDuplicated": dupChunksCount,
+		"users":            userCount,
 	})
 
 	response = events.APIGatewayProxyResponse{

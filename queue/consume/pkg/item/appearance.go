@@ -1,4 +1,4 @@
-package appearance
+package queueItem
 
 import "fmt"
 

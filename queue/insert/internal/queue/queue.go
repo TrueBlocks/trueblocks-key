@@ -1,13 +1,12 @@
 package queue
 
-import (
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
-)
+import queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 
 type RemoteQueuer interface {
 	Init() error
-	Add(app *appearance.Appearance) (string, error)
-	AddBatch(apps []*appearance.Appearance) (err error)
+	Add(itemType queueItem.ItemType, item any) (string, error)
+	AddAppearanceBatch(items []*queueItem.Appearance) (err error)
+	AddChunkBatch(items []*queueItem.Chunk) (err error)
 }
 
 type Queue struct {
@@ -22,10 +21,18 @@ func NewQueue(remoteQueue RemoteQueuer) (q *Queue, err error) {
 	return
 }
 
-func (q *Queue) Add(app *appearance.Appearance) (msgId string, err error) {
-	return q.remote.Add(app)
+func (q *Queue) AddAppearance(app *queueItem.Appearance) (msgId string, err error) {
+	return q.remote.Add(queueItem.ItemTypeAppearance, app)
 }
 
-func (q *Queue) AddBatch(apps []*appearance.Appearance) (err error) {
-	return q.remote.AddBatch(apps)
+func (q *Queue) AddAppearanceBatch(apps []*queueItem.Appearance) (err error) {
+	return q.remote.AddAppearanceBatch(apps)
+}
+
+func (q *Queue) AddChunk(chunk *queueItem.Chunk) (msgId string, err error) {
+	return q.remote.Add(queueItem.ItemTypeChunk, chunk)
+}
+
+func (q *Queue) AddChunkBatch(chunks []*queueItem.Chunk) (err error) {
+	return q.remote.AddChunkBatch(chunks)
 }

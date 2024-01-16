@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/TrueBlocks/trueblocks-key/database/pkg/sql"
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -38,7 +38,7 @@ func FetchAppearances(ctx context.Context, c *Connection, address string, limit 
 	return
 }
 
-func InsertAppearanceBatch(ctx context.Context, c *Connection, apps []appearance.Appearance) (err error) {
+func InsertAppearanceBatch(ctx context.Context, c *Connection, apps []queueItem.Appearance) (err error) {
 	batch := &pgx.Batch{}
 
 	for _, app := range apps {

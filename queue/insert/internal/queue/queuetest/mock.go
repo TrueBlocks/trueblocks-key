@@ -3,25 +3,45 @@ package queuetest
 import (
 	"fmt"
 
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 )
 
 type MockQueue struct {
-	items []*appearance.Appearance
+	apps   []*queueItem.Appearance
+	chunks []*queueItem.Chunk
 }
 
 func (m *MockQueue) Init() error {
 	return nil
 }
 
-func (m *MockQueue) Add(app *appearance.Appearance) (string, error) {
-	m.items = append(m.items, app)
-	return fmt.Sprintf("%d", m.Len()), nil
+func (m *MockQueue) Add(itemType queueItem.ItemType, item any) (string, error) {
+	switch itemType {
+	case queueItem.ItemTypeAppearance:
+		app := item.(*queueItem.Appearance)
+		m.apps = append(m.apps, app)
+		return fmt.Sprintf("%d", m.Len()), nil
+	case queueItem.ItemTypeChunk:
+		chunk := item.(*queueItem.Chunk)
+		m.chunks = append(m.chunks, chunk)
+		return fmt.Sprintf("%d", m.Len()), nil
+	default:
+		return "", fmt.Errorf("unsupported type: %s", itemType)
+	}
 }
 
-func (m *MockQueue) AddBatch(apps []*appearance.Appearance) (err error) {
-	for _, app := range apps {
-		if _, err = m.Add(app); err != nil {
+func (m *MockQueue) AddAppearanceBatch(items []*queueItem.Appearance) (err error) {
+	for _, item := range items {
+		if _, err = m.Add(queueItem.ItemTypeAppearance, item); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *MockQueue) AddChunkBatch(items []*queueItem.Chunk) (err error) {
+	for _, item := range items {
+		if _, err = m.Add(queueItem.ItemTypeChunk, item); err != nil {
 			return err
 		}
 	}
@@ -29,9 +49,13 @@ func (m *MockQueue) AddBatch(apps []*appearance.Appearance) (err error) {
 }
 
 func (m *MockQueue) Len() int {
-	return len(m.items)
+	return len(m.apps) + len(m.chunks)
 }
 
-func (m *MockQueue) Get(index int) *appearance.Appearance {
-	return m.items[index]
+func (m *MockQueue) GetAppearances(index int) *queueItem.Appearance {
+	return m.apps[index]
+}
+
+func (m *MockQueue) GetChunks(index int) *queueItem.Chunk {
+	return m.chunks[index]
 }

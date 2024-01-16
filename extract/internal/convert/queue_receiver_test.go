@@ -10,11 +10,11 @@ import (
 	"testing"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 )
 
 func TestQueueReceiver_SendBatch(t *testing.T) {
-	batch := []appearance.Appearance{
+	batch := []queueItem.Appearance{
 		{
 			Address:         "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
 			BlockNumber:     18540199,

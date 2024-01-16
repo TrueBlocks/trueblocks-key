@@ -16,7 +16,5 @@ func FetchAppearancesCount(ctx context.Context, c *Connection) (result int, err 
 		return
 	}
 
-	result, err = pgx.CollectOneRow[int](rows, pgx.RowTo[int])
-
-	return
+	return pgx.CollectOneRow[int](rows, pgx.RowTo[int])
 }

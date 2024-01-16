@@ -12,7 +12,7 @@ import (
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 	"github.com/TrueBlocks/trueblocks-key/test/dbtest"
 	"github.com/TrueBlocks/trueblocks-key/test/integration/helpers"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -196,7 +196,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	defer helpers.KillSamOnPanic()
 
 	// Prepate test data
-	appearances := []appearance.Appearance{
+	appearances := []queueItem.Appearance{
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 1},
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 2},
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 3},

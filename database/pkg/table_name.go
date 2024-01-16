@@ -7,3 +7,7 @@ func (c *Connection) AddressesTableName() string {
 func (c *Connection) AppearancesTableName() string {
 	return c.Chain + "_appearances"
 }
+
+func (c *Connection) ChunksTableName() string {
+	return c.Chain + "_chunks"
+}
