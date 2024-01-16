@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 )
 
 // QueueReceiver uses HTTP to send appearances to `insert` tool running
@@ -24,7 +24,7 @@ type QueueReceiver struct {
 }
 
 // SendBatch sends given batch of items to `insert` tool
-func (q *QueueReceiver) SendBatch(batch []appearance.Appearance) (err error) {
+func (q *QueueReceiver) SendBatch(batch []queueItem.Appearance) (err error) {
 	q.sendMutex.Lock()
 	defer q.sendMutex.Unlock()
 
@@ -44,11 +44,11 @@ func (q *QueueReceiver) SendBatch(batch []appearance.Appearance) (err error) {
 	return
 }
 
-func (q *QueueReceiver) encodeBatch(batch []appearance.Appearance, results chan<- []byte, errs chan<- error) {
+func (q *QueueReceiver) encodeBatch(batch []queueItem.Appearance, results chan<- []byte, errs chan<- error) {
 	defer close(results)
 	for _, item := range batch {
 		item := item
-		app := &appearance.Appearance{
+		app := &queueItem.Appearance{
 			Address:         item.Address,
 			TransactionId:   item.TransactionId,
 			BlockNumber:     item.BlockNumber,

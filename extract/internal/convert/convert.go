@@ -16,7 +16,7 @@ import (
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/index"
 	"github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/utils"
 	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 )
 
 var realTimeProgress bool
@@ -28,7 +28,7 @@ func init() {
 }
 
 type AppearanceReceiver interface {
-	SendBatch([]appearance.Appearance) error
+	SendBatch([]queueItem.Appearance) error
 }
 
 func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath string) error {
@@ -70,7 +70,7 @@ func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath stri
 
 	// Extract appearances in batches and push them to DB
 	batchSize := cnf.Convert.BatchSize
-	batch := make([]appearance.Appearance, 0, batchSize)
+	batch := make([]queueItem.Appearance, 0, batchSize)
 	var mu sync.Mutex
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -120,7 +120,7 @@ func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath stri
 
 			for _, app := range apps {
 				mu.Lock()
-				batch = append(batch, appearance.Appearance{
+				batch = append(batch, queueItem.Appearance{
 					Address:         addressRecord.Address.Hex(),
 					BlockNumber:     app.BlockNumber,
 					TransactionId:   app.TransactionId,
@@ -132,7 +132,7 @@ func Convert(cnf *config.ConfigFile, receiver AppearanceReceiver, indexPath stri
 						SaveStatus(fileName, StatusAppError)
 						return err
 					}
-					batch = make([]appearance.Appearance, 0, batchSize)
+					batch = make([]queueItem.Appearance, 0, batchSize)
 				}
 				mu.Unlock()
 				progressChan <- struct {

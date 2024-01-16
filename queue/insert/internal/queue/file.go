@@ -1,9 +1,10 @@
 package queue
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 )
 
 // FileQueue is only meant for local testing, as it uses
@@ -25,14 +26,33 @@ func (f *FileQueue) Init() (err error) {
 	return err
 }
 
-func (f *FileQueue) Add(app *appearance.Appearance) (msgId string, err error) {
-	_, err = f.file.WriteString(app.String() + "\n")
+func (f *FileQueue) Add(itemType queueItem.ItemType, item any) (msgId string, err error) {
+	var content string
+	switch itemType {
+	case queueItem.ItemTypeAppearance:
+		content = item.(*queueItem.Appearance).String()
+	case queueItem.ItemTypeChunk:
+		chunk := item.(*queueItem.Chunk)
+		content = fmt.Sprintf("%s: %s (%s)", chunk.Range, chunk.Cid, chunk.Author)
+	default:
+		return "", fmt.Errorf("unsupported queue item type: %s", itemType)
+	}
+	_, err = f.file.WriteString(content + "\n")
 	return
 }
 
-func (f *FileQueue) AddBatch(apps []*appearance.Appearance) (err error) {
-	for _, app := range apps {
-		if _, err = f.Add(app); err != nil {
+func (f *FileQueue) AddAppearanceBatch(items []*queueItem.Appearance) (err error) {
+	for _, app := range items {
+		if _, err = f.Add(queueItem.ItemTypeAppearance, app); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *FileQueue) AddChunkBatch(items []*queueItem.Chunk) (err error) {
+	for _, app := range items {
+		if _, err = f.Add(queueItem.ItemTypeChunk, app); err != nil {
 			return err
 		}
 	}
