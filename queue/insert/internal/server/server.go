@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 	"github.com/TrueBlocks/trueblocks-key/queue/insert/internal/queue"
 )
 
@@ -32,27 +32,58 @@ func (s *Server) Start(port int) (err error) {
 	return
 }
 
+func (s *Server) Error(w http.ResponseWriter, code int, err error) {
+	w.WriteHeader(500)
+	w.Write([]byte(err.Error()))
+}
+
 func (s *Server) addHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(400)
+		return
 	}
 
-	app := &appearance.Appearance{}
+	// app := &appearance.Appearance{}
 	defer r.Body.Close()
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-	}
-	if err := json.Unmarshal(b, app); err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
+		s.Error(w, 500, err)
+		return
 	}
 
-	msgId, err := s.qu.Add(app)
+	notificationType, err := readNotificationType(b)
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte(err.Error()))
+		s.Error(w, 400, err)
+	}
+
+	var msgId string
+	switch Message(notificationType) {
+	case MessageAppearance:
+		s.Error(w, 400, fmt.Errorf("appearance type is only supported in batches"))
+		return
+	case MessageChunkWritten:
+		notification := &Notification[NotificationPayloadChunkWritten]{}
+		if err := json.Unmarshal(b, notification); err != nil {
+			fmt.Println(err)
+			s.Error(w, 500, err)
+			return
+		}
+		chunk := &queueItem.Chunk{
+			Cid:    notification.Payload.Cid,
+			Range:  notification.Payload.Range,
+			Author: notification.Payload.Author,
+		}
+		msgId, err = s.qu.AddChunk(chunk)
+		if err != nil {
+			s.Error(w, 400, err)
+			return
+		}
+	case MessageStageUpdated:
+		w.WriteHeader(208)
+		return
+	default:
+		s.Error(w, 400, fmt.Errorf("unknown notification type: %s", notificationType))
+		return
 	}
 
 	w.WriteHeader(200)
@@ -62,29 +93,75 @@ func (s *Server) addHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) batchHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(400)
+		return
 	}
 
-	notification := &Notification{}
+	// notification := &Notification[[]NotificationPayloadAppearance]{}
 	defer r.Body.Close()
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-	}
-	if err := json.Unmarshal(b, notification); err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
+		s.Error(w, 500, err)
+		return
 	}
 
-	apps, err := notification.Appearances()
+	notificationType, err := readNotificationType(b)
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
+		s.Error(w, 400, err)
 	}
-	if err := s.qu.AddBatch(apps); err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte(err.Error()))
+
+	switch Message(notificationType) {
+	case MessageAppearance:
+		notification := &Notification[[]NotificationPayloadAppearance]{}
+		if err := json.Unmarshal(b, notification); err != nil {
+			s.Error(w, 500, err)
+			return
+		}
+		apps, err := notification.Appearances()
+		if err != nil {
+			s.Error(w, 500, err)
+			return
+		}
+		if err := s.qu.AddAppearanceBatch(apps); err != nil {
+			s.Error(w, 400, err)
+			return
+		}
+	case MessageChunkWritten:
+		notification := &Notification[[]NotificationPayloadChunkWritten]{}
+		if err := json.Unmarshal(b, notification); err != nil {
+			s.Error(w, 500, err)
+			return
+		}
+		chunks := make([]*queueItem.Chunk, 0, len(notification.Payload))
+		for _, item := range notification.Payload {
+			chunks = append(chunks, &queueItem.Chunk{
+				Cid:    item.Cid,
+				Range:  item.Range,
+				Author: item.Author,
+			})
+		}
+		if err := s.qu.AddChunkBatch(chunks); err != nil {
+			s.Error(w, 400, err)
+			return
+		}
+	case MessageStageUpdated:
+		w.WriteHeader(208)
+		return
+	default:
+		s.Error(w, 400, fmt.Errorf("unknown notification type: %s", notificationType))
+		return
 	}
 
 	w.WriteHeader(200)
+}
+
+func readNotificationType(b []byte) (string, error) {
+	var part struct {
+		Msg string `json:"msg"`
+	}
+
+	if err := json.Unmarshal(b, &part); err != nil {
+		return "", err
+	}
+
+	return part.Msg, nil
 }

@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 
 	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
 	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -25,18 +26,39 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 	}
 
 	recordCount := len(sqsEvent.Records)
-	models := make([]appearance.Appearance, 0, recordCount)
+	appearances := make([]queueItem.Appearance, 0, recordCount)
+	chunks := make([]queueItem.Chunk, 0, recordCount)
 
 	log.Println("Inserting", recordCount, "items")
 
 	for _, record := range sqsEvent.Records {
-		app := appearance.Appearance{}
-		if err = json.Unmarshal([]byte(record.Body), &app); err != nil {
-			log.Println("unmarshal JSON:", err)
-			err = errors.New("invalid JSON")
-			return
+		var recordType string
+		rawType := record.MessageAttributes["Type"].StringValue
+		if rawType == nil {
+			recordType = ""
+		} else {
+			recordType = *rawType
 		}
-		models = append(models, app)
+		switch recordType {
+		case string(queueItem.ItemTypeAppearance):
+			item := queueItem.Appearance{}
+			if err = json.Unmarshal([]byte(record.Body), &item); err != nil {
+				log.Println("unmarshal appearance JSON:", err)
+				err = errors.New("invalid JSON")
+				return
+			}
+			appearances = append(appearances, item)
+		case string(queueItem.ItemTypeChunk):
+			item := queueItem.Chunk{}
+			if err = json.Unmarshal([]byte(record.Body), &item); err != nil {
+				log.Println("unmarshal chunk JSON:", err)
+				err = errors.New("invalid JSON")
+				return
+			}
+			chunks = append(chunks, item)
+		default:
+			err = fmt.Errorf("unsupported message type: %s", recordType)
+		}
 	}
 
 	// batchSize := recordCount
@@ -46,9 +68,19 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 
 	log.Println("Creating database items")
 
-	err = database.InsertAppearanceBatch(ctx, dbConn, models)
-	if err == nil {
-		log.Println("Success:", recordCount, "items inserted")
+	if len(appearances) > 0 {
+		log.Println("inserting appearances")
+
+		err = database.InsertAppearanceBatch(ctx, dbConn, appearances)
+		if err == nil {
+			log.Println("Success:", recordCount, "items inserted")
+		}
+	}
+
+	if len(chunks) > 0 {
+		log.Println("inserting chunks")
+
+		err = database.InsertChunkBatch(ctx, dbConn, chunks)
 	}
 
 	return

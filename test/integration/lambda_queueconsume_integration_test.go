@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
-	"github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/appearance"
+	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 	"github.com/TrueBlocks/trueblocks-key/test/dbtest"
 	"github.com/TrueBlocks/trueblocks-key/test/integration/helpers"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -19,8 +19,8 @@ import (
 
 type sqsReceiveEvent string
 
-func NewSqsReceiveEvent(appearance *appearance.Appearance) (s sqsReceiveEvent, err error) {
-	encoded, err := json.Marshal(appearance)
+func NewSqsReceiveEvent(itemType queueItem.ItemType, payload any) (s sqsReceiveEvent, err error) {
+	encoded, err := json.Marshal(payload)
 	if err != nil {
 		return
 	}
@@ -37,7 +37,12 @@ func NewSqsReceiveEvent(appearance *appearance.Appearance) (s sqsReceiveEvent, e
         "SenderId": "123456789012",
         "ApproximateFirstReceiveTimestamp": "1523232000001"
       },
-      "messageAttributes": {},
+      "messageAttributes": {
+		"Type": {
+			"DataType": "String",
+			"StringValue": "%s"
+		}
+	  },
       "md5OfBody": "7b270e59b47ff90a553787216d55d91d",
       "eventSource": "aws:sqs",
       "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:MyQueue",
@@ -46,6 +51,7 @@ func NewSqsReceiveEvent(appearance *appearance.Appearance) (s sqsReceiveEvent, e
   ]
 }`,
 		strconv.Quote(string(encoded)),
+		itemType,
 	))
 	return
 }
@@ -63,7 +69,7 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 	defer helpers.KillSamOnPanic()
 
 	// Prepate test data
-	appearance := &appearance.Appearance{
+	appearance := &queueItem.Appearance{
 		Address:       "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
 		BlockNumber:   11154177,
 		TransactionId: 1,
@@ -76,7 +82,7 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 
 	// Valid request, appearance added
 
-	request, err = NewSqsReceiveEvent(appearance)
+	request, err = NewSqsReceiveEvent(queueItem.ItemTypeAppearance, appearance)
 	t.Log(request)
 	output = helpers.InvokeLambda(t, client, "AppearancesQueueConsume", request)
 
@@ -116,7 +122,12 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
         "SenderId": "123456789012",
         "ApproximateFirstReceiveTimestamp": "1523232000001"
       },
-      "messageAttributes": {},
+      "messageAttributes": {
+		"Type": {
+			"DataType": "String",
+			"StringValue": "appearance"
+		}
+	  },
       "md5OfBody": "7b270e59b47ff90a553787216d55d91d",
       "eventSource": "aws:sqs",
       "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:MyQueue",
@@ -140,5 +151,45 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 
 	if count != 1 {
 		t.Fatal("expected count to be 1, but got", count)
+	}
+
+	// Chunks
+
+	chunk := &queueItem.Chunk{
+		Cid:    "QmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4",
+		Range:  "1000-2000",
+		Author: "test1",
+	}
+
+	// Valid request, chunk added
+
+	request, err = NewSqsReceiveEvent(queueItem.ItemTypeChunk, chunk)
+	t.Log(request)
+	output = helpers.InvokeLambda(t, client, "AppearancesQueueConsume", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+
+	count, err = database.CountChunks(context.TODO(), dbConn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Fatal("wrong chunk count:", count)
+	}
+
+	// Insert duplicated chunk
+	request, err = NewSqsReceiveEvent(queueItem.ItemTypeChunk, chunk)
+	output = helpers.InvokeLambda(t, client, "AppearancesQueueConsume", request)
+	helpers.AssertLambdaSuccessful(t, output)
+
+	dups, err := database.FetchDuplicatedChunks(context.TODO(), dbConn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l := len(dups); l != 1 {
+		t.Fatal("wrong duplicated chunk count:", l)
+	}
+	if dupRange := dups[0]; dupRange != chunk.Range {
+		t.Fatalf("wrong range reported: expected %s but got %s", chunk.Range, dupRange)
 	}
 }
