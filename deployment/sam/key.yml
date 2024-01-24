@@ -53,11 +53,13 @@ Resources:
     Properties:
       # Setting BackupRetentionPeriod to 0 DISABLES BACKUPS
       BackupRetentionPeriod: 4
+      # Turn on only when uploading datasets:
+      # AutoMinorVersionUpgrade: false
       DBInstanceIdentifier: !Sub ${AWS::StackName}-index
-      DBInstanceClass: db.t4g.medium # db.t3.micro
+      DBInstanceClass: db.t4g.xlarge # db.t4g.medium # db.t3.micro
       DBParameterGroupName: !Ref IndexDatabaseParameterGroup
       Engine: postgres
-      AllocatedStorage: "400"
+      AllocatedStorage: "1500"
       StorageType: "gp3"
       DBName: !Ref RDSDBName
       MasterUsername: !Ref RDSMasterUserName
@@ -76,15 +78,18 @@ Resources:
     Properties:
       Description: Index database parameters
       Family: postgres15
+      # Modifying these causes database to go DOWN:
       Parameters:
         work_mem: 16384 # 16 MB
         # Below settings are useful when uploading large dataset
         # maintenance_work_mem: 'GREATEST({DBInstanceClassMemory/63963136*1024},65536)'
         # maintenance_work_mem: 3145728 # 3 GB in kB
         # autovacuum: false
-        # max_wal_size: 10240
-        # checkpoint_timeout: 600 # 10 min
+        # min_wal_size: 10240 # MB = 10 GB
+        # max_wal_size: 30720 # MB = 30 GB
+        # checkpoint_timeout: 3600 # in sec = 1 h
         # synchronous_commit: 'off'
+        # wal_buffers: -1
 
 
   # Index database enhanced monitoring role
@@ -119,11 +124,21 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17' # Policy Document
             Statement:
-              - Effect: Allow
+              - Sid: s3import
+                Effect: Allow
                 Action:
                   - s3:GetObject
                   - s3:ListBucket
-                Resource: !GetAtt DevOpsDbUploadBucket.Arn
+                Resource:
+                  - !Join
+                    - ''
+                    - - 'arn:aws:s3:::'
+                      - !Ref DevOpsDbUploadBucket
+                  - !Join
+                    - ''
+                    - - 'arn:aws:s3:::'
+                      - !Ref DevOpsDbUploadBucket
+                      - '/*'
 
   ### DynamoDB QN users
   UsersQn:
@@ -230,9 +245,36 @@ Resources:
       TreatMissingData: notBreaching
       Unit: Seconds
 
+  AppearancesQueueNoMessagesAlert:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: Appearances Queue No Messages
+      AlarmDescription: Alarms if the SQS Queue is not receiving new messages
+      AlarmActions:
+        - !Ref AppearancesQueueNoMessagesAlertNotification
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AppearancesQueue.QueueName
+      EvaluationPeriods: 1
+      MetricName: NumberOfMessagesSent
+      Namespace: AWS/SQS
+      Period: 43200 # 12 hour
+      Statistic: Sum
+      Threshold: 0
+      TreatMissingData: notBreaching
+      Unit: Count
+
   # Queue alerts notifications
 
   AppearancesQueueStuckMessageAlertNotification:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: "email"
+          Endpoint: "dawid@quickblocks.io"
+
+  AppearancesQueueNoMessagesAlertNotification:
     Type: AWS::SNS::Topic
     Properties:
       Subscription:
@@ -811,6 +853,25 @@ Resources:
       #           - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
       #           - TableName: !Ref UsersQn
 
+  # S3Endpoint:
+  #   Type: AWS::EC2::VPCEndpoint
+  #   DependsOn:
+  #     - RDSSecurityGroup
+  #   Properties:
+  #     VpcEndpointType: Gateway
+  #     ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+  #     VpcId: !Ref RDSVPC
+  #     RouteTableIds:
+  #       - !Ref RDSVPCRouteTable
+  #     PolicyDocument:
+  #         Version: '2012-10-17' # Policy Document
+  #         Statement:
+  #           - Effect: Allow
+  #             Principal: '*'
+  #             Action:
+  #               - '*'
+  #             Resource: '*'
+
   ###
   # DevOps
   ###
@@ -876,6 +937,17 @@ Resources:
           FromPort: 5432
           ToPort: 5432
           CidrIp: 0.0.0.0/0
+        # Added for S3 -> EFS DataSync
+        - IpProtocol: "tcp"
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+      # Added for S3 -> EFS DataSync
+      SecurityGroupEgress:
+        - IpProtocol: "tcp"
+          ToPort: 65535
+          FromPort: 0
+          CidrIp: 0.0.0.0/0
 
 
   # DevOps EC2 instance. Remember that SAM and CF are always turning on the instances
@@ -885,12 +957,67 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      ImageId: "ami-0e8a34246278c21e4"
+      ImageId: "ami-0c7217cdde317cfec"
       KeyName: !Ref DevOpsInstanceKeyPair
       SecurityGroupIds:
         - !GetAtt DevOpsInstanceSecurityGroup.GroupId
       SubnetId: !Ref PublicDevOpsSubnet
-      UserData: !Base64
-        |
-          #!/bin/sh
-          sudo amazon-linux-extras install postgresql15
+
+  DevOpsFs:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      AvailabilityZoneName: us-east-1a
+      BackupPolicy:
+        Status: DISABLED
+      Encrypted: false
+      FileSystemPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - elasticfilesystem:*
+              - datasync:*
+            Principal:
+                AWS: '*'
+
+  DevOpsFsTarget:
+      Type: AWS::EFS::MountTarget
+      Properties:
+        FileSystemId: !Ref DevOpsFs
+        SubnetId: !Ref PublicDevOpsSubnet
+        SecurityGroups:
+          - !Ref DevOpsFsSecurityGroup
+
+  DevOpsFsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: FileSystem Security Group
+      VpcId: !Ref RDSVPC
+      GroupName: devops-fs
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref DevOpsInstanceSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: "tcp"
+          ToPort: 65535
+          FromPort: 0
+          DestinationSecurityGroupId: !Ref DevOpsInstanceSecurityGroup
+
+  DevOpsFsAccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref DevOpsFs
+      PosixUser:
+        Uid: "13234"
+        Gid: "1322"
+        SecondaryGids:
+          - "1344"
+          - "1452"
+      RootDirectory:
+        CreationInfo:
+          OwnerGid: "708798"
+          OwnerUid: "7987987"
+          Permissions: "0755"
+        Path: "/efs"
