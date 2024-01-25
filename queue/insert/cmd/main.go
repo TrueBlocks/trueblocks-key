@@ -53,5 +53,7 @@ func main() {
 	}
 	srv := server.New(q)
 
-	srv.Start(port)
+	if err := srv.Start(port); err != nil {
+		log.Fatalln(err)
+	}
 }
