@@ -1,6 +1,3 @@
 all:
-	@deploy
-
-deploy:
-	@scp -pr * "trueblocks.io:/home/jrush/Websites/key.trueblocks.io/"
+	@scp -pr * "key.trueblocks.io:/home/jrush/Websites/key.trueblocks.io/"
 
