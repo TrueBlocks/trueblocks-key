@@ -63,3 +63,15 @@ func (a *Appearance) Insert(ctx context.Context, c *Connection, address string) 
 
 	return
 }
+
+func FetchMaxBlockNumber(ctx context.Context, c *Connection) (result int, err error) {
+	rows, err := c.conn.Query(
+		ctx,
+		sql.SelectAppearancesMaxBlockNumber(c.AppearancesTableName()),
+	)
+	if err != nil {
+		return
+	}
+
+	return pgx.CollectOneRow[int](rows, pgx.RowTo[int])
+}
