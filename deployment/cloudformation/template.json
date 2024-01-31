@@ -369,7 +369,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "b18a5a8ca2a76760e0c351c3f503d41d"
+                    "S3Key": "33fc8a882b710c9db75b622efe448dde"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 128,
@@ -438,6 +438,34 @@
                 "Architectures": [
                     "x86_64"
                 ]
+            }
+        },
+        "DevOpsFs": {
+            "Type": "AWS::EFS::FileSystem",
+            "Properties": {
+                "AvailabilityZoneName": "us-east-1a",
+                "BackupPolicy": {
+                    "Status": "DISABLED"
+                },
+                "Encrypted": false,
+                "FileSystemPolicy": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "elasticfilesystem:*",
+                                "datasync:*"
+                            ],
+                            "Principal": {
+                                "AWS": "*"
+                            }
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "DevOpsFs"
             }
         },
         "StatsFunctionApiEventPermissionStage": {
@@ -600,7 +628,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "6738f9b24fdcfa584e669af731533ba0"
+                    "S3Key": "bb0088ee95b9e9bfd14a7083d1aaed68"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 128,
@@ -758,6 +786,41 @@
                 "SamResourceId": "DevOpsInstanceKeyPair"
             }
         },
+        "AppearancesQueueNoMessagesAlert": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmName": "Appearances Queue No Messages",
+                "AlarmDescription": "Alarms if the SQS Queue is not receiving new messages",
+                "AlarmActions": [
+                    {
+                        "Ref": "AppearancesQueueNoMessagesAlertNotification"
+                    }
+                ],
+                "ComparisonOperator": "LessThanOrEqualToThreshold",
+                "Dimensions": [
+                    {
+                        "Name": "QueueName",
+                        "Value": {
+                            "Fn::GetAtt": [
+                                "AppearancesQueue",
+                                "QueueName"
+                            ]
+                        }
+                    }
+                ],
+                "EvaluationPeriods": 1,
+                "MetricName": "NumberOfMessagesSent",
+                "Namespace": "AWS/SQS",
+                "Period": 43200,
+                "Statistic": "Sum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching",
+                "Unit": "Count"
+            },
+            "Metadata": {
+                "SamResourceId": "AppearancesQueueNoMessagesAlert"
+            }
+        },
         "QnProvisionFunctionUpdatePermissionStage": {
             "Type": "AWS::Lambda::Permission",
             "Properties": {
@@ -783,7 +846,7 @@
             "Type": "AWS::EC2::Instance",
             "Properties": {
                 "InstanceType": "t2.micro",
-                "ImageId": "ami-0e8a34246278c21e4",
+                "ImageId": "ami-0c7217cdde317cfec",
                 "KeyName": {
                     "Ref": "DevOpsInstanceKeyPair"
                 },
@@ -797,9 +860,6 @@
                 ],
                 "SubnetId": {
                     "Ref": "PublicDevOpsSubnet"
-                },
-                "UserData": {
-                    "Fn::Base64": "#!/bin/sh\nsudo amazon-linux-extras install postgresql15\n"
                 }
             },
             "Metadata": {
@@ -904,17 +964,37 @@
                             "Version": "2012-10-17",
                             "Statement": [
                                 {
+                                    "Sid": "s3import",
                                     "Effect": "Allow",
                                     "Action": [
                                         "s3:GetObject",
                                         "s3:ListBucket"
                                     ],
-                                    "Resource": {
-                                        "Fn::GetAtt": [
-                                            "DevOpsDbUploadBucket",
-                                            "Arn"
-                                        ]
-                                    }
+                                    "Resource": [
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    "arn:aws:s3:::",
+                                                    {
+                                                        "Ref": "DevOpsDbUploadBucket"
+                                                    }
+                                                ]
+                                            ]
+                                        },
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    "arn:aws:s3:::",
+                                                    {
+                                                        "Ref": "DevOpsDbUploadBucket"
+                                                    },
+                                                    "/*"
+                                                ]
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         }
@@ -933,7 +1013,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "2bee458f949639a23d4b783500eda4dc"
+                    "S3Key": "2ed6bfad8dd9a878a99ef57b8370289a"
                 },
                 "Handler": "provision",
                 "MemorySize": 128,
@@ -1132,7 +1212,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "65e3b4d8569186f0f1485d608e2d3863"
+                    "S3Key": "47670e561c7c7312c0a0f42d32d3b24f"
                 },
                 "Handler": "query",
                 "MemorySize": 128,
@@ -1203,6 +1283,27 @@
                 "Architectures": [
                     "x86_64"
                 ]
+            }
+        },
+        "QnProvisionFunctionProvisionPermissionStage": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "QnProvisionFunction"
+                },
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/POST/provision",
+                        {
+                            "__ApiId__": {
+                                "Ref": "QnApi"
+                            },
+                            "__Stage__": "*"
+                        }
+                    ]
+                }
             }
         },
         "QnHealthCheckFunctionRole": {
@@ -1468,7 +1569,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "b566bb2aafd51314177f92c1e6cbecb3"
+                    "S3Key": "d647c70824e1d75300afe520aac1f9f5"
                 },
                 "Handler": "stats",
                 "MemorySize": 128,
@@ -1562,6 +1663,20 @@
                         "IpProtocol": "tcp",
                         "FromPort": 5432,
                         "ToPort": 5432,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 2049,
+                        "ToPort": 2049,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "ToPort": 65535,
+                        "FromPort": 0,
                         "CidrIp": "0.0.0.0/0"
                     }
                 ]
@@ -1661,7 +1776,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "ed7d9b44825135c589bc1b0724dfd322"
+                    "S3Key": "1cd9afbd650ca0f44b505a429caa9810"
                 },
                 "Handler": "consume",
                 "MemorySize": 128,
@@ -1748,12 +1863,12 @@
                 "DBInstanceIdentifier": {
                     "Fn::Sub": "${AWS::StackName}-index"
                 },
-                "DBInstanceClass": "db.t4g.medium",
+                "DBInstanceClass": "db.t4g.xlarge",
                 "DBParameterGroupName": {
                     "Ref": "IndexDatabaseParameterGroup"
                 },
                 "Engine": "postgres",
-                "AllocatedStorage": "400",
+                "AllocatedStorage": "1500",
                 "StorageType": "gp3",
                 "DBName": {
                     "Ref": "RDSDBName"
@@ -1885,6 +2000,25 @@
                 "SamResourceId": "RouteIG"
             }
         },
+        "DevOpsFsTarget": {
+            "Type": "AWS::EFS::MountTarget",
+            "Properties": {
+                "FileSystemId": {
+                    "Ref": "DevOpsFs"
+                },
+                "SubnetId": {
+                    "Ref": "PublicDevOpsSubnet"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "DevOpsFsSecurityGroup"
+                    }
+                ]
+            },
+            "Metadata": {
+                "SamResourceId": "DevOpsFsTarget"
+            }
+        },
         "PrivateLambdaRouteTableSubnet1": {
             "Type": "AWS::EC2::SubnetRouteTableAssociation",
             "Properties": {
@@ -1897,6 +2031,39 @@
             },
             "Metadata": {
                 "SamResourceId": "PrivateLambdaRouteTableSubnet1"
+            }
+        },
+        "DevOpsFsSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "FileSystem Security Group",
+                "VpcId": {
+                    "Ref": "RDSVPC"
+                },
+                "GroupName": "devops-fs",
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 2049,
+                        "ToPort": 2049,
+                        "SourceSecurityGroupId": {
+                            "Ref": "DevOpsInstanceSecurityGroup"
+                        }
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "ToPort": 65535,
+                        "FromPort": 0,
+                        "DestinationSecurityGroupId": {
+                            "Ref": "DevOpsInstanceSecurityGroup"
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "SamResourceId": "DevOpsFsSecurityGroup"
             }
         },
         "SecretsManagerEndpoint": {
@@ -1983,31 +2150,45 @@
                 "SamResourceId": "InternetGatewayAttachment"
             }
         },
-        "QnProvisionFunctionProvisionPermissionStage": {
-            "Type": "AWS::Lambda::Permission",
+        "DevOpsFsAccessPoint": {
+            "Type": "AWS::EFS::AccessPoint",
             "Properties": {
-                "Action": "lambda:InvokeFunction",
-                "FunctionName": {
-                    "Ref": "QnProvisionFunction"
+                "FileSystemId": {
+                    "Ref": "DevOpsFs"
                 },
-                "Principal": "apigateway.amazonaws.com",
-                "SourceArn": {
-                    "Fn::Sub": [
-                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/POST/provision",
-                        {
-                            "__ApiId__": {
-                                "Ref": "QnApi"
-                            },
-                            "__Stage__": "*"
-                        }
+                "PosixUser": {
+                    "Uid": "13234",
+                    "Gid": "1322",
+                    "SecondaryGids": [
+                        "1344",
+                        "1452"
                     ]
+                },
+                "RootDirectory": {
+                    "CreationInfo": {
+                        "OwnerGid": "708798",
+                        "OwnerUid": "7987987",
+                        "Permissions": "0755"
+                    },
+                    "Path": "/efs"
                 }
+            },
+            "Metadata": {
+                "SamResourceId": "DevOpsFsAccessPoint"
             }
         },
-        "InternetGateway": {
-            "Type": "AWS::EC2::InternetGateway",
+        "AppearancesQueueNoMessagesAlertNotification": {
+            "Type": "AWS::SNS::Topic",
+            "Properties": {
+                "Subscription": [
+                    {
+                        "Protocol": "email",
+                        "Endpoint": "dawid@quickblocks.io"
+                    }
+                ]
+            },
             "Metadata": {
-                "SamResourceId": "InternetGateway"
+                "SamResourceId": "AppearancesQueueNoMessagesAlertNotification"
             }
         },
         "QnApi": {
@@ -2241,6 +2422,12 @@
             },
             "Metadata": {
                 "SamResourceId": "AppearancesQueueIngestUserKey"
+            }
+        },
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Metadata": {
+                "SamResourceId": "InternetGateway"
             }
         }
     }
