@@ -52,3 +52,12 @@ WHERE  oid = 'public.%[1]s'::regclass;
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
 	)
 }
+
+func SelectAppearancesMaxBlockNumber(appearancesTableName string) string {
+	return fmt.Sprintf(`
+SELECT max(block_number)
+FROM   %[1]s;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}

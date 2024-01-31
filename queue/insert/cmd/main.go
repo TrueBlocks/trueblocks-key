@@ -25,7 +25,8 @@ func main() {
 	flag.IntVar(&port, "port", 5555, "port to listen on")
 	flag.Parse()
 
-	if configPath == "" {
+	// require config unless using file
+	if configPath == "" && file == "" {
 		log.Fatalln("configuration path is required")
 	}
 
@@ -53,5 +54,7 @@ func main() {
 	}
 	srv := server.New(q)
 
-	srv.Start(port)
+	if err := srv.Start(port); err != nil {
+		log.Fatalln(err)
+	}
 }
