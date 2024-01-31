@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
@@ -78,6 +79,7 @@ func (s *Server) addHandler(w http.ResponseWriter, r *http.Request) {
 			s.Error(w, 400, err)
 			return
 		}
+		log.Println("Added notification of type ChunkWritten")
 	case MessageStageUpdated:
 		w.WriteHeader(208)
 		return
@@ -96,7 +98,6 @@ func (s *Server) batchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// notification := &Notification[[]NotificationPayloadAppearance]{}
 	defer r.Body.Close()
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -125,6 +126,7 @@ func (s *Server) batchHandler(w http.ResponseWriter, r *http.Request) {
 			s.Error(w, 400, err)
 			return
 		}
+		log.Printf("Batch added %d notifications of type Appearance\n", len(apps))
 	case MessageChunkWritten:
 		notification := &Notification[[]NotificationPayloadChunkWritten]{}
 		if err := json.Unmarshal(b, notification); err != nil {
@@ -143,6 +145,7 @@ func (s *Server) batchHandler(w http.ResponseWriter, r *http.Request) {
 			s.Error(w, 400, err)
 			return
 		}
+		log.Printf("Batch added %d notifications of type ChunkWritten\n", len(chunks))
 	case MessageStageUpdated:
 		w.WriteHeader(208)
 		return
