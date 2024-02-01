@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -50,35 +51,18 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		}
 	}
 
-	limit := rpcRequest.Parameters().PerPage
-	if limit == 0 {
-		// Just in case we forgot to define the limit in configuration
-		limit = defaultLimit
+	var r any
+	switch rpcRequest.Method {
+	case query.MethodGetAppearances:
+		r, err = handleGetAppearances(ctx, rpcRequest)
+	case query.MethodGetAppearanceCount:
+		r, err = handleCount(ctx, rpcRequest)
+	default:
+		err = fmt.Errorf("unsupported method: %s", rpcRequest.Method)
 	}
-
-	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {
-		if limit > int(confLimit) {
-			limit = int(confLimit)
-		}
-	}
-
-	offset := rpcRequest.Parameters().Page - 1
-	if offset < 0 {
-		offset = 0
-	}
-	offset = offset * limit
-
-	items, err := database.FetchAppearances(ctx, dbConn, rpcRequest.Address(), uint(limit), uint(offset))
 	if err != nil {
-		log.Println("database query:", err)
-		err = ErrInternal
+		log.Println(err)
 		return
-	}
-
-	r := &query.RpcResponse{
-		JsonRpc: "2.0",
-		Id:      rpcRequest.Id,
-		Result:  items,
 	}
 
 	// TODO: would returning non-JSON and rewriting the response in API gateway make it faster?

@@ -38,6 +38,19 @@ func FetchAppearances(ctx context.Context, c *Connection, address string, limit 
 	return
 }
 
+func FetchCount(ctx context.Context, c *Connection, address string) (result int, err error) {
+	rows, err := c.conn.Query(
+		ctx,
+		sql.SelectAppearancesCountForAddress(c.AppearancesTableName(), c.AddressesTableName()),
+		address,
+	)
+	if err != nil {
+		return
+	}
+
+	return pgx.CollectOneRow[int](rows, pgx.RowTo[int])
+}
+
 func InsertAppearanceBatch(ctx context.Context, c *Connection, apps []queueItem.Appearance) (err error) {
 	batch := &pgx.Batch{}
 

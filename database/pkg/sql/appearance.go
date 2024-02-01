@@ -61,3 +61,15 @@ FROM   %[1]s;
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
 	)
 }
+
+func SelectAppearancesCountForAddress(appearancesTableName string, addressesTableName string) string {
+	return fmt.Sprintf(`
+SELECT count(*)
+FROM %[1]s
+JOIN %[2]s apps ON apps.address_id = id
+WHERE address = $1;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}
