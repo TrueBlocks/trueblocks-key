@@ -34,7 +34,7 @@ SELECT apps.block_number, apps.tx_id
 FROM %[1]s
 JOIN %[2]s apps ON apps.address_id = id
 WHERE address = $1
-ORDER BY apps.block_number DESC, tx_id ASC
+ORDER BY apps.block_number ASC, tx_id ASC
 LIMIT $2
 OFFSET $3;
 `,
