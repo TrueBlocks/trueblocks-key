@@ -412,7 +412,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "08770aacbd325a75a1a81363ad6cea20"
+                    "S3Key": "4095d39addf2c9df168c50c0d95f76a6"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 128,
@@ -671,7 +671,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "405d1ef6b1b36f6bdb2375eb3d58aae2"
+                    "S3Key": "09bbf117b91f31fe282bceb5b140f78b"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 128,
@@ -1067,7 +1067,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "7a747ac43eeea9fb6cfc1d841040a565"
+                    "S3Key": "3939f254353f2a07e419a8b0ac3ce8b1"
                 },
                 "Handler": "provision",
                 "MemorySize": 128,
@@ -1266,7 +1266,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "d9e3651a01c6a3c4bd62a347a51cfbec"
+                    "S3Key": "80888d8341c9d96f55cd895ac9d878b2"
                 },
                 "Handler": "query",
                 "MemorySize": 128,
@@ -1623,7 +1623,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "53c4a4b3c7d1b7e423f0f97a19b07c71"
+                    "S3Key": "249bfb66c5061381f8979f83abafe5c0"
                 },
                 "Handler": "stats",
                 "MemorySize": 128,
@@ -1830,7 +1830,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "516e9b9bf693284a4469e2f6cba7ff71"
+                    "S3Key": "f980907f75085dca4f334b9e86f1cb50"
                 },
                 "Handler": "consume",
                 "MemorySize": 128,

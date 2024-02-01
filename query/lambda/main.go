@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	awshelper "github.com/TrueBlocks/trueblocks-key/awshelper/pkg"
 	keyConfig "github.com/TrueBlocks/trueblocks-key/config/pkg"
@@ -27,11 +28,14 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	rpcRequest := &query.RpcRequest{}
 	if err = json.Unmarshal([]byte(request.Body), rpcRequest); err != nil {
 		response.StatusCode = http.StatusBadRequest
-		err = errors.New("invalid JSON")
+		response.Body = strconv.Quote("invalid JSON")
+		err = nil
 		return
 	}
 	if err = rpcRequest.Validate(); err != nil {
 		response.StatusCode = http.StatusBadRequest
+		response.Body = strconv.Quote(err.Error())
+		err = nil
 		return
 	}
 
@@ -62,6 +66,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 	if err != nil {
 		log.Println(err)
+
 		return
 	}
 
