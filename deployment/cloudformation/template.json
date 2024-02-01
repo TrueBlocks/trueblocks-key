@@ -337,14 +337,57 @@
                 ]
             }
         },
-        "StatsApiDeployment59e230b779": {
-            "Type": "AWS::ApiGateway::Deployment",
+        "QnProvisionFunctionDeactivatePermissionStage": {
+            "Type": "AWS::Lambda::Permission",
             "Properties": {
-                "Description": "RestApi deployment id: 59e230b779d3a002a98a087fae2e815f2f352e9c",
-                "RestApiId": {
-                    "Ref": "StatsApi"
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "QnProvisionFunction"
                 },
-                "StageName": "Stage"
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/DELETE/deactivate_endpoint",
+                        {
+                            "__ApiId__": {
+                                "Ref": "QnApi"
+                            },
+                            "__Stage__": "*"
+                        }
+                    ]
+                }
+            }
+        },
+        "RDSLowStorageAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmName": "RDS Low Storage Alarm",
+                "AlarmDescription": "This alarm is triggered when RDS storage is lower than or equal to 10GB",
+                "AlarmActions": [
+                    {
+                        "Ref": "AlarmNotification"
+                    }
+                ],
+                "MetricName": "FreeStorageSpace",
+                "Namespace": "AWS/RDS",
+                "Statistic": "Average",
+                "Dimensions": [
+                    {
+                        "Name": "DBInstanceIdentifier",
+                        "Value": {
+                            "Fn::Sub": "${AWS::StackName}-index"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "Threshold": 21474836480,
+                "ComparisonOperator": "LessThanOrEqualToThreshold",
+                "TreatMissingData": "missing"
+            },
+            "Metadata": {
+                "SamResourceId": "RDSLowStorageAlarm"
             }
         },
         "StatsApiStage": {
@@ -369,7 +412,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "33fc8a882b710c9db75b622efe448dde"
+                    "S3Key": "08770aacbd325a75a1a81363ad6cea20"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 128,
@@ -573,23 +616,14 @@
                 "SamResourceId": "RoutePublicSubnet"
             }
         },
-        "DevOpsDbUploadBucket": {
-            "Type": "AWS::S3::Bucket",
-            "Properties": {
-                "BucketName": "key-devops-db-upload"
-            },
-            "Metadata": {
-                "SamResourceId": "DevOpsDbUploadBucket"
-            }
-        },
-        "AppearancesQueueStuckMessageAlert": {
+        "AppearancesQueueStuckMessageAlarm": {
             "Type": "AWS::CloudWatch::Alarm",
             "Properties": {
                 "AlarmName": "Appearances Queue Message Stuck",
                 "AlarmDescription": "Alarms if the SQS Queue has messages in it for too long",
                 "AlarmActions": [
                     {
-                        "Ref": "AppearancesQueueStuckMessageAlertNotification"
+                        "Ref": "AlarmNotification"
                     }
                 ],
                 "ComparisonOperator": "GreaterThanThreshold",
@@ -614,7 +648,16 @@
                 "Unit": "Seconds"
             },
             "Metadata": {
-                "SamResourceId": "AppearancesQueueStuckMessageAlert"
+                "SamResourceId": "AppearancesQueueStuckMessageAlarm"
+            }
+        },
+        "DevOpsDbUploadBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": "key-devops-db-upload"
+            },
+            "Metadata": {
+                "SamResourceId": "DevOpsDbUploadBucket"
             }
         },
         "QnAuthorizer": {
@@ -628,7 +671,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "bb0088ee95b9e9bfd14a7083d1aaed68"
+                    "S3Key": "405d1ef6b1b36f6bdb2375eb3d58aae2"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 128,
@@ -719,7 +762,7 @@
                 "StageName": "Stage"
             }
         },
-        "AppearancesQueueStuckMessageAlertNotification": {
+        "AlarmNotification": {
             "Type": "AWS::SNS::Topic",
             "Properties": {
                 "Subscription": [
@@ -730,7 +773,7 @@
                 ]
             },
             "Metadata": {
-                "SamResourceId": "AppearancesQueueStuckMessageAlertNotification"
+                "SamResourceId": "AlarmNotification"
             }
         },
         "RpcFunctionApiEventPermissionStage": {
@@ -786,41 +829,6 @@
                 "SamResourceId": "DevOpsInstanceKeyPair"
             }
         },
-        "AppearancesQueueNoMessagesAlert": {
-            "Type": "AWS::CloudWatch::Alarm",
-            "Properties": {
-                "AlarmName": "Appearances Queue No Messages",
-                "AlarmDescription": "Alarms if the SQS Queue is not receiving new messages",
-                "AlarmActions": [
-                    {
-                        "Ref": "AppearancesQueueNoMessagesAlertNotification"
-                    }
-                ],
-                "ComparisonOperator": "LessThanOrEqualToThreshold",
-                "Dimensions": [
-                    {
-                        "Name": "QueueName",
-                        "Value": {
-                            "Fn::GetAtt": [
-                                "AppearancesQueue",
-                                "QueueName"
-                            ]
-                        }
-                    }
-                ],
-                "EvaluationPeriods": 1,
-                "MetricName": "NumberOfMessagesSent",
-                "Namespace": "AWS/SQS",
-                "Period": 43200,
-                "Statistic": "Sum",
-                "Threshold": 0,
-                "TreatMissingData": "notBreaching",
-                "Unit": "Count"
-            },
-            "Metadata": {
-                "SamResourceId": "AppearancesQueueNoMessagesAlert"
-            }
-        },
         "QnProvisionFunctionUpdatePermissionStage": {
             "Type": "AWS::Lambda::Permission",
             "Properties": {
@@ -866,25 +874,71 @@
                 "SamResourceId": "DevOpsInstance"
             }
         },
-        "QnProvisionFunctionDeactivatePermissionStage": {
-            "Type": "AWS::Lambda::Permission",
+        "AppearancesQueueNoMessagesAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
             "Properties": {
-                "Action": "lambda:InvokeFunction",
-                "FunctionName": {
-                    "Ref": "QnProvisionFunction"
-                },
-                "Principal": "apigateway.amazonaws.com",
-                "SourceArn": {
-                    "Fn::Sub": [
-                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/DELETE/deactivate_endpoint",
-                        {
-                            "__ApiId__": {
-                                "Ref": "QnApi"
-                            },
-                            "__Stage__": "*"
+                "AlarmName": "Appearances Queue No Messages",
+                "AlarmDescription": "Alarms if the SQS Queue is not receiving new messages",
+                "AlarmActions": [
+                    {
+                        "Ref": "AlarmNotification"
+                    }
+                ],
+                "ComparisonOperator": "LessThanOrEqualToThreshold",
+                "Dimensions": [
+                    {
+                        "Name": "QueueName",
+                        "Value": {
+                            "Fn::GetAtt": [
+                                "AppearancesQueue",
+                                "QueueName"
+                            ]
                         }
-                    ]
-                }
+                    }
+                ],
+                "EvaluationPeriods": 1,
+                "MetricName": "NumberOfMessagesSent",
+                "Namespace": "AWS/SQS",
+                "Period": 43200,
+                "Statistic": "Sum",
+                "Threshold": 0,
+                "TreatMissingData": "notBreaching",
+                "Unit": "Count"
+            },
+            "Metadata": {
+                "SamResourceId": "AppearancesQueueNoMessagesAlarm"
+            }
+        },
+        "RDSLowMemoryAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmName": "RDS Low Memory Alarm",
+                "AlarmDescription": "This alarm is triggered when RDS memory is lower than or equal to 1GB",
+                "AlarmActions": [
+                    {
+                        "Ref": "AlarmNotification"
+                    }
+                ],
+                "MetricName": "FreeableMemory",
+                "Namespace": "AWS/RDS",
+                "Statistic": "Average",
+                "Dimensions": [
+                    {
+                        "Name": "DBInstanceIdentifier",
+                        "Value": {
+                            "Fn::Sub": "${AWS::StackName}-index"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "Threshold": 1073741824,
+                "ComparisonOperator": "LessThanOrEqualToThreshold",
+                "TreatMissingData": "missing"
+            },
+            "Metadata": {
+                "SamResourceId": "RDSLowMemoryAlarm"
             }
         },
         "QnApiStage": {
@@ -1013,7 +1067,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "2ed6bfad8dd9a878a99ef57b8370289a"
+                    "S3Key": "7a747ac43eeea9fb6cfc1d841040a565"
                 },
                 "Handler": "provision",
                 "MemorySize": 128,
@@ -1212,7 +1266,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "47670e561c7c7312c0a0f42d32d3b24f"
+                    "S3Key": "d9e3651a01c6a3c4bd62a347a51cfbec"
                 },
                 "Handler": "query",
                 "MemorySize": 128,
@@ -1569,7 +1623,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "d647c70824e1d75300afe520aac1f9f5"
+                    "S3Key": "53c4a4b3c7d1b7e423f0f97a19b07c71"
                 },
                 "Handler": "stats",
                 "MemorySize": 128,
@@ -1776,7 +1830,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "1cd9afbd650ca0f44b505a429caa9810"
+                    "S3Key": "516e9b9bf693284a4469e2f6cba7ff71"
                 },
                 "Handler": "consume",
                 "MemorySize": 128,
@@ -1851,6 +1905,19 @@
                 ]
             }
         },
+        "IndexDatabaseParameterGroup": {
+            "Type": "AWS::RDS::DBParameterGroup",
+            "Properties": {
+                "Description": "Index database parameters",
+                "Family": "postgres15",
+                "Parameters": {
+                    "work_mem": 16384
+                }
+            },
+            "Metadata": {
+                "SamResourceId": "IndexDatabaseParameterGroup"
+            }
+        },
         "IndexDatabase": {
             "Type": "AWS::RDS::DBInstance",
             "DependsOn": [
@@ -1908,17 +1975,14 @@
                 "SamResourceId": "IndexDatabase"
             }
         },
-        "IndexDatabaseParameterGroup": {
-            "Type": "AWS::RDS::DBParameterGroup",
+        "StatsApiDeployment59e230b779": {
+            "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
-                "Description": "Index database parameters",
-                "Family": "postgres15",
-                "Parameters": {
-                    "work_mem": 16384
-                }
-            },
-            "Metadata": {
-                "SamResourceId": "IndexDatabaseParameterGroup"
+                "Description": "RestApi deployment id: 59e230b779d3a002a98a087fae2e815f2f352e9c",
+                "RestApiId": {
+                    "Ref": "StatsApi"
+                },
+                "StageName": "Stage"
             }
         },
         "QnAuthorizerRole": {
@@ -2177,18 +2241,10 @@
                 "SamResourceId": "DevOpsFsAccessPoint"
             }
         },
-        "AppearancesQueueNoMessagesAlertNotification": {
-            "Type": "AWS::SNS::Topic",
-            "Properties": {
-                "Subscription": [
-                    {
-                        "Protocol": "email",
-                        "Endpoint": "dawid@quickblocks.io"
-                    }
-                ]
-            },
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
             "Metadata": {
-                "SamResourceId": "AppearancesQueueNoMessagesAlertNotification"
+                "SamResourceId": "InternetGateway"
             }
         },
         "QnApi": {
@@ -2422,12 +2478,6 @@
             },
             "Metadata": {
                 "SamResourceId": "AppearancesQueueIngestUserKey"
-            }
-        },
-        "InternetGateway": {
-            "Type": "AWS::EC2::InternetGateway",
-            "Metadata": {
-                "SamResourceId": "InternetGateway"
             }
         }
     }

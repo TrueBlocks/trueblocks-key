@@ -106,6 +106,47 @@ Resources:
             Service: 'monitoring.rds.amazonaws.com'
           Action: 'sts:AssumeRole'
 
+  # Database alarms
+  RDSLowStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: RDS Low Storage Alarm
+      AlarmDescription: This alarm is triggered when RDS storage is lower than or equal to 10GB
+      AlarmActions:
+        - !Ref AlarmNotification
+      MetricName: FreeStorageSpace
+      Namespace: AWS/RDS
+      Statistic: Average
+      Dimensions:
+      - Name: DBInstanceIdentifier
+        Value: !Sub ${AWS::StackName}-index
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 21474836480 # bytes = 20 GB
+      ComparisonOperator: LessThanOrEqualToThreshold
+      TreatMissingData: missing
+
+  RDSLowMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: RDS Low Memory Alarm
+      AlarmDescription: This alarm is triggered when RDS memory is lower than or equal to 1GB
+      AlarmActions:
+        - !Ref AlarmNotification
+      MetricName: FreeableMemory
+      Namespace: AWS/RDS
+      Statistic: Average
+      Dimensions:
+      - Name: DBInstanceIdentifier
+        Value: !Sub ${AWS::StackName}-index
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1073741824 # bytes = 20 GB
+      ComparisonOperator: LessThanOrEqualToThreshold
+      TreatMissingData: missing
+
   # Allow importing db from S3
   RDSImportFromS3Role:
     Type: AWS::IAM::Role
@@ -223,15 +264,15 @@ Resources:
       Status: Active
       UserName: !Ref AppearancesQueueIngestUser
 
-  # Queue alerts
+  # Queue Alarms
 
-  AppearancesQueueStuckMessageAlert:
+  AppearancesQueueStuckMessageAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: Appearances Queue Message Stuck
       AlarmDescription: Alarms if the SQS Queue has messages in it for too long
       AlarmActions:
-        - !Ref AppearancesQueueStuckMessageAlertNotification
+        - !Ref AlarmNotification
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
@@ -245,13 +286,13 @@ Resources:
       TreatMissingData: notBreaching
       Unit: Seconds
 
-  AppearancesQueueNoMessagesAlert:
+  AppearancesQueueNoMessagesAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: Appearances Queue No Messages
       AlarmDescription: Alarms if the SQS Queue is not receiving new messages
       AlarmActions:
-        - !Ref AppearancesQueueNoMessagesAlertNotification
+        - !Ref AlarmNotification
       ComparisonOperator: LessThanOrEqualToThreshold
       Dimensions:
         - Name: QueueName
@@ -265,16 +306,11 @@ Resources:
       TreatMissingData: notBreaching
       Unit: Count
 
-  # Queue alerts notifications
+  ###
+  # Alarm notifications
+  ###
 
-  AppearancesQueueStuckMessageAlertNotification:
-    Type: AWS::SNS::Topic
-    Properties:
-      Subscription:
-        - Protocol: "email"
-          Endpoint: "dawid@quickblocks.io"
-
-  AppearancesQueueNoMessagesAlertNotification:
+  AlarmNotification:
     Type: AWS::SNS::Topic
     Properties:
       Subscription:
