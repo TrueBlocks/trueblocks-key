@@ -34,7 +34,7 @@ SELECT apps.block_number, apps.tx_id
 FROM %[1]s
 JOIN %[2]s apps ON apps.address_id = id
 WHERE address = $1
-ORDER BY apps.block_number DESC, tx_id ASC
+ORDER BY apps.block_number ASC, tx_id ASC
 LIMIT $2
 OFFSET $3;
 `,
@@ -58,6 +58,18 @@ func SelectAppearancesMaxBlockNumber(appearancesTableName string) string {
 SELECT max(block_number)
 FROM   %[1]s;
 `,
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}
+
+func SelectAppearancesCountForAddress(appearancesTableName string, addressesTableName string) string {
+	return fmt.Sprintf(`
+SELECT count(*)
+FROM %[1]s
+JOIN %[2]s apps ON apps.address_id = id
+WHERE address = $1;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
 	)
 }

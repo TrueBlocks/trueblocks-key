@@ -46,7 +46,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcResponse{}
+	response := &query.RpcAppearancesResponse{}
 
 	// Valid request, appearance found
 
@@ -69,9 +69,6 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if l := len(response.Result); l != 1 {
 		t.Fatal("wrong result count:", l)
 	}
-	// if addr := response.Result[0].Address; addr != appearance.Address {
-	// 	t.Fatal("wrong address:", addr)
-	// }
 	if bn := response.Result[0].BlockNumber; bn != appearance.BlockNumber {
 		t.Fatal("wrong block number:", bn)
 	}
@@ -185,6 +182,44 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	t.Logf("result: %+v", response)
 	helpers.AssertLambdaError(t, string(output.Payload), "incorrect page or perPage")
+
+	// Invalid request: invalid method
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "invalid",
+		Params: []query.RpcRequestParams{
+			{
+				Address: address,
+			},
+		},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+	helpers.AssertLambdaError(t, string(output.Payload), "invalid method")
+
+	// Count
+
+	countResponse := &query.RpcCountResponse{}
+
+	// Valid request, appearance found
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearanceCount",
+		Params: []query.RpcRequestParams{
+			{
+				Address: address,
+			},
+		},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	helpers.UnmarshalLambdaOutput(t, output, countResponse)
+
+	if c := countResponse.Result; c != 1 {
+		t.Fatal("wrong count:", c)
+	}
 }
 
 func TestLambdaRpcFunctionPagination(t *testing.T) {
@@ -211,7 +246,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcResponse{}
+	response := &query.RpcAppearancesResponse{}
 
 	// Check basic pagination
 

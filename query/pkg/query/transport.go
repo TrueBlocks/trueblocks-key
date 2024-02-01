@@ -44,7 +44,7 @@ func (r *RpcRequest) Address() string {
 
 func (r *RpcRequest) Validate() error {
 	// Validate method
-	if r.Method != "tb_getAppearances" {
+	if r.Method != MethodGetAppearances && r.Method != MethodGetAppearanceCount {
 		return ErrInvalidMethod
 	}
 
@@ -83,8 +83,14 @@ func (r *RpcRequest) LambdaPayload() (string, error) {
 	return fmt.Sprintf(`{"body": %s}`, strconv.Quote(string(encoded))), nil
 }
 
-type RpcResponse struct {
+type RpcAppearancesResponse struct {
 	JsonRpc string                `json:"jsonrpc"`
 	Id      int                   `json:"id"`
 	Result  []database.Appearance `json:"result"`
+}
+
+type RpcCountResponse struct {
+	JsonRpc string `json:"jsonrpc"`
+	Id      int    `json:"id"`
+	Result  int    `json:"result"`
 }
