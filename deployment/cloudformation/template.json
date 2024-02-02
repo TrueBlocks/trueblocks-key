@@ -412,7 +412,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "4095d39addf2c9df168c50c0d95f76a6"
+                    "S3Key": "dfa9911f6529869e40a446f36548dedb"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 128,
@@ -588,14 +588,6 @@
                     }
                 ],
                 "Description": "Test plan for QN beta testing",
-                "Quota": {
-                    "Limit": 500,
-                    "Period": "MONTH"
-                },
-                "Throttle": {
-                    "BurstLimit": 100,
-                    "RateLimit": 10
-                },
                 "UsagePlanName": "qn-beta-test"
             },
             "Metadata": {
@@ -671,7 +663,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "09bbf117b91f31fe282bceb5b140f78b"
+                    "S3Key": "7ce24e8093eee3abd0ef936e2b04f554"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 128,
@@ -829,25 +821,27 @@
                 "SamResourceId": "DevOpsInstanceKeyPair"
             }
         },
-        "QnProvisionFunctionUpdatePermissionStage": {
-            "Type": "AWS::Lambda::Permission",
+        "DynamoDbEndpoint": {
+            "Type": "AWS::EC2::VPCEndpoint",
+            "DependsOn": [
+                "LambdaSecurityGroup"
+            ],
             "Properties": {
-                "Action": "lambda:InvokeFunction",
-                "FunctionName": {
-                    "Ref": "QnProvisionFunction"
+                "VpcEndpointType": "Gateway",
+                "ServiceName": {
+                    "Fn::Sub": "com.amazonaws.${AWS::Region}.dynamodb"
                 },
-                "Principal": "apigateway.amazonaws.com",
-                "SourceArn": {
-                    "Fn::Sub": [
-                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/PUT/update",
-                        {
-                            "__ApiId__": {
-                                "Ref": "QnApi"
-                            },
-                            "__Stage__": "*"
-                        }
-                    ]
-                }
+                "VpcId": {
+                    "Ref": "RDSVPC"
+                },
+                "RouteTableIds": [
+                    {
+                        "Ref": "RDSVPCRouteTable"
+                    }
+                ]
+            },
+            "Metadata": {
+                "SamResourceId": "DynamoDbEndpoint"
             }
         },
         "DevOpsInstance": {
@@ -1067,7 +1061,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "3939f254353f2a07e419a8b0ac3ce8b1"
+                    "S3Key": "0e0df3e99dffea1b6bd78e40ca19b8fc"
                 },
                 "Handler": "provision",
                 "MemorySize": 128,
@@ -1266,7 +1260,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "80888d8341c9d96f55cd895ac9d878b2"
+                    "S3Key": "c3b11311d42e2cb6d9ff211fa4225e17"
                 },
                 "Handler": "query",
                 "MemorySize": 128,
@@ -1623,7 +1617,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "249bfb66c5061381f8979f83abafe5c0"
+                    "S3Key": "be5c8560901097dd64c5171b6c46a599"
                 },
                 "Handler": "stats",
                 "MemorySize": 128,
@@ -1830,7 +1824,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "f980907f75085dca4f334b9e86f1cb50"
+                    "S3Key": "2b7986a8dd836a02d840d39d1bf4b297"
                 },
                 "Handler": "consume",
                 "MemorySize": 128,
@@ -1927,6 +1921,7 @@
             ],
             "Properties": {
                 "BackupRetentionPeriod": 4,
+                "AutoMinorVersionUpgrade": true,
                 "DBInstanceIdentifier": {
                     "Fn::Sub": "${AWS::StackName}-index"
                 },
@@ -2177,27 +2172,36 @@
                 "SamResourceId": "ApiKeyQnBetaTest"
             }
         },
-        "DynamoDbEndpoint": {
-            "Type": "AWS::EC2::VPCEndpoint",
-            "DependsOn": [
-                "LambdaSecurityGroup"
-            ],
+        "RDSHighCPUAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
             "Properties": {
-                "VpcEndpointType": "Gateway",
-                "ServiceName": {
-                    "Fn::Sub": "com.amazonaws.${AWS::Region}.dynamodb"
-                },
-                "VpcId": {
-                    "Ref": "RDSVPC"
-                },
-                "RouteTableIds": [
+                "AlarmName": "RDS High CPU Alarm",
+                "AlarmDescription": "This alarm is triggered when RDS CPU usage is greater than or equal to 70%",
+                "AlarmActions": [
                     {
-                        "Ref": "RDSVPCRouteTable"
+                        "Ref": "AlarmNotification"
                     }
-                ]
+                ],
+                "MetricName": "CPUUtilization",
+                "Namespace": "AWS/RDS",
+                "Statistic": "Average",
+                "Dimensions": [
+                    {
+                        "Name": "DBInstanceIdentifier",
+                        "Value": {
+                            "Fn::Sub": "${AWS::StackName}-index"
+                        }
+                    }
+                ],
+                "Period": 60,
+                "EvaluationPeriods": 1,
+                "DatapointsToAlarm": 1,
+                "Threshold": 70,
+                "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+                "TreatMissingData": "missing"
             },
             "Metadata": {
-                "SamResourceId": "DynamoDbEndpoint"
+                "SamResourceId": "RDSHighCPUAlarm"
             }
         },
         "InternetGatewayAttachment": {
@@ -2466,6 +2470,27 @@
             },
             "Metadata": {
                 "SamResourceId": "RDSVPCRouteTable"
+            }
+        },
+        "QnProvisionFunctionUpdatePermissionStage": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Ref": "QnProvisionFunction"
+                },
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Sub": [
+                        "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/${__Stage__}/PUT/update",
+                        {
+                            "__ApiId__": {
+                                "Ref": "QnApi"
+                            },
+                            "__Stage__": "*"
+                        }
+                    ]
+                }
             }
         },
         "AppearancesQueueIngestUserKey": {

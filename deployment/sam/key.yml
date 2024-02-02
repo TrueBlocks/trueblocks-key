@@ -53,8 +53,8 @@ Resources:
     Properties:
       # Setting BackupRetentionPeriod to 0 DISABLES BACKUPS
       BackupRetentionPeriod: 4
-      # Turn on only when uploading datasets:
-      # AutoMinorVersionUpgrade: false
+      # Turn off only when uploading datasets:
+      AutoMinorVersionUpgrade: true
       DBInstanceIdentifier: !Sub ${AWS::StackName}-index
       DBInstanceClass: db.t4g.xlarge # db.t4g.medium # db.t3.micro
       DBParameterGroupName: !Ref IndexDatabaseParameterGroup
@@ -145,6 +145,26 @@ Resources:
       DatapointsToAlarm: 1
       Threshold: 1073741824 # bytes = 20 GB
       ComparisonOperator: LessThanOrEqualToThreshold
+      TreatMissingData: missing
+
+  RDSHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: RDS High CPU Alarm
+      AlarmDescription: This alarm is triggered when RDS CPU usage is greater than or equal to 70%
+      AlarmActions:
+        - !Ref AlarmNotification
+      MetricName: CPUUtilization
+      Namespace: AWS/RDS
+      Statistic: Average
+      Dimensions:
+      - Name: DBInstanceIdentifier
+        Value: !Sub ${AWS::StackName}-index
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 70 # %
+      ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: missing
 
   # Allow importing db from S3
