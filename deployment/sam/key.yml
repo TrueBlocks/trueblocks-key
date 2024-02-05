@@ -274,6 +274,8 @@ Resources:
             - Effect: Allow
               Action:
                 - sqs:SendMessage
+                - sqs:GetQueueAttributes
+                - sqs:GetQueueUrl
               Resource: !GetAtt AppearancesQueue.Arn
 
   # User's keys (secret key can be fetched using !GetAtt SecretAccessKey)

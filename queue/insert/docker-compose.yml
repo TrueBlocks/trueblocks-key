@@ -1,0 +1,28 @@
+version: '3.1'
+
+services:
+
+  listener:
+    build:
+      context: ../..
+      dockerfile: queue/insert/Dockerfile
+    env_file: .env
+    restart: always
+    ports:
+      - 5555:5555
+
+  core:
+    image: dszlachta/trueblocks-core:develop
+    ports:
+      - "8080:${SERVE_PORT-8080}"
+    depends_on:
+      - listener
+    restart: always
+    env_file: .env
+    volumes:
+      - cache:/cache
+      - unchained:/unchained
+
+volumes:
+  unchained:
+  cache:

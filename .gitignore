@@ -4,3 +4,4 @@ uploader.bak
 key.toml
 packaged_key_template.yml
 bin/
+.env
