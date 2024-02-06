@@ -1,5 +1,5 @@
 #!/bin/bash
 
 chifra init --all
-chifra chunks --truncate 18508662
+chifra chunks index --truncate 18508663
 chifra scrape

@@ -1,5 +1,7 @@
 FROM golang:1.21-alpine
 
+RUN apk add lsof
+
 WORKDIR /app
 COPY . /app
 EXPOSE 5555
