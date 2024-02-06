@@ -12,7 +12,7 @@
         },
         "AppearancesQueueBatchSize": {
             "Type": "Number",
-            "Default": "10"
+            "Default": "400"
         },
         "RDSMasterUserName": {
             "Type": "String",
@@ -245,7 +245,8 @@
                 },
                 "FunctionName": {
                     "Ref": "AppearancesQueueConsume"
-                }
+                },
+                "MaximumBatchingWindowInSeconds": 1
             }
         },
         "AppearancesQueueIngestUser": {
@@ -261,7 +262,9 @@
                                 {
                                     "Effect": "Allow",
                                     "Action": [
-                                        "sqs:SendMessage"
+                                        "sqs:SendMessage",
+                                        "sqs:GetQueueAttributes",
+                                        "sqs:GetQueueUrl"
                                     ],
                                     "Resource": {
                                         "Fn::GetAtt": [
@@ -412,7 +415,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "dfa9911f6529869e40a446f36548dedb"
+                    "S3Key": "be9b371bc7e4673954eb4824df857ca4"
                 },
                 "Handler": "healthcheck",
                 "MemorySize": 128,
@@ -663,7 +666,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "7ce24e8093eee3abd0ef936e2b04f554"
+                    "S3Key": "b6166f8680ad29386155aee3412cfd1c"
                 },
                 "Handler": "authorizer",
                 "MemorySize": 128,
@@ -1061,7 +1064,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "0e0df3e99dffea1b6bd78e40ca19b8fc"
+                    "S3Key": "ab34f007b83ea033dec2220b0aed42d9"
                 },
                 "Handler": "provision",
                 "MemorySize": 128,
@@ -1260,7 +1263,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "c3b11311d42e2cb6d9ff211fa4225e17"
+                    "S3Key": "50319fbd2892d7f6a3a2ac53a4ea78ed"
                 },
                 "Handler": "query",
                 "MemorySize": 128,
@@ -1617,7 +1620,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "be5c8560901097dd64c5171b6c46a599"
+                    "S3Key": "dbeb3698f43ffefaeab899c0a3241adb"
                 },
                 "Handler": "stats",
                 "MemorySize": 128,
@@ -1824,7 +1827,7 @@
             "Properties": {
                 "Code": {
                     "S3Bucket": "aws-sam-cli-managed-default-samclisourcebucket-xfxhsc3bo3na",
-                    "S3Key": "2b7986a8dd836a02d840d39d1bf4b297"
+                    "S3Key": "cccf3d9770ba18526c7b0e0d44f76adb"
                 },
                 "Handler": "consume",
                 "MemorySize": 128,

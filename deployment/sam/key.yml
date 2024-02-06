@@ -14,7 +14,7 @@ Parameters:
     Default: key-prod-users-qn
   AppearancesQueueBatchSize:
     Type: Number
-    Default: "10"
+    Default: "400"
   QnApiStageName:
     Type: String
     Default: prod
@@ -233,6 +233,7 @@ Resources:
           Properties:
             Queue: !GetAtt AppearancesQueue.Arn
             BatchSize: !Ref AppearancesQueueBatchSize
+            MaximumBatchingWindowInSeconds: 1 # remove if BatchSize <= 10
       VpcConfig: # For accessing RDS instance
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
