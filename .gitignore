@@ -3,5 +3,6 @@ uploader.bak
 .aws-sam
 key.toml
 packaged_key_template.yml
+deployment/cloudformation/template.json
 bin/
 .env
