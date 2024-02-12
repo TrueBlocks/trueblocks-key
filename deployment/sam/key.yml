@@ -14,7 +14,10 @@ Parameters:
     Default: key-prod-users-qn
   AppearancesQueueBatchSize:
     Type: Number
-    Default: "10"
+    Default: 400
+  AppearancesQueueConsumeMaxConcurrency:
+    Type: Number
+    Default: 30
   QnApiStageName:
     Type: String
     Default: prod
@@ -227,12 +230,16 @@ Resources:
       Runtime: go1.x
       Handler: consume
       CodeUri: ../../queue/consume/lambda
+      ReservedConcurrentExecutions: !Ref AppearancesQueueConsumeMaxConcurrency
       Events:
         Ingest:
           Type: SQS
           Properties:
             Queue: !GetAtt AppearancesQueue.Arn
             BatchSize: !Ref AppearancesQueueBatchSize
+            MaximumBatchingWindowInSeconds: 1 # remove if BatchSize <= 10
+            ScalingConfig:
+              MaximumConcurrency: !Ref AppearancesQueueConsumeMaxConcurrency
       VpcConfig: # For accessing RDS instance
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
@@ -274,6 +281,8 @@ Resources:
             - Effect: Allow
               Action:
                 - sqs:SendMessage
+                - sqs:GetQueueAttributes
+                - sqs:GetQueueUrl
               Resource: !GetAtt AppearancesQueue.Arn
 
   # User's keys (secret key can be fetched using !GetAtt SecretAccessKey)

@@ -25,11 +25,6 @@ func main() {
 	flag.IntVar(&port, "port", 5555, "port to listen on")
 	flag.Parse()
 
-	// require config unless using file
-	if configPath == "" && file == "" {
-		log.Fatalln("configuration path is required")
-	}
-
 	cfg, err := awsConfig.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatalf("failed to load configuration, %v", err)
@@ -45,6 +40,10 @@ func main() {
 	if file != "" {
 		impl = queue.NewFileQueue(file)
 	} else {
+		if keyConfig.Sqs.QueueName == "" {
+			log.Fatalln("Cannot read QueueName. Either use --config or set env variable")
+		}
+		log.Println("Loading SQS queue", keyConfig.Sqs.QueueName)
 		impl = queue.NewSqsQueue(client, keyConfig)
 	}
 

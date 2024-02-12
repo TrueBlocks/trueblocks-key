@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	config "github.com/TrueBlocks/trueblocks-key/config/pkg"
 	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
@@ -67,7 +68,7 @@ func (s *SqsQueue) Add(itemType queueItem.ItemType, item any) (msgId string, err
 func (s *SqsQueue) AddAppearanceBatch(items []*queueItem.Appearance) (err error) {
 	entries := make([]types.SendMessageBatchRequestEntry, 0, 10)
 
-	for _, item := range items {
+	for index, item := range items {
 		item := item
 		if len(entries) == 10 {
 			if err := s.sendBatch(entries); err != nil {
@@ -80,6 +81,7 @@ func (s *SqsQueue) AddAppearanceBatch(items []*queueItem.Appearance) (err error)
 			return err
 		}
 		entries = append(entries, types.SendMessageBatchRequestEntry{
+			Id: aws.String(fmt.Sprint(index)),
 			MessageAttributes: map[string]types.MessageAttributeValue{
 				"Type": {
 					DataType:    aws.String("String"),
@@ -102,7 +104,7 @@ func (s *SqsQueue) AddAppearanceBatch(items []*queueItem.Appearance) (err error)
 func (s *SqsQueue) AddChunkBatch(items []*queueItem.Chunk) (err error) {
 	entries := make([]types.SendMessageBatchRequestEntry, 0, 10)
 
-	for _, item := range items {
+	for index, item := range items {
 		item := item
 		if len(entries) == 10 {
 			if err := s.sendBatch(entries); err != nil {
@@ -115,6 +117,7 @@ func (s *SqsQueue) AddChunkBatch(items []*queueItem.Chunk) (err error) {
 			return err
 		}
 		entries = append(entries, types.SendMessageBatchRequestEntry{
+			Id: aws.String(fmt.Sprint(index)),
 			MessageAttributes: map[string]types.MessageAttributeValue{
 				"Type": {
 					DataType:    aws.String("String"),
