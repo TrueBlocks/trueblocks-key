@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -88,5 +89,22 @@ func AssertLambdaError(t *testing.T, payload string, errorStr string) {
 	}
 	if lambdaError.ErrorMessage != errorStr {
 		t.Fatal("assert lamda error: expected", errorStr, "but got", lambdaError.ErrorMessage)
+	}
+}
+
+type proxiedLambdaError struct {
+	StatusCode int    `json:"statusCode"`
+	Body       string `json:"body"`
+}
+
+func AssertLambdaProxyError(t *testing.T, payload string, errorStr string) {
+	t.Helper()
+	lambdaError := &proxiedLambdaError{}
+	if err := json.Unmarshal([]byte(payload), lambdaError); err != nil {
+		t.Fatal("assert lambda error: unmarshal:", err)
+	}
+	unquoted, _ := strconv.Unquote(lambdaError.Body)
+	if unquoted != errorStr {
+		t.Fatal("assert lamda error: expected", errorStr, "but got", lambdaError.Body)
 	}
 }

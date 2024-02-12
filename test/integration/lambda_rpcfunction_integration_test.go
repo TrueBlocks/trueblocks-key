@@ -108,7 +108,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaError(t, string(output.Payload), "exactly 1 parameter object required")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "exactly 1 parameter object required")
 
 	// Invalid request: invalid address
 
@@ -124,7 +124,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaError(t, string(output.Payload), "incorrect address")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect address")
 
 	// Invalid request: invalid page
 
@@ -141,7 +141,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaError(t, string(output.Payload), "incorrect page or perPage")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
 
 	// Invalid request: invalid PerPage
 
@@ -159,7 +159,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaError(t, string(output.Payload), "incorrect page or perPage")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
 
 	// Invalid request: params out of range
 
@@ -172,7 +172,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaError(t, string(output.Payload), "invalid JSON")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "invalid JSON")
 
 	// Invalid request: insane number as parameter
 
@@ -181,7 +181,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaError(t, string(output.Payload), "incorrect page or perPage")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
 
 	// Invalid request: invalid method
 
@@ -195,7 +195,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		},
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
-	helpers.AssertLambdaError(t, string(output.Payload), "invalid method")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "invalid method")
 
 	// Count
 
@@ -219,6 +219,26 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	if c := countResponse.Result; c != 1 {
 		t.Fatal("wrong count:", c)
+	}
+
+	// Last indexed block
+
+	lastIndexedBlockResponse := &query.RpcLastIndexedBlockResponse{}
+
+	// Valid request, appearance found
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_lastIndexedBlock",
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	t.Log(string(output.Payload))
+	helpers.UnmarshalLambdaOutput(t, output, lastIndexedBlockResponse)
+
+	if l := lastIndexedBlockResponse.Result; l != 1 {
+		t.Fatal("wrong max indexed block:", l)
 	}
 }
 

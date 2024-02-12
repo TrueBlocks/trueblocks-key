@@ -3,10 +3,12 @@ package dbtest
 import (
 	"context"
 	"fmt"
+	"time"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -46,26 +48,20 @@ func NewTestConnection() (conn *database.Connection, done func() error, err erro
 		Chain:    "mainnet",
 	}
 	ctx := context.Background()
-	dbContainer, err := testcontainers.GenericContainer(
-		ctx,
-		testcontainers.GenericContainerRequest{
+	dbContainer, err := postgres.RunContainer(ctx,
+		testcontainers.WithImage("postgres:15.4"),
+		postgres.WithDatabase(conn.Database),
+		postgres.WithUsername(conn.User),
+		postgres.WithPassword(conn.Password),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).WithStartupTimeout(1*time.Minute)),
+		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				// Make sure image version matches one in Makefile (for target "test")
-				Image:        "postgres:15.4",
-				Name:         containerName,
-				ExposedPorts: []string{containerPort},
-				WaitingFor:   wait.ForListeningPort(nat.Port(containerPort)),
-				Env: map[string]string{
-					"POSTGRES_DB":       conn.Database,
-					"POSTGRES_USER":     conn.User,
-					"POSTGRES_PASSWORD": conn.Password,
-				},
+				Name:     "test-db",
 				Networks: []string{dockerNetwork},
-				// For logging only:
-				// Cmd: []string{"postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"},
 			},
-			Started: true,
-		},
+		}),
 	)
 	if err != nil {
 		return
