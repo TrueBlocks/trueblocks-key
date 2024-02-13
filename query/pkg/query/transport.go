@@ -44,8 +44,12 @@ func (r *RpcRequest) Address() string {
 
 func (r *RpcRequest) Validate() error {
 	// Validate method
-	if r.Method != MethodGetAppearances && r.Method != MethodGetAppearanceCount {
+	if r.Method != MethodGetAppearances && r.Method != MethodGetAppearanceCount && r.Method != MethodLastIndexedBlock {
 		return ErrInvalidMethod
+	}
+
+	if r.Method == MethodLastIndexedBlock {
+		return nil
 	}
 
 	if len(r.Params) != 1 {
@@ -91,6 +95,12 @@ type RpcAppearancesResponse struct {
 }
 
 type RpcCountResponse struct {
+	JsonRpc string `json:"jsonrpc"`
+	Id      int    `json:"id"`
+	Result  int    `json:"result"`
+}
+
+type RpcLastIndexedBlockResponse struct {
 	JsonRpc string `json:"jsonrpc"`
 	Id      int    `json:"id"`
 	Result  int    `json:"result"`

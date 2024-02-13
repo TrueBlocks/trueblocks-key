@@ -59,6 +59,8 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		r, err = handleGetAppearances(ctx, rpcRequest)
 	case query.MethodGetAppearanceCount:
 		r, err = handleCount(ctx, rpcRequest)
+	case query.MethodLastIndexedBlock:
+		r, err = handleLastIndexedBlock(ctx, rpcRequest)
 	default:
 		err = fmt.Errorf("unsupported method: %s", rpcRequest.Method)
 	}
