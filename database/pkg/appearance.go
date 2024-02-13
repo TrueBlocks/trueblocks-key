@@ -13,8 +13,8 @@ import (
 // const hardFetchLimit = 3000
 
 type Appearance struct {
-	BlockNumber   uint32 `json:"blockNumber"`
-	TransactionId uint32 `json:"transactionId"`
+	BlockNumber      uint32 `json:"blockNumber"`
+	TransactionIndex uint32 `json:"transactionIndex"`
 }
 
 func FetchAppearances(ctx context.Context, c *Connection, address string, limit uint, offset uint) (results []Appearance, err error) {
@@ -61,7 +61,7 @@ func InsertAppearanceBatch(ctx context.Context, c *Connection, apps []queueItem.
 			sql.InsertAppearance(c.AppearancesTableName(), c.AddressesTableName()),
 			app.Address,
 			app.BlockNumber,
-			app.TransactionId,
+			app.TransactionIndex,
 		)
 	}
 
@@ -73,7 +73,7 @@ func (a *Appearance) Insert(ctx context.Context, c *Connection, address string) 
 		sql.InsertAppearance(c.AppearancesTableName(), c.AddressesTableName()),
 		address,
 		a.BlockNumber,
-		a.TransactionId,
+		a.TransactionIndex,
 	)
 
 	return

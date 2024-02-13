@@ -68,6 +68,6 @@ func main() {
 	}
 
 	for _, appearance := range results {
-		fmt.Println(appearance.BlockNumber, appearance.TransactionId)
+		fmt.Println(appearance.BlockNumber, appearance.TransactionIndex)
 	}
 }

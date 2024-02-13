@@ -34,36 +34,10 @@ func Appearances[T coreNotify.NotificationPayload](n *coreNotify.Notification[T]
 			return nil, err
 		}
 		apps = append(apps, &queueItem.Appearance{
-			Address:       item.Address,
-			BlockNumber:   uint32(bn),
-			TransactionId: item.TransactionIndex,
+			Address:          item.Address,
+			BlockNumber:      uint32(bn),
+			TransactionIndex: item.TransactionIndex,
 		})
 	}
 	return
 }
-
-// func (p *NotificationPayloadChunkWritten) CidRange() (string, string) {
-// 	return p.Cid, p.Range
-// }
-
-// func (n *Notification[T]) Appearances() (apps []*queueItem.Appearance, err error) {
-// 	payload, ok := any(n.Payload).([]NotificationPayloadAppearance)
-// 	if !ok {
-// 		err = fmt.Errorf("notification is not appearance notification: %s", n.Msg)
-// 		return
-// 	}
-
-// 	apps = make([]*queueItem.Appearance, 0, len(payload))
-// 	for _, item := range payload {
-// 		bn, err := strconv.ParseUint(item.BlockNumber, 10, 32)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		apps = append(apps, &queueItem.Appearance{
-// 			Address:       item.Address,
-// 			BlockNumber:   uint32(bn),
-// 			TransactionId: item.TransactionIndex,
-// 		})
-// 	}
-// 	return
-// }

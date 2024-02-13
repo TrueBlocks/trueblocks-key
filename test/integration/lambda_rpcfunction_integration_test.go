@@ -36,8 +36,8 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	// Prepate test data
 	address := "0x0000000000000281526004018083600019166000"
 	appearance := &database.Appearance{
-		BlockNumber:   1,
-		TransactionId: 5,
+		BlockNumber:      1,
+		TransactionIndex: 5,
 	}
 	if err = appearance.Insert(context.TODO(), dbConn, address); err != nil {
 		t.Fatal("inserting test data:", err)
@@ -72,7 +72,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if bn := response.Result[0].BlockNumber; bn != appearance.BlockNumber {
 		t.Fatal("wrong block number:", bn)
 	}
-	if txid := response.Result[0].TransactionId; txid != appearance.TransactionId {
+	if txid := response.Result[0].TransactionIndex; txid != appearance.TransactionIndex {
 		t.Fatal("wrong txid:", txid)
 	}
 
@@ -252,12 +252,12 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 
 	// Prepate test data
 	appearances := []queueItem.Appearance{
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 1},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 2},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 3},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 4},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 5},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionId: 6},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 1},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 2},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 3},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 4},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 5},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 6},
 	}
 	if err = database.InsertAppearanceBatch(context.TODO(), dbConn, appearances); err != nil {
 		t.Fatal("inserting test data:", err)
@@ -292,8 +292,8 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		}
 
 		pa := database.Appearance{
-			BlockNumber:   appearances[i-1].BlockNumber,
-			TransactionId: appearances[i-1].TransactionId,
+			BlockNumber:      appearances[i-1].BlockNumber,
+			TransactionIndex: appearances[i-1].TransactionIndex,
 		}
 		if r := response.Result; !reflect.DeepEqual(r, []database.Appearance{pa}) {
 			t.Fatal(i, "-- wrong result:", r)
@@ -338,8 +338,8 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		if bn := pa.BlockNumber; bn != appearances[index].BlockNumber {
 			t.Fatal("wrong block number", bn, "expected", appearances[index].BlockNumber)
 		}
-		if txid := pa.TransactionId; txid != appearances[index].TransactionId {
-			t.Fatal("wrong txid", txid, "expected", appearances[index].TransactionId)
+		if txid := pa.TransactionIndex; txid != appearances[index].TransactionIndex {
+			t.Fatal("wrong txid", txid, "expected", appearances[index].TransactionIndex)
 		}
 	}
 }

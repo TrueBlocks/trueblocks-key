@@ -70,9 +70,9 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 
 	// Prepate test data
 	appearance := &queueItem.Appearance{
-		Address:       "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-		BlockNumber:   11154177,
-		TransactionId: 1,
+		Address:          "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+		BlockNumber:      11154177,
+		TransactionIndex: 1,
 	}
 
 	client := helpers.NewLambdaClient(t)
@@ -103,7 +103,7 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 		t.Fatal("mismatched AppearanceId:", appId)
 	}
 
-	if appId := dbAppearances[0].TransactionId; appId != appearance.TransactionId {
+	if appId := dbAppearances[0].TransactionIndex; appId != appearance.TransactionIndex {
 		t.Fatal("mismatched AppearanceId:", appId)
 	}
 
@@ -178,6 +178,7 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 	}
 
 	// Insert duplicated chunk
+	chunk.Cid = "some-other-cid-to-make-it-a-duplicate"
 	request, err = NewSqsReceiveEvent(queueItem.ItemTypeChunk, chunk)
 	output = helpers.InvokeLambda(t, client, "AppearancesQueueConsume", request)
 	helpers.AssertLambdaSuccessful(t, output)
