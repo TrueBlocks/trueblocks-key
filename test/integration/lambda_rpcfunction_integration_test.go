@@ -270,7 +270,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 
 	// Check basic pagination
 
-	for i := 1; i < len(appearances)+1; i++ {
+	for i := 0; i < len(appearances); i++ {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",
@@ -292,8 +292,8 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		}
 
 		pa := database.Appearance{
-			BlockNumber:      appearances[i-1].BlockNumber,
-			TransactionIndex: appearances[i-1].TransactionIndex,
+			BlockNumber:      appearances[i].BlockNumber,
+			TransactionIndex: appearances[i].TransactionIndex,
 		}
 		if r := response.Result; !reflect.DeepEqual(r, []database.Appearance{pa}) {
 			t.Fatal(i, "-- wrong result:", r)
@@ -304,7 +304,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 
 	var pagingResults = make([]database.Appearance, 0, len(appearances))
 	perPage := 3
-	for i := 1; i < (len(appearances)/perPage)+1; i++ {
+	for i := 0; i < (len(appearances) / perPage); i++ {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",

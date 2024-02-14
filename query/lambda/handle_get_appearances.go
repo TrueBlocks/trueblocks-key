@@ -23,7 +23,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 		}
 	}
 
-	offset := rpcRequest.Parameters().Page - 1
+	offset := rpcRequest.Parameters().Page
 	if offset < 0 {
 		offset = 0
 	}
