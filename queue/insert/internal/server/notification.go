@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	coreNotify "github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/notify"
 	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 )
 
@@ -15,38 +16,12 @@ const (
 	MessageAppearance   Message = "appearance"
 )
 
-// TODO: remove and link trueblocks-core/pkg instead when PR is merged: https://github.com/TrueBlocks/trueblocks-core/pull/3404
-type Notification[T NotificationPayload] struct {
-	Msg     Message        `json:"msg"`
-	Meta    map[string]any `json:"meta"`
-	Payload T              `json:"payload"`
-}
-
-type NotificationPayload interface {
-	[]NotificationPayloadAppearance |
-		[]NotificationPayloadChunkWritten |
-		NotificationPayloadChunkWritten |
-		string
-}
-
-type NotificationPayloadAppearance struct {
-	Address          string `json:"address"`
-	BlockNumber      string `json:"blockNumber"`
-	TransactionIndex uint32 `json:"txid"`
-}
-
-type NotificationPayloadChunkWritten struct {
-	Cid    string `json:"cid"`
-	Range  string `json:"range"`
-	Author string `json:"author"`
-}
-
-func (p *NotificationPayloadChunkWritten) CidRange() (string, string) {
+func CidRange(p *coreNotify.NotificationPayloadChunkWritten) (string, string) {
 	return p.Cid, p.Range
 }
 
-func (n *Notification[T]) Appearances() (apps []*queueItem.Appearance, err error) {
-	payload, ok := any(n.Payload).([]NotificationPayloadAppearance)
+func Appearances[T coreNotify.NotificationPayload](n *coreNotify.Notification[T]) (apps []*queueItem.Appearance, err error) {
+	payload, ok := any(n.Payload).([]coreNotify.NotificationPayloadAppearance)
 	if !ok {
 		err = fmt.Errorf("notification is not appearance notification: %s", n.Msg)
 		return
@@ -59,9 +34,9 @@ func (n *Notification[T]) Appearances() (apps []*queueItem.Appearance, err error
 			return nil, err
 		}
 		apps = append(apps, &queueItem.Appearance{
-			Address:       item.Address,
-			BlockNumber:   uint32(bn),
-			TransactionId: item.TransactionIndex,
+			Address:          item.Address,
+			BlockNumber:      uint32(bn),
+			TransactionIndex: item.TransactionIndex,
 		})
 	}
 	return
