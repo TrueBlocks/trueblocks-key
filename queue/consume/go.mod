@@ -1,6 +1,6 @@
 module github.com/TrueBlocks/trueblocks-key/queue/consume
 
-go 1.20
+go 1.22
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.21.1 // indirect

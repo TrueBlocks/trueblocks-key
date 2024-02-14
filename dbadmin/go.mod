@@ -1,6 +1,6 @@
 module github.com/TrueBlocks/trueblocks-key/dbadmin
 
-go 1.20
+go 1.22
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

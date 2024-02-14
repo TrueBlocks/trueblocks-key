@@ -1,6 +1,6 @@
 module github.com/TrueBlocks/trueblocks-key/database
 
-go 1.20
+go 1.22
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect

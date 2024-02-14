@@ -1,6 +1,6 @@
 module github.com/TrueBlocks/trueblocks-key/extract
 
-go 1.20
+go 1.22
 
 require (
 	github.com/TrueBlocks/trueblocks-core/src/apps/chifra v0.0.0-20230905152807-4575013c381d
