@@ -236,7 +236,7 @@
             </figure>
 
             <h5>Returns</h5>
-            An array of appearances
+            An array of appearances (from the earliest to the latest)
 
             <h5>Example</h5>
 
@@ -247,15 +247,16 @@
 curl -X POST --data '{"jsonrpc":"2.0","method":"tb_getAppearances","params":[{see above}],"id":1}'
 // Result
 {
+  "id": 1,
   "jsonrpc": "2.0",
   "result": [
     {
       "blockNumber": 4053179,
-      "transactionId": 1
+      "transactionId": 2
     },
     {
       "blockNumber": 4053179,
-      "transactionId": 2
+      "transactionId": 1
     }
   ]
 }</pre>
@@ -263,6 +264,83 @@ curl -X POST --data '{"jsonrpc":"2.0","method":"tb_getAppearances","params":[{se
             </figure>
 
         </div>
+
+        <!-- getAppearanceCount -->
+                <div class="docs-item">
+
+            <h4><code>tb_getAppearanceCount</code></h4>
+            Returns number of appearances of the given address.
+
+            <h5>Parameters</h5>
+            <ol>
+                <li>
+                    <code>Object</code>
+                    <ul>
+                        <li><code>address</code>: Address - address for which to return the number of appearances</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <figure>
+                <code>
+                    <pre>
+"params": [{
+  "address": "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5"
+}]</pre>
+                </code>
+            </figure>
+
+            <h5>Returns</h5>
+            Number (decimal) of appearances
+
+            <h5>Example</h5>
+
+            <figure>
+                <code>
+                    <pre>
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"tb_getAppearanceCount","params":[{see above}],"id":1}'
+// Result
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": 5302
+}</pre>
+                </code>
+            </figure>
+
+        </div>
+
+        <!-- lastIndexedBlock -->
+
+        <div class="docs-item">
+            <h4><code>tb_lastIndexedBlock</code></h4>
+            Returns last indexed block number.
+
+            <h5>Parameters</h5>
+            None
+
+            <h5>Returns</h5>
+            Block number (decimal)
+
+            <h5>Example</h5>
+
+            <figure>
+                <code>
+                    <pre>
+// Request
+curl -X POST --data '{"jsonrpc":"2.0","method":"tb_lastIndexedBlock","params":[],"id":1}'
+// Result
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": 19226855
+}</pre>
+                </code>
+            </figure>
+
+        </div>
+
     </section>
 
     <section id="faq" class="faq-body">
