@@ -1,6 +1,6 @@
 module github.com/TrueBlocks/trueblocks-key/config
 
-go 1.20
+go 1.22
 
 require (
 	github.com/knadh/koanf/parsers/toml v0.1.0

@@ -69,7 +69,6 @@ func (s *SqsQueue) AddAppearanceBatch(items []*queueItem.Appearance) (err error)
 	entries := make([]types.SendMessageBatchRequestEntry, 0, 10)
 
 	for index, item := range items {
-		item := item
 		if len(entries) == 10 {
 			if err := s.sendBatch(entries); err != nil {
 				return err
@@ -105,7 +104,6 @@ func (s *SqsQueue) AddChunkBatch(items []*queueItem.Chunk) (err error) {
 	entries := make([]types.SendMessageBatchRequestEntry, 0, 10)
 
 	for index, item := range items {
-		item := item
 		if len(entries) == 10 {
 			if err := s.sendBatch(entries); err != nil {
 				return err
