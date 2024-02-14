@@ -172,8 +172,8 @@ func TestStatsApi(t *testing.T) {
 
 	address := "0x0000000000000281526004018083600019166000"
 	appearance := &database.Appearance{
-		BlockNumber:   1,
-		TransactionId: 5,
+		BlockNumber:      1,
+		TransactionIndex: 5,
 	}
 	if err = appearance.Insert(context.TODO(), dbConn, address); err != nil {
 		t.Fatal("inserting test data:", err)

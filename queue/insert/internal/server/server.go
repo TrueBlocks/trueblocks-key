@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	coreNotify "github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/notify"
 	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 	"github.com/TrueBlocks/trueblocks-key/queue/insert/internal/queue"
 )
@@ -63,7 +64,7 @@ func (s *Server) addHandler(w http.ResponseWriter, r *http.Request) {
 		s.Error(w, 400, fmt.Errorf("appearance type is only supported in batches"))
 		return
 	case MessageChunkWritten:
-		notification := &Notification[NotificationPayloadChunkWritten]{}
+		notification := &coreNotify.Notification[coreNotify.NotificationPayloadChunkWritten]{}
 		if err := json.Unmarshal(b, notification); err != nil {
 			fmt.Println(err)
 			s.Error(w, 500, err)
@@ -112,12 +113,12 @@ func (s *Server) batchHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch Message(notificationType) {
 	case MessageAppearance:
-		notification := &Notification[[]NotificationPayloadAppearance]{}
+		notification := &coreNotify.Notification[[]coreNotify.NotificationPayloadAppearance]{}
 		if err := json.Unmarshal(b, notification); err != nil {
 			s.Error(w, 500, err)
 			return
 		}
-		apps, err := notification.Appearances()
+		apps, err := Appearances(notification)
 		if err != nil {
 			s.Error(w, 500, err)
 			return
@@ -128,7 +129,7 @@ func (s *Server) batchHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("Batch added %d notifications of type Appearance\n", len(apps))
 	case MessageChunkWritten:
-		notification := &Notification[[]NotificationPayloadChunkWritten]{}
+		notification := &coreNotify.Notification[[]coreNotify.NotificationPayloadChunkWritten]{}
 		if err := json.Unmarshal(b, notification); err != nil {
 			s.Error(w, 500, err)
 			return

@@ -16,11 +16,11 @@ func TestQueueAdd(t *testing.T) {
 	}
 
 	app := &queueItem.Appearance{
-		Address:         "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-		BlockNumber:     17742858,
-		TransactionId:   15,
-		BlockRangeStart: 17740000,
-		BlockRangeEnd:   17742858,
+		Address:          "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+		BlockNumber:      17742858,
+		TransactionIndex: 15,
+		BlockRangeStart:  17740000,
+		BlockRangeEnd:    17742858,
 	}
 	if _, err := q.AddAppearance(app); err != nil {
 		t.Fatal(err)
@@ -64,11 +64,11 @@ func TestQueueAddBatch(t *testing.T) {
 
 	apps := []*queueItem.Appearance{
 		{
-			Address:         "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-			BlockNumber:     17742858,
-			TransactionId:   15,
-			BlockRangeStart: 17740000,
-			BlockRangeEnd:   17742858,
+			Address:          "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+			BlockNumber:      17742858,
+			TransactionIndex: 15,
+			BlockRangeStart:  17740000,
+			BlockRangeEnd:    17742858,
 		},
 	}
 	if err := q.AddAppearanceBatch(apps); err != nil {

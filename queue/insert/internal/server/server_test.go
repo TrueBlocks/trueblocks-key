@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	coreNotify "github.com/TrueBlocks/trueblocks-core/src/apps/chifra/pkg/notify"
 	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
 	"github.com/TrueBlocks/trueblocks-key/queue/insert/internal/queue"
 	"github.com/TrueBlocks/trueblocks-key/queue/insert/internal/queue/queuetest"
@@ -27,9 +28,9 @@ func TestServer_Add(t *testing.T) {
 		Range:  "1000-2000",
 		Author: "test",
 	}
-	n := &Notification[NotificationPayloadChunkWritten]{
-		Msg: MessageChunkWritten,
-		Payload: NotificationPayloadChunkWritten{
+	n := &coreNotify.Notification[coreNotify.NotificationPayloadChunkWritten]{
+		Msg: coreNotify.MessageChunkWritten,
+		Payload: coreNotify.NotificationPayloadChunkWritten{
 			Cid:    expected.Cid,
 			Range:  expected.Range,
 			Author: expected.Author,
@@ -59,9 +60,9 @@ func TestServer_AddBatch(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(svr.batchHandler))
 	defer ts.Close()
 
-	payload := Notification[[]NotificationPayloadAppearance]{
-		Msg: MessageAppearance,
-		Payload: []NotificationPayloadAppearance{
+	payload := coreNotify.Notification[[]coreNotify.NotificationPayloadAppearance]{
+		Msg: coreNotify.MessageAppearance,
+		Payload: []coreNotify.NotificationPayloadAppearance{
 			{
 				Address:          "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
 				BlockNumber:      "18540199",
@@ -91,7 +92,7 @@ func TestServer_AddBatch(t *testing.T) {
 		t.Fatal("wrong status code:", res.StatusCode)
 	}
 
-	apps, err := payload.Appearances()
+	apps, err := Appearances[[]coreNotify.NotificationPayloadAppearance](&payload)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,9 +115,9 @@ func TestServer_AddBatch_Chunks(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(svr.batchHandler))
 	defer ts.Close()
 
-	payload := Notification[[]NotificationPayloadChunkWritten]{
-		Msg: MessageChunkWritten,
-		Payload: []NotificationPayloadChunkWritten{
+	payload := coreNotify.Notification[[]coreNotify.NotificationPayloadChunkWritten]{
+		Msg: coreNotify.MessageChunkWritten,
+		Payload: []coreNotify.NotificationPayloadChunkWritten{
 			{
 				Cid:    "QmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4",
 				Range:  "1000-2000",
