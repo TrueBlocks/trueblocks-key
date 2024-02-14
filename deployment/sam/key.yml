@@ -25,13 +25,19 @@ Parameters:
     Type: String
     Default: qn-beta-test
 
+Conditions:
+  IsLocal: !Equals [123456789012, !Ref AWS::AccountId]
+
 # Global values that are applied to all applicable resources in this template
 Globals:
   Function:
-    Architectures: ["x86_64"]
+    Architectures: ["arm64"] # ["x86_64"]
+    Runtime: provided.al2023
+    Handler: bootstrap
     Timeout: 30
     Layers:
-      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
+      - !If [!Ref IsLocal, "arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:12", !Ref AWS::NoValue]
+      # - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
 
 Outputs:
   AppearancesQueueIngestUserAccessKey:
@@ -225,10 +231,10 @@ Resources:
     DependsOn:
       - IndexDatabase
       - AppearancesQueue
+    Metadata:
+      BuildMethod: go1.x
     Properties:
       MemorySize: 128
-      Runtime: go1.x
-      Handler: consume
       CodeUri: ../../queue/consume/lambda
       ReservedConcurrentExecutions: !Ref AppearancesQueueConsumeMaxConcurrency
       Events:
@@ -450,10 +456,10 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn:
       - QnProvisionSecret
+    Metadata:
+      BuildMethod: go1.x
     Properties:
       MemorySize: 128
-      Runtime: go1.x
-      Handler: authorizer
       CodeUri: ../../quicknode/authorizer/lambda
       Environment:
         Variables:
@@ -476,10 +482,10 @@ Resources:
 
   QnHealthCheckFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
     Properties:
       MemorySize: 128
-      Runtime: go1.x
-      Handler: healthcheck
       CodeUri: ../../quicknode/healthcheck/lambda
       Events:
         ApiEvent:
@@ -526,10 +532,10 @@ Resources:
 
   QnProvisionFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
     Properties:
       MemorySize: 128
-      Runtime: go1.x
-      Handler: provision
       CodeUri: ../../quicknode/provision/lambda
       Events:
         Provision:
@@ -598,10 +604,10 @@ Resources:
   # ### RPC route
   RpcFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
     Properties:
       MemorySize: 128
-      Runtime: go1.x
-      Handler: query
       CodeUri: ../../query/lambda
       Events:
         ApiEvent:
@@ -662,10 +668,10 @@ Resources:
 
   StatsFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
     Properties:
       MemorySize: 128
-      Runtime: go1.x
-      Handler: stats
       CodeUri: ../../stats/lambda
       Events:
         ApiEvent:
