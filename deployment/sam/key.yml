@@ -36,7 +36,7 @@ Globals:
     Handler: bootstrap
     Timeout: 30
     Layers:
-      - !If [!Ref IsLocal, "arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:12", !Ref AWS::NoValue]
+      - !If [IsLocal, "arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:12", !Ref AWS::NoValue]
       # - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:38"
 
 Outputs:
