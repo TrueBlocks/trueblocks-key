@@ -21,7 +21,7 @@ services:
       - 5001:5001
 
   core:
-    image: dszlachta/trueblocks-core:develop
+    image: trueblocks/core:v2.5.8-release
     ports:
       - "8080:${SERVE_PORT-8080}"
     depends_on:
@@ -34,13 +34,5 @@ services:
     entrypoint: sh /src/core.entrypoint.sh
     volumes:
       - .:/src
-      # - cache:/cache
-      # - unchained:/unchained
       - ~/key_insert/cache:/cache
       - ~/key_insert/cache/unchained:/unchained
-
-# volumes:
-#   unchained:
-#     external: true
-#   cache:
-#     external: true
