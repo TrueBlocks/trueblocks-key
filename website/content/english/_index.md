@@ -21,7 +21,7 @@ features:
     button:
       enable: true
       label: "Read docs"
-      link: "#"
+      link: "/docs/appearance/"
 
   - title: "Coming soon"
     content: ""
