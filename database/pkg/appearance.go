@@ -9,8 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// TODO: disabled temporarily for stress tests
-// const hardFetchLimit = 3000
+const hardFetchLimit = 3000
 
 type Appearance struct {
 	BlockNumber      uint32 `json:"blockNumber"`
@@ -18,10 +17,9 @@ type Appearance struct {
 }
 
 func FetchAppearances(ctx context.Context, c *Connection, address string, limit uint, offset uint) (results []Appearance, err error) {
-	// TODO: disabled temporarily for stress tests
-	// if limit > hardFetchLimit {
-	// 	log.Printf("database/FetchAppearances: limit too large (%d),setting it to %d\n", limit, hardFetchLimit)
-	// }
+	if limit > hardFetchLimit {
+		log.Printf("database/FetchAppearances: limit too large (%d),setting it to %d\n", limit, hardFetchLimit)
+	}
 	rows, err := c.conn.Query(
 		ctx,
 		sql.SelectAppearances(c.AppearancesTableName(), c.AddressesTableName()),
