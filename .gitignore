@@ -7,3 +7,5 @@ deployment/cloudformation/template.json
 bin/
 .env
 node_modules/
+website/resources
+website/public
