@@ -6,3 +6,9 @@ packaged_key_template.yml
 deployment/cloudformation/template.json
 bin/
 .env
+node_modules/
+website/resources
+website/public
+website/.hugo_build.lock
+website/hugo_stats.json
+website/typescript

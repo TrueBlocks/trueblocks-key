@@ -1,0 +1,7 @@
+// Add your own custom styles here
+
+html.dark {
+    .navbar-brand img {
+        filter: #{'invert()'};
+    }
+}

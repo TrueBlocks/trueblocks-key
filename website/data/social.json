@@ -1,0 +1,19 @@
+{
+  "main": [
+    {
+      "name": "discord",
+      "icon": "fab fa-discord",
+      "link": "https://discord.com/invite/kAFcZH2x7K"
+    },
+    {
+      "name": "twitter",
+      "icon": "fab fa-twitter",
+      "link": "https://twitter.com/trueblocks"
+    },
+    {
+      "name": "github",
+      "icon": "fab fa-github",
+      "link": "https://github.com/trueblocks/trueblocks-core"
+    }
+  ]
+}
