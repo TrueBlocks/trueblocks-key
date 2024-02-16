@@ -1,3 +1,4 @@
 all:
-	@scp -pr * "key.trueblocks.io:/home/jrush/Websites/key.trueblocks.io/"
+	npm run build
+	@scp -pr public/* "key.trueblocks.io:/home/jrush/Websites/key.trueblocks.io/"
 
