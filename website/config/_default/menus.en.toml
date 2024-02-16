@@ -1,0 +1,43 @@
+############# English navigation ##############
+
+# main menu
+[[main]]
+name = "Home"
+url = "/"
+weight = 1
+
+[[main]]
+name = "Docs"
+hasChildren = true
+weight = 2
+
+[[main]]
+parent = "Docs"
+name = "Appearance Index"
+url = "docs/appearance"
+
+[[main]]
+name = "About"
+url = "about/"
+weight = 3
+
+[[main]]
+name = "FAQ"
+url = "faq/"
+weight = 4
+
+# footer menu
+[[footer]]
+name = "About"
+url = "about/"
+weight = 1
+
+[[footer]]
+name = "Privacy Policy"
+url = "privacy-policy/"
+weight = 3
+
+[[footer]]
+name = "Terms of Service"
+url = "terms/"
+weight = 3
