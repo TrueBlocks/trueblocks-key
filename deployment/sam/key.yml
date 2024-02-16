@@ -725,12 +725,12 @@ Resources:
         - ApiId: !Ref QnApi
           Stage: !Ref QnApiStageName
       Description: Test plan for QN beta testing
-      Quota:
-        Limit: 500
-        Period: MONTH
+      # Quota:
+      #   Limit: 500
+      #   Period: MONTH
       Throttle:
-            BurstLimit: 100
-            RateLimit: 10
+            # BurstLimit: 10
+            RateLimit: 20
       UsagePlanName: qn-beta-test
   ApiKeyQnBetaTest:
     Type: 'AWS::ApiGateway::ApiKey'

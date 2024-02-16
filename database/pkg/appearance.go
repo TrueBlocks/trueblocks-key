@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-const hardFetchLimit = 3000
+const hardFetchLimit = 1000
 
 type Appearance struct {
 	BlockNumber      uint32 `json:"blockNumber"`
