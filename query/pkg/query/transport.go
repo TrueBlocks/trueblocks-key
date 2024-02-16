@@ -72,10 +72,9 @@ func (r *RpcRequest) Validate() error {
 		return ErrIncorrectPagePerPage
 	}
 
-	// TODO: disabled temporarily for stress tests
-	// if r.Parameters().Page > MaxSafePage || r.Parameters().PerPage > MaxSafePerPage {
-	// 	return ErrIncorrectPagePerPage
-	// }
+	if r.Parameters().Page > MaxSafePage || r.Parameters().PerPage > MaxSafePerPage {
+		return ErrIncorrectPagePerPage
+	}
 
 	return nil
 }
