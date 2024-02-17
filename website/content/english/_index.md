@@ -23,7 +23,7 @@ features:
       label: "Read docs"
       link: "/docs/appearance/"
 
-  - title: "Coming soon"
+  - title: "On our roadmap"
     content: ""
     bulletpoints:
       - "Appearance Index API: date and time queries"
