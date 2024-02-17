@@ -29,9 +29,9 @@ jobs:
         script: |
           cd /home/${{ secrets.DOCS_USER }}/trueblocks-key/website
           git pull origin testing
+          npm run build
+          chown -R ${{ secrets.DOCS_USER }}:${{ secrets.DOCS_GROUP }} /home/${{ secrets.DOCS_USER }}/trueblocks-key/website
           pwd
-          find . | grep -v node_modules
+          find . -exec ls -l {} ';' | grep -v node_modules
           echo ${{ secrets.DOCS_USER }}:${{ secrets.DOCS_GROUP }}
-          # npm run build
-          # chown -R ${{ secrets.DOCS_USER }}:${{ secrets.DOCS_GROUP }} /home/${{ secrets.DOCS_USER }}/trueblocks-key/website
           # cp -pR /home/${{ secrets.DOCS_USER }}/trueblocks-key/website /var/www/trueblocks-key/html
