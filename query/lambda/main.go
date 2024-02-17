@@ -17,6 +17,8 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
+const defaultLimit = 100
+
 var ErrInternal = errors.New(http.StatusText(http.StatusInternalServerError))
 
 var cnf *keyConfig.ConfigFile
