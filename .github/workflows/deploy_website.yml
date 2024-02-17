@@ -24,8 +24,8 @@ jobs:
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.NEW_SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        username: ${{ secrets.DOCS_USER }}
+        key: ${{ secrets.DOCS_PRIVATE_KEY }}
         script: |
           cd /path/to/your/hugo/site/directory
           git pull origin main
