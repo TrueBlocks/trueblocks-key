@@ -1,7 +1,7 @@
 ---
 # Banner
 banner:
-  title: "Everything that ever happened anywhere on the chain"
+  title: "Almost everything that ever happened anywhere on the chain"
   content: "Get a complete historical list of appearances (block number, transaction id) for any Ethereum address"
   button:
     enable: true
