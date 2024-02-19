@@ -8,7 +8,7 @@ import (
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 )
 
-func handleLastIndexedBlock(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcLastIndexedBlockResponse, err error) {
+func handleLastIndexedBlock(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[int], err error) {
 	block, err := database.FetchMaxBlockNumber(ctx, dbConn)
 	if err != nil {
 		log.Println("database query (lastIndexedBlock):", err)
@@ -16,7 +16,7 @@ func handleLastIndexedBlock(ctx context.Context, rpcRequest *query.RpcRequest) (
 		return
 	}
 
-	response = &query.RpcLastIndexedBlockResponse{
+	response = &query.RpcResponse[int]{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
 		Result:  query.Result[int]{Data: block},

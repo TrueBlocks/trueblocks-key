@@ -10,7 +10,7 @@ import (
 
 const defaultAppearancesLimit = 100
 
-func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcAppearancesResponse, err error) {
+func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[[]database.Appearance], err error) {
 	limit := rpcRequest.Parameters().PerPage
 	if limit == 0 {
 		// Just in case we forgot to define the limit in configuration
@@ -36,7 +36,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 		return
 	}
 
-	response = &query.RpcAppearancesResponse{
+	response = &query.RpcResponse[[]database.Appearance]{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
 		Result:  query.Result[[]database.Appearance]{Data: items},

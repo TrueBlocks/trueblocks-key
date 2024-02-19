@@ -46,7 +46,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcAppearancesResponse{}
+	response := &query.RpcResponse[[]database.Appearance]{}
 
 	// Valid request, appearance found
 
@@ -199,7 +199,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Count
 
-	countResponse := &query.RpcCountResponse{}
+	countResponse := &query.RpcResponse[int]{}
 
 	// Valid request, appearance found
 
@@ -223,7 +223,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Last indexed block
 
-	lastIndexedBlockResponse := &query.RpcLastIndexedBlockResponse{}
+	lastIndexedBlockResponse := &query.RpcResponse[int]{}
 
 	// Valid request, appearance found
 
@@ -266,7 +266,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcAppearancesResponse{}
+	response := &query.RpcResponse[[]database.Appearance]{}
 
 	// Check basic pagination
 

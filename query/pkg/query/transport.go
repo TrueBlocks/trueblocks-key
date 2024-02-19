@@ -87,22 +87,10 @@ func (r *RpcRequest) LambdaPayload() (string, error) {
 	return fmt.Sprintf(`{"body": %s}`, strconv.Quote(string(encoded))), nil
 }
 
-type RpcAppearancesResponse struct {
-	JsonRpc                       string `json:"jsonrpc"`
-	Id                            int    `json:"id"`
-	Result[[]database.Appearance] `json:"result"`
-}
-
-type RpcCountResponse struct {
-	JsonRpc     string `json:"jsonrpc"`
-	Id          int    `json:"id"`
-	Result[int] `json:"result"`
-}
-
-type RpcLastIndexedBlockResponse struct {
-	JsonRpc     string `json:"jsonrpc"`
-	Id          int    `json:"id"`
-	Result[int] `json:"result"`
+type RpcResponse[T RpcResponseResult] struct {
+	JsonRpc   string `json:"jsonrpc"`
+	Id        int    `json:"id"`
+	Result[T] `json:"result"`
 }
 
 type Result[T RpcResponseResult] struct {

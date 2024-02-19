@@ -8,7 +8,7 @@ import (
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 )
 
-func handleCount(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcCountResponse, err error) {
+func handleCount(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[int], err error) {
 	count, err := database.FetchCount(ctx, dbConn, rpcRequest.Address())
 	if err != nil {
 		log.Println("database query (count):", err)
@@ -16,7 +16,7 @@ func handleCount(ctx context.Context, rpcRequest *query.RpcRequest) (response *q
 		return
 	}
 
-	response = &query.RpcCountResponse{
+	response = &query.RpcResponse[int]{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
 		Result:  query.Result[int]{Data: count},
