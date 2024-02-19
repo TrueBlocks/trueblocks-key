@@ -21,9 +21,9 @@ Parameters:
   QnApiStageName:
     Type: String
     Default: prod
-  QnBetaTestApiKeyName:
+  QnStandardPlanSlug:
     Type: String
-    Default: qn-beta-test
+    Default: qn-standard
 
 Conditions:
   IsLocal: !Equals [123456789012, !Ref AWS::AccountId]
@@ -715,7 +715,7 @@ Resources:
 
   ### QN plans
 
-  UsagePlanQnBetaTest:
+  UsagePlanQnStandard:
     Type: 'AWS::ApiGateway::UsagePlan'
     DependsOn:
       # - QnApi
@@ -731,22 +731,22 @@ Resources:
       Throttle:
             # BurstLimit: 10
             RateLimit: 20
-      UsagePlanName: qn-beta-test
-  ApiKeyQnBetaTest:
+      UsagePlanName: qn-standard
+  ApiKeyQnStandard:
     Type: 'AWS::ApiGateway::ApiKey'
     DependsOn:
-      - UsagePlanQnBetaTest
+      - UsagePlanQnStandard
     Properties:
       # Note: due to SAM limitations, name of the plan HAS to be the same
       # as plan slug defined in QN
-      Name: !Ref QnBetaTestApiKeyName
+      Name: !Ref QnStandardPlanSlug
       Enabled: true
-  LinkUsagePlanApiKeyQnBetaTest:
+  LinkUsagePlanApiKeyQnStandard:
     Type: 'AWS::ApiGateway::UsagePlanKey'
     Properties:
-      KeyId: !Ref ApiKeyQnBetaTest
+      KeyId: !Ref ApiKeyQnStandard
       KeyType: API_KEY
-      UsagePlanId: !Ref UsagePlanQnBetaTest
+      UsagePlanId: !Ref UsagePlanQnStandard
 
   ###
   # S3 object storage
