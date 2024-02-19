@@ -39,7 +39,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	response = &query.RpcAppearancesResponse{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
-		Result:  items,
+		Result:  query.Result[[]database.Appearance]{Data: items},
 	}
 	return
 }

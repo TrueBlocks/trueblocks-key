@@ -19,7 +19,7 @@ func handleLastIndexedBlock(ctx context.Context, rpcRequest *query.RpcRequest) (
 	response = &query.RpcLastIndexedBlockResponse{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
-		Result:  block,
+		Result:  query.Result[int]{Data: block},
 	}
 	return
 }

@@ -66,13 +66,13 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	t.Logf("result: %+v", response)
 
-	if l := len(response.Result); l != 1 {
+	if l := len(response.Result.Data); l != 1 {
 		t.Fatal("wrong result count:", l)
 	}
-	if bn := response.Result[0].BlockNumber; bn != appearance.BlockNumber {
+	if bn := response.Result.Data[0].BlockNumber; bn != appearance.BlockNumber {
 		t.Fatal("wrong block number:", bn)
 	}
-	if txid := response.Result[0].TransactionIndex; txid != appearance.TransactionIndex {
+	if txid := response.Result.Data[0].TransactionIndex; txid != appearance.TransactionIndex {
 		t.Fatal("wrong txid:", txid)
 	}
 
@@ -94,7 +94,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	t.Logf("result: %+v", response)
 
-	if l := len(response.Result); l != 0 {
+	if l := len(response.Result.Data); l != 0 {
 		t.Fatal("wrong result count:", l)
 	}
 
@@ -217,7 +217,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	helpers.AssertLambdaSuccessful(t, output)
 	helpers.UnmarshalLambdaOutput(t, output, countResponse)
 
-	if c := countResponse.Result; c != 1 {
+	if c := countResponse.Result.Data; c != 1 {
 		t.Fatal("wrong count:", c)
 	}
 
@@ -237,7 +237,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	t.Log(string(output.Payload))
 	helpers.UnmarshalLambdaOutput(t, output, lastIndexedBlockResponse)
 
-	if l := lastIndexedBlockResponse.Result; l != 1 {
+	if l := lastIndexedBlockResponse.Result.Data; l != 1 {
 		t.Fatal("wrong max indexed block:", l)
 	}
 }
@@ -287,7 +287,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		helpers.AssertLambdaSuccessful(t, output)
 		helpers.UnmarshalLambdaOutput(t, output, response)
 
-		if l := len(response.Result); l != 1 {
+		if l := len(response.Result.Data); l != 1 {
 			t.Fatal(i, "-- wrong result count:", l)
 		}
 
@@ -321,10 +321,10 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		helpers.AssertLambdaSuccessful(t, output)
 		helpers.UnmarshalLambdaOutput(t, output, response)
 
-		if l := len(response.Result); l != 3 {
+		if l := len(response.Result.Data); l != 3 {
 			t.Fatal(i, "-- wrong page len:", l)
 		}
-		pagingResults = append(pagingResults, response.Result...)
+		pagingResults = append(pagingResults, response.Result.Data...)
 	}
 
 	if l := len(pagingResults); l != len(appearances) {

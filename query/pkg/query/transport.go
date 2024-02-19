@@ -88,19 +88,34 @@ func (r *RpcRequest) LambdaPayload() (string, error) {
 }
 
 type RpcAppearancesResponse struct {
-	JsonRpc string                `json:"jsonrpc"`
-	Id      int                   `json:"id"`
-	Result  []database.Appearance `json:"result"`
+	JsonRpc                       string `json:"jsonrpc"`
+	Id                            int    `json:"id"`
+	Result[[]database.Appearance] `json:"result"`
 }
 
 type RpcCountResponse struct {
-	JsonRpc string `json:"jsonrpc"`
-	Id      int    `json:"id"`
-	Result  int    `json:"result"`
+	JsonRpc     string `json:"jsonrpc"`
+	Id          int    `json:"id"`
+	Result[int] `json:"result"`
 }
 
 type RpcLastIndexedBlockResponse struct {
-	JsonRpc string `json:"jsonrpc"`
-	Id      int    `json:"id"`
-	Result  int    `json:"result"`
+	JsonRpc     string `json:"jsonrpc"`
+	Id          int    `json:"id"`
+	Result[int] `json:"result"`
+}
+
+type Result[T RpcResponseResult] struct {
+	Data T `json:"data"`
+	Meta `json:"meta"`
+}
+
+type RpcResponseResult interface {
+	[]database.Appearance |
+		int
+}
+
+type Meta struct {
+	LastIndexedBlock int    `json:"lastIndexedBlock"`
+	Address          string `json:"address"`
 }

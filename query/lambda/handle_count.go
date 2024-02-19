@@ -19,7 +19,7 @@ func handleCount(ctx context.Context, rpcRequest *query.RpcRequest) (response *q
 	response = &query.RpcCountResponse{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
-		Result:  count,
+		Result:  query.Result[int]{Data: count},
 	}
 	return
 }
