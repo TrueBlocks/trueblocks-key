@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 )
 
-func handleCount(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[*int], err error) {
-	rpcParams, err := rpcRequest.AppearanceCountParams()
+func handleGetAddressesInTx(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[[]string], err error) {
+	rpcParams, err := rpcRequest.AddressesInParam()
 	if err != nil {
 		err = NewRpcError(err, http.StatusBadRequest, "invalid JSON")
 		return
@@ -25,24 +24,19 @@ func handleCount(ctx context.Context, rpcRequest *query.RpcRequest) (response *q
 		return
 	}
 
-	// get status first, so we know max block number
-	meta, err := getMeta(ctx, param.Address)
+	meta, err := getMeta(ctx, "")
 	if err != nil {
 		return
 	}
 
-	count, err := database.FetchCount(ctx, dbConn, param.Address, meta.LastIndexedBlock)
-	if err != nil {
-		log.Println("database query (count):", err)
-		err = ErrInternal
-		return
-	}
+	limit, offset := getValidLimits(param)
+	addrs, err := database.FetchAddressesInTx(ctx, dbConn, int(param.BlockNumber), int(param.TransactionIndex), limit, offset)
 
-	response = &query.RpcResponse[*int]{
+	response = &query.RpcResponse[[]string]{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
-		Result: query.Result[*int]{
-			Data: &count,
+		Result: query.Result[[]string]{
+			Data: addrs,
 			Meta: meta,
 		},
 	}

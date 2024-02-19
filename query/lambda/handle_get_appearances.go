@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
@@ -11,31 +12,31 @@ import (
 const defaultAppearancesLimit = 100
 
 func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[[]database.Appearance], err error) {
-	limit := rpcRequest.Parameters().PerPage
-	if limit == 0 {
-		// Just in case we forgot to define the limit in configuration
-		limit = defaultAppearancesLimit
+	rpcParams, err := rpcRequest.AppearancesParams()
+	if err != nil {
+		err = NewRpcError(err, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+	if err = rpcParams.Validate(); err != nil {
+		err = NewRpcError(err, http.StatusBadRequest, err.Error())
+		// Validate() always returns public errors
+		return
 	}
 
-	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {
-		if limit > int(confLimit) {
-			limit = int(confLimit)
-		}
+	param := rpcParams.Get()
+	if err = param.Validate(); err != nil {
+		err = NewRpcError(err, http.StatusBadRequest, err.Error())
+		return
 	}
-
-	offset := rpcRequest.Parameters().Page
-	if offset < 0 {
-		offset = 0
-	}
-	offset = offset * limit
+	limit, offset := getValidLimits(param)
 
 	// get status first, so we know max block number
-	meta, err := getMeta(ctx, rpcRequest.Address())
+	meta, err := getMeta(ctx, param.Address)
 	if err != nil {
 		return
 	}
 
-	items, err := database.FetchAppearances(ctx, dbConn, rpcRequest.Address(), meta.LastIndexedBlock, uint(limit), uint(offset))
+	items, err := database.FetchAppearances(ctx, dbConn, param.Address, meta.LastIndexedBlock, uint(limit), uint(offset))
 	if err != nil {
 		log.Println("database query:", err)
 		err = ErrInternal

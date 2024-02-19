@@ -53,11 +53,17 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAppearancesParam{
 			{
 				Address: address,
 			},
 		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
@@ -92,11 +98,17 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAppearancesParam{
 			{
 				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
 			},
 		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
@@ -114,8 +126,8 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{},
 	}
+
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	t.Logf("result: %+v", response)
@@ -126,51 +138,41 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAppearancesParam{
 			{
 				Address: "0000000000000281526004018083600019166000",
 			},
 		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	t.Logf("result: %+v", response)
 	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect address")
 
-	// Invalid request: invalid page
-
-	request = &query.RpcRequest{
-		Id:     1,
-		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
-			{
-				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-				Page:    -1,
-			},
-		},
-	}
-	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
-
-	t.Logf("result: %+v", response)
-	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
-
+	// TODO: uncomment after merge (when there is MinSafePerPage)
 	// Invalid request: invalid PerPage
 
-	request = &query.RpcRequest{
-		Id:     1,
-		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
-			{
-				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-				Page:    10,
-				PerPage: -1,
-			},
-		},
-	}
-	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+	// request = &query.RpcAddressRequest{
+	// 	Id:     1,
+	// 	Method: "tb_getAppearances",
+	// 	Params: []query.RpcGetAppearancesParam{
+	// 		{
+	// 			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+	// 			Page:    10,
+	// 			PerPage: -1,
+	// 		},
+	// 	},
+	// }
+	// output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
-	t.Logf("result: %+v", response)
-	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
+	// t.Logf("result: %+v", response)
+	// helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
 
 	// Invalid request: params out of range
 
@@ -199,14 +201,20 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "invalid",
-		Params: []query.RpcRequestParams{
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAppearancesParam{
 			{
 				Address: address,
 			},
 		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
-	helpers.AssertLambdaProxyError(t, string(output.Payload), "invalid method")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "unsupported method: invalid")
 
 	// Count
 
@@ -217,11 +225,17 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	request = &query.RpcRequest{
 		Id:     1,
 		Method: "tb_getAppearanceCount",
-		Params: []query.RpcRequestParams{
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAppearancesParam{
 			{
 				Address: address,
 			},
 		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
@@ -244,7 +258,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		t.Fatal("wrong meta address")
 	}
 
-	// Last indexed block
+	// Status
 
 	statusResponse := &query.RpcResponse[*database.Status]{}
 
@@ -262,6 +276,64 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	if l := statusResponse.Result.Meta.LastIndexedBlock; l != 1 {
 		t.Fatal("wrong max indexed block:", l)
+	}
+}
+
+func TestLambdaRpcFunctionAddressInRequests(t *testing.T) {
+	dbConn, done, err := dbtest.NewTestConnection()
+	if err != nil {
+		t.Fatal("connecting to test db:", err)
+	}
+	defer done()
+	defer helpers.KillSamOnPanic()
+
+	// Prepate test data
+	appearances := []queueItem.Appearance{
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 1},
+		{Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b", BlockNumber: 4053179, TransactionIndex: 1},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 2},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 3},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 4},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 5},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 6},
+	}
+	if err = database.InsertAppearanceBatch(context.TODO(), dbConn, appearances); err != nil {
+		t.Fatal("inserting test data:", err)
+	}
+
+	client := helpers.NewLambdaClient(t)
+	var request *query.RpcRequest
+	var output *lambda.InvokeOutput
+	response := &query.RpcResponse[[]string]{}
+
+	// Adresses in tx
+
+	request = &query.RpcRequest{
+		Method: "tb_getAddressesInTx",
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAddressesInParam{
+			{
+				BlockNumber:      4053179,
+				TransactionIndex: 1,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
+	}
+
+	// Valid request, appearances found
+
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	t.Log(string(output.Payload))
+	helpers.UnmarshalLambdaOutput(t, output, response)
+
+	if l := len(response.Data); l != 2 {
+		t.Fatal("wrong length:", l)
 	}
 }
 
@@ -297,13 +369,19 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",
-			Params: []query.RpcRequestParams{
+		}
+		err = query.SetParams(
+			request,
+			[]query.RpcGetAppearancesParam{
 				{
 					Address: appearances[0].Address,
 					PerPage: 1,
-					Page:    i,
+					Page:    uint(i),
 				},
 			},
+		)
+		if err != nil {
+			t.Fatal("setting rpc request params:", err)
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
@@ -331,13 +409,19 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",
-			Params: []query.RpcRequestParams{
+		}
+		err = query.SetParams(
+			request,
+			[]query.RpcGetAppearancesParam{
 				{
 					Address: appearances[0].Address,
-					PerPage: perPage,
-					Page:    i,
+					PerPage: uint(perPage),
+					Page:    uint(i),
 				},
 			},
+		)
+		if err != nil {
+			t.Fatal("setting rpc request params:", err)
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 

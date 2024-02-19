@@ -27,17 +27,18 @@ var dbConn *database.Connection
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (response events.APIGatewayProxyResponse, err error) {
 	rpcRequest := &query.RpcRequest{}
 	if err = json.Unmarshal([]byte(request.Body), rpcRequest); err != nil {
-		response.StatusCode = http.StatusBadRequest
-		response.Body = strconv.Quote("invalid JSON")
+		// response.StatusCode = http.StatusBadRequest
+		// response.Body = strconv.Quote("invalid JSON")
+		NewRpcError(err, http.StatusBadRequest, "invalid JSON").Report(&response)
 		err = nil
 		return
 	}
-	if err = rpcRequest.Validate(); err != nil {
-		response.StatusCode = http.StatusBadRequest
-		response.Body = strconv.Quote(err.Error())
-		err = nil
-		return
-	}
+	// if err = rpcRequest.Validate(); err != nil {
+	// 	response.StatusCode = http.StatusBadRequest
+	// 	response.Body = strconv.Quote(err.Error())
+	// 	err = nil
+	// 	return
+	// }
 
 	if cnf == nil {
 		if err = loadConfig(); err != nil {
@@ -63,11 +64,19 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		r, err = handleCount(ctx, rpcRequest)
 	case query.MethodLastIndexedBlock:
 		r, err = handleLastIndexedBlock(ctx, rpcRequest)
+	case query.MethodGetAddressesInTx:
+		r, err = handleGetAddressesInTx(ctx, rpcRequest)
 	default:
 		err = fmt.Errorf("unsupported method: %s", rpcRequest.Method)
+		err = NewRpcError(err, http.StatusBadRequest, err.Error())
 	}
 	if err != nil {
-		log.Println(err)
+		if rpcErr, ok := err.(*RpcError); ok {
+			rpcErr.Report(&response)
+			err = nil
+		} else {
+			log.Println(err)
+		}
 
 		return
 	}
@@ -83,6 +92,23 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	response = events.APIGatewayProxyResponse{
 		Body:       string(body),
 		StatusCode: 200,
+	}
+	return
+}
+
+func unmarshallAndValidateRequest[T query.Validator](encoded string, response events.APIGatewayProxyResponse) (rpcRequest T, err error) {
+	// rpcRequest = new(T)
+	if err = json.Unmarshal([]byte(encoded), rpcRequest); err != nil {
+		response.StatusCode = http.StatusBadRequest
+		response.Body = strconv.Quote("invalid JSON")
+		// err = nil
+		// return
+	}
+	if err = rpcRequest.Validate(); err != nil {
+		response.StatusCode = http.StatusBadRequest
+		response.Body = strconv.Quote(err.Error())
+		// err = nil
+		// return
 	}
 	return
 }
