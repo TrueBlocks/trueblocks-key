@@ -8,6 +8,7 @@ import (
 
 func HandleDeprovision(c *gin.Context) {
 	resp := &responder{c}
+	log.Println("Deprovisioning user")
 
 	account, _, err := readAccountFromRequest(resp, c)
 	if err != nil {

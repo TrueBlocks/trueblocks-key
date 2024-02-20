@@ -10,6 +10,7 @@ import (
 
 func HandleDeactivateEndpoint(c *gin.Context) {
 	resp := &responder{c}
+	log.Println("Deactivating endpoint")
 
 	account, accountData, err := readAccountFromRequest(resp, c)
 	if err != nil {

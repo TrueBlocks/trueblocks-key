@@ -724,12 +724,12 @@ Resources:
       ApiStages:
         - ApiId: !Ref QnApi
           Stage: !Ref QnApiStageName
-      Description: Test plan for QN beta testing
+      Description: QuickNode plan Standard
       # Quota:
       #   Limit: 500
       #   Period: MONTH
       Throttle:
-            # BurstLimit: 10
+            BurstLimit: 10
             RateLimit: 20
       UsagePlanName: qn-standard
   ApiKeyQnStandard:
