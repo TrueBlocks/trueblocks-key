@@ -210,7 +210,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Count
 
-	countResponse := &query.RpcResponse[int]{}
+	countResponse := &query.RpcResponse[*int]{}
 
 	// Valid request, appearance found
 
@@ -225,10 +225,11 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
+	t.Log(string(output.Payload))
 	helpers.AssertLambdaSuccessful(t, output)
 	helpers.UnmarshalLambdaOutput(t, output, countResponse)
 
-	if c := countResponse.Result.Data; c != 1 {
+	if c := countResponse.Result.Data; *c != 1 {
 		t.Fatal("wrong count:", c)
 	}
 
@@ -245,7 +246,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Last indexed block
 
-	statusResponse := &query.RpcResponse[database.Status]{}
+	statusResponse := &query.RpcResponse[*database.Status]{}
 
 	// Valid request, appearance found
 
@@ -259,7 +260,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	t.Log(string(output.Payload))
 	helpers.UnmarshalLambdaOutput(t, output, statusResponse)
 
-	if l := statusResponse.Result.Data.LastIndexedBlock; l != 1 {
+	if l := statusResponse.Result.Meta.LastIndexedBlock; l != 1 {
 		t.Fatal("wrong max indexed block:", l)
 	}
 }

@@ -95,13 +95,13 @@ type RpcResponse[T RpcResponseResult] struct {
 
 type Result[T RpcResponseResult] struct {
 	Data  T `json:"data"`
-	*Meta `json:"meta,omitempty"`
+	*Meta `json:"meta"`
 }
 
 type RpcResponseResult interface {
 	[]database.Appearance |
-		database.Status |
-		int
+		*database.Status |
+		*int
 }
 
 type Meta struct {
