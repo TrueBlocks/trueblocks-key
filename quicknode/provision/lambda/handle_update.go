@@ -10,19 +10,33 @@ import (
 
 func HandleUpdate(c *gin.Context) {
 	resp := &responder{c}
+	log.Println("Update account")
 
 	account, accountData, err := readAccountFromRequest(resp, c)
 	if err != nil {
 		return
 	}
+	account.EndpointIds = append(account.EndpointIds, accountData.EndpointId)
 
-	if err := findAccount(resp, account); err != nil {
+	oldAccount := qnaccount.NewAccount(dynamoClient, cnf.QnProvision.TableName)
+	oldAccount.SetFromAccountData(accountData)
+	oldAccount.EndpointIds = append(oldAccount.EndpointIds, accountData.EndpointId)
+	if err := findAccount(resp, oldAccount); err != nil {
 		return
 	}
+
+	log.Println("Account:", account.QuicknodeId, "old plan:", oldAccount.Plan, "new plan:", account.Plan)
 
 	if err := account.Authorize(accountData); err != nil {
 		log.Println(err.Error(), accountData.QuicknodeId, accountData.EndpointId)
 		resp.abortWithError(http.StatusNotFound, err)
+		return
+	}
+
+	// load possibly new API key
+	if err := account.LoadApiKey(apiGatewayClient); err != nil {
+		log.Println(err)
+		resp.abortWithInternalError()
 		return
 	}
 

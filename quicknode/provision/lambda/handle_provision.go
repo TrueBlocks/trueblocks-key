@@ -11,6 +11,7 @@ import (
 
 func HandleProvision(c *gin.Context) {
 	resp := &responder{c}
+	log.Println("Provisioning new user")
 
 	account, accountData, err := readAccountFromRequest(resp, c)
 	if err != nil {

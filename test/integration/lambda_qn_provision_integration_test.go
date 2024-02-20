@@ -256,7 +256,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id",
 		Test:        true,
-		Plan:        "IntegrationTestPlan",
+		Plan:        "IntegrationTestPlan2",
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
@@ -273,7 +273,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id2",
 		Test:        true,
-		Plan:        "IntegrationTestPlan",
+		Plan:        "IntegrationTestPlan2",
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
@@ -290,7 +290,7 @@ func TestLambdaQnProvisioning(t *testing.T) {
 		QuicknodeId: "test-quicknode-id",
 		EndpointId:  "test-endpoint-id",
 		Test:        true,
-		Plan:        "IntegrationTestPlan",
+		Plan:        "IntegrationTestPlan2",
 		Chain:       "ethereum",
 		Network:     "mainnet",
 	}
