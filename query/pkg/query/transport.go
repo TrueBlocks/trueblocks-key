@@ -94,16 +94,17 @@ type RpcResponse[T RpcResponseResult] struct {
 }
 
 type Result[T RpcResponseResult] struct {
-	Data T `json:"data"`
-	Meta `json:"meta"`
+	Data  T `json:"data"`
+	*Meta `json:"meta,omitempty"`
 }
 
 type RpcResponseResult interface {
 	[]database.Appearance |
+		database.Status |
 		int
 }
 
 type Meta struct {
-	LastIndexedBlock int    `json:"lastIndexedBlock"`
-	Address          string `json:"address"`
+	LastIndexedBlock uint   `json:"lastIndexedBlock"`
+	Address          string `json:"address,omitempty"`
 }

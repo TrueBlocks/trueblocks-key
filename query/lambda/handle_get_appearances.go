@@ -29,7 +29,13 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	}
 	offset = offset * limit
 
-	items, err := database.FetchAppearances(ctx, dbConn, rpcRequest.Address(), uint(limit), uint(offset))
+	// get status first, so we know max block number
+	meta, err := getMeta(ctx, rpcRequest.Address())
+	if err != nil {
+		return
+	}
+
+	items, err := database.FetchAppearances(ctx, dbConn, rpcRequest.Address(), meta.LastIndexedBlock, uint(limit), uint(offset))
 	if err != nil {
 		log.Println("database query:", err)
 		err = ErrInternal
@@ -39,7 +45,10 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	response = &query.RpcResponse[[]database.Appearance]{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
-		Result:  query.Result[[]database.Appearance]{Data: items},
+		Result: query.Result[[]database.Appearance]{
+			Data: items,
+			Meta: meta,
+		},
 	}
 	return
 }

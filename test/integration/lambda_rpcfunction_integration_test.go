@@ -76,6 +76,17 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		t.Fatal("wrong txid:", txid)
 	}
 
+	// meta
+	if response.Meta == nil {
+		t.Fatal("meta is nil")
+	}
+	if l := response.Meta.LastIndexedBlock; l != 1 {
+		t.Fatal("wrong meta LastIndexedBlock")
+	}
+	if a := response.Meta.Address; a != address {
+		t.Fatal("wrong meta address")
+	}
+
 	// Valid request, no appearance found
 
 	request = &query.RpcRequest{
@@ -221,23 +232,34 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		t.Fatal("wrong count:", c)
 	}
 
+	// meta
+	if countResponse.Meta == nil {
+		t.Fatal("meta is nil")
+	}
+	if l := countResponse.Meta.LastIndexedBlock; l != 1 {
+		t.Fatal("wrong meta LastIndexedBlock")
+	}
+	if a := countResponse.Meta.Address; a != address {
+		t.Fatal("wrong meta address")
+	}
+
 	// Last indexed block
 
-	lastIndexedBlockResponse := &query.RpcResponse[int]{}
+	statusResponse := &query.RpcResponse[database.Status]{}
 
 	// Valid request, appearance found
 
 	request = &query.RpcRequest{
 		Id:     1,
-		Method: "tb_lastIndexedBlock",
+		Method: "tb_status",
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	helpers.AssertLambdaSuccessful(t, output)
 	t.Log(string(output.Payload))
-	helpers.UnmarshalLambdaOutput(t, output, lastIndexedBlockResponse)
+	helpers.UnmarshalLambdaOutput(t, output, statusResponse)
 
-	if l := lastIndexedBlockResponse.Result.Data; l != 1 {
+	if l := statusResponse.Result.Data.LastIndexedBlock; l != 1 {
 		t.Fatal("wrong max indexed block:", l)
 	}
 }
@@ -295,7 +317,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			BlockNumber:      appearances[i].BlockNumber,
 			TransactionIndex: appearances[i].TransactionIndex,
 		}
-		if r := response.Result; !reflect.DeepEqual(r, []database.Appearance{pa}) {
+		if r := response.Result.Data; !reflect.DeepEqual(r, []database.Appearance{pa}) {
 			t.Fatal(i, "-- wrong result:", r)
 		}
 	}

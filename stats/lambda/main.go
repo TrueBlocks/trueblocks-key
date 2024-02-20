@@ -59,14 +59,14 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	log.Println("appearances:", appCount)
 
-	maxBlockNumber, err := database.FetchMaxBlockNumber(ctx, dbConn)
+	status, err := database.FetchStatus(ctx, dbConn)
 	if err != nil {
-		log.Println("fetching max block number:", err)
+		log.Println("fetching status:", err)
 		err = ErrInternal
 		return
 	}
 
-	log.Println("maxBlockNumber:", appCount)
+	log.Println("maxBlockNumber:", status.LastIndexedBlock)
 
 	chunksCount, err := database.CountChunks(ctx, dbConn)
 	if err != nil {
@@ -100,7 +100,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	body, err := json.Marshal(map[string]any{
 		"appearances":      appCount,
-		"maxBlockNumber":   maxBlockNumber,
+		"maxBlockNumber":   status.LastIndexedBlock,
 		"chunks":           chunksCount,
 		"chunksDuplicated": dupChunksCount,
 		"users":            userCount,
