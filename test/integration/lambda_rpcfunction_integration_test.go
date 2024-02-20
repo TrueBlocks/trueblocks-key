@@ -46,7 +46,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcAppearancesResponse{}
+	response := &query.RpcResponse[[]database.Appearance]{}
 
 	// Valid request, appearance found
 
@@ -66,14 +66,25 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	t.Logf("result: %+v", response)
 
-	if l := len(response.Result); l != 1 {
+	if l := len(response.Result.Data); l != 1 {
 		t.Fatal("wrong result count:", l)
 	}
-	if bn := response.Result[0].BlockNumber; bn != appearance.BlockNumber {
+	if bn := response.Result.Data[0].BlockNumber; bn != appearance.BlockNumber {
 		t.Fatal("wrong block number:", bn)
 	}
-	if txid := response.Result[0].TransactionIndex; txid != appearance.TransactionIndex {
+	if txid := response.Result.Data[0].TransactionIndex; txid != appearance.TransactionIndex {
 		t.Fatal("wrong txid:", txid)
+	}
+
+	// meta
+	if response.Meta == nil {
+		t.Fatal("meta is nil")
+	}
+	if l := response.Meta.LastIndexedBlock; l != 1 {
+		t.Fatal("wrong meta LastIndexedBlock")
+	}
+	if a := response.Meta.Address; a != address {
+		t.Fatal("wrong meta address")
 	}
 
 	// Valid request, no appearance found
@@ -94,7 +105,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	t.Logf("result: %+v", response)
 
-	if l := len(response.Result); l != 0 {
+	if l := len(response.Result.Data); l != 0 {
 		t.Fatal("wrong result count:", l)
 	}
 
@@ -199,7 +210,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Count
 
-	countResponse := &query.RpcCountResponse{}
+	countResponse := &query.RpcResponse[*int]{}
 
 	// Valid request, appearance found
 
@@ -214,30 +225,42 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
+	t.Log(string(output.Payload))
 	helpers.AssertLambdaSuccessful(t, output)
 	helpers.UnmarshalLambdaOutput(t, output, countResponse)
 
-	if c := countResponse.Result; c != 1 {
+	if c := countResponse.Result.Data; *c != 1 {
 		t.Fatal("wrong count:", c)
+	}
+
+	// meta
+	if countResponse.Meta == nil {
+		t.Fatal("meta is nil")
+	}
+	if l := countResponse.Meta.LastIndexedBlock; l != 1 {
+		t.Fatal("wrong meta LastIndexedBlock")
+	}
+	if a := countResponse.Meta.Address; a != address {
+		t.Fatal("wrong meta address")
 	}
 
 	// Last indexed block
 
-	lastIndexedBlockResponse := &query.RpcLastIndexedBlockResponse{}
+	statusResponse := &query.RpcResponse[*database.Status]{}
 
 	// Valid request, appearance found
 
 	request = &query.RpcRequest{
 		Id:     1,
-		Method: "tb_lastIndexedBlock",
+		Method: "tb_status",
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	helpers.AssertLambdaSuccessful(t, output)
 	t.Log(string(output.Payload))
-	helpers.UnmarshalLambdaOutput(t, output, lastIndexedBlockResponse)
+	helpers.UnmarshalLambdaOutput(t, output, statusResponse)
 
-	if l := lastIndexedBlockResponse.Result; l != 1 {
+	if l := statusResponse.Result.Meta.LastIndexedBlock; l != 1 {
 		t.Fatal("wrong max indexed block:", l)
 	}
 }
@@ -266,7 +289,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcAppearancesResponse{}
+	response := &query.RpcResponse[[]database.Appearance]{}
 
 	// Check basic pagination
 
@@ -287,7 +310,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		helpers.AssertLambdaSuccessful(t, output)
 		helpers.UnmarshalLambdaOutput(t, output, response)
 
-		if l := len(response.Result); l != 1 {
+		if l := len(response.Result.Data); l != 1 {
 			t.Fatal(i, "-- wrong result count:", l)
 		}
 
@@ -295,7 +318,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			BlockNumber:      appearances[i].BlockNumber,
 			TransactionIndex: appearances[i].TransactionIndex,
 		}
-		if r := response.Result; !reflect.DeepEqual(r, []database.Appearance{pa}) {
+		if r := response.Result.Data; !reflect.DeepEqual(r, []database.Appearance{pa}) {
 			t.Fatal(i, "-- wrong result:", r)
 		}
 	}
@@ -321,10 +344,10 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		helpers.AssertLambdaSuccessful(t, output)
 		helpers.UnmarshalLambdaOutput(t, output, response)
 
-		if l := len(response.Result); l != 3 {
+		if l := len(response.Result.Data); l != 3 {
 			t.Fatal(i, "-- wrong page len:", l)
 		}
-		pagingResults = append(pagingResults, response.Result...)
+		pagingResults = append(pagingResults, response.Result.Data...)
 	}
 
 	if l := len(pagingResults); l != len(appearances) {

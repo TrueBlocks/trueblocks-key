@@ -1,8 +1,7 @@
 package query
 
 import (
-	"context"
-	"fmt"
+	"errors"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
@@ -18,14 +17,16 @@ type Query struct {
 }
 
 func (q *Query) Do() (results []database.Appearance, err error) {
-	if q.Limit > maxLimit {
-		q.Limit = maxLimit
-	}
+	// if q.Limit > maxLimit {
+	// 	q.Limit = maxLimit
+	// }
 
-	results, err = database.FetchAppearances(context.TODO(), q.Connection, q.Address, uint(q.Limit), uint(q.Offset))
-	if err != nil {
-		return nil, fmt.Errorf("query.Do: executing: %w", err)
-	}
+	// results, err = database.FetchAppearances(context.TODO(), q.Connection, q.Address, , uint(q.Limit), uint(q.Offset))
+	// if err != nil {
+	// 	return nil, fmt.Errorf("query.Do: executing: %w", err)
+	// }
 
+	// return
+	err = errors.New("unimplemented")
 	return
 }

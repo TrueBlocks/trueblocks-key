@@ -16,7 +16,7 @@ type Appearance struct {
 	TransactionIndex uint32 `json:"transactionIndex"`
 }
 
-func FetchAppearances(ctx context.Context, c *Connection, address string, limit uint, offset uint) (results []Appearance, err error) {
+func FetchAppearances(ctx context.Context, c *Connection, address string, latestBlock uint, limit uint, offset uint) (results []Appearance, err error) {
 	if limit > hardFetchLimit {
 		log.Printf("database/FetchAppearances: limit too large (%d),setting it to %d\n", limit, hardFetchLimit)
 	}
@@ -24,6 +24,7 @@ func FetchAppearances(ctx context.Context, c *Connection, address string, limit 
 		ctx,
 		sql.SelectAppearances(c.AppearancesTableName(), c.AddressesTableName()),
 		address,
+		latestBlock,
 		limit,
 		offset,
 	)
@@ -38,11 +39,12 @@ func FetchAppearances(ctx context.Context, c *Connection, address string, limit 
 	return
 }
 
-func FetchCount(ctx context.Context, c *Connection, address string) (result int, err error) {
+func FetchCount(ctx context.Context, c *Connection, address string, latestBlock uint) (result int, err error) {
 	rows, err := c.conn.Query(
 		ctx,
 		sql.SelectAppearancesCountForAddress(c.AppearancesTableName(), c.AddressesTableName()),
 		address,
+		latestBlock,
 	)
 	if err != nil {
 		return
@@ -75,16 +77,4 @@ func (a *Appearance) Insert(ctx context.Context, c *Connection, address string) 
 	)
 
 	return
-}
-
-func FetchMaxBlockNumber(ctx context.Context, c *Connection) (result int, err error) {
-	rows, err := c.conn.Query(
-		ctx,
-		sql.SelectAppearancesMaxBlockNumber(c.AppearancesTableName()),
-	)
-	if err != nil {
-		return
-	}
-
-	return pgx.CollectOneRow[int](rows, pgx.RowTo[int])
 }

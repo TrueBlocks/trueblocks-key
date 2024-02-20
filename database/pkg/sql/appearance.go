@@ -33,10 +33,10 @@ func SelectAppearances(appearancesTableName string, addressesTableName string) s
 SELECT apps.block_number, apps.tx_id
 FROM %[1]s
 JOIN %[2]s apps ON apps.address_id = id
-WHERE address = $1
+WHERE address = $1 AND block_number <= $2
 ORDER BY apps.block_number ASC, tx_id ASC
-LIMIT $2
-OFFSET $3;
+LIMIT $3
+OFFSET $4;
 `,
 		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
@@ -53,21 +53,12 @@ WHERE  oid = 'public.%[1]s'::regclass;
 	)
 }
 
-func SelectAppearancesMaxBlockNumber(appearancesTableName string) string {
-	return fmt.Sprintf(`
-SELECT max(block_number)
-FROM   %[1]s;
-`,
-		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
-	)
-}
-
 func SelectAppearancesCountForAddress(appearancesTableName string, addressesTableName string) string {
 	return fmt.Sprintf(`
 SELECT count(*)
 FROM %[1]s
 JOIN %[2]s apps ON apps.address_id = id
-WHERE address = $1;
+WHERE address = $1 AND block_number <= $2;
 `,
 		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
