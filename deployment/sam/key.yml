@@ -729,7 +729,7 @@ Resources:
       #   Limit: 500
       #   Period: MONTH
       Throttle:
-            BurstLimit: 10
+            BurstLimit: 20
             RateLimit: 20
       UsagePlanName: qn-standard
   ApiKeyQnStandard:
