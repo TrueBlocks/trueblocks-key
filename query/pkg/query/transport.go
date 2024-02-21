@@ -23,7 +23,7 @@ const MaxSafePerPage = 10000
 const MaxSafePage = 100000
 
 type RpcRequest struct {
-	Id     int                `json:"id"`
+	Id     any                `json:"id"`
 	Method string             `json:"method"`
 	Params []RpcRequestParams `json:"params"`
 }
@@ -89,7 +89,7 @@ func (r *RpcRequest) LambdaPayload() (string, error) {
 
 type RpcResponse[T RpcResponseResult] struct {
 	JsonRpc   string `json:"jsonrpc"`
-	Id        int    `json:"id"`
+	Id        any    `json:"id"`
 	Result[T] `json:"result"`
 }
 
