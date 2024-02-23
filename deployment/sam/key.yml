@@ -115,6 +115,82 @@ Resources:
             Service: 'monitoring.rds.amazonaws.com'
           Action: 'sts:AssumeRole'
 
+  # DB Proxy
+  IndexDatabaseProxyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service: rds.amazonaws.com
+      Policies:
+        - PolicyName: rdsProxyReadSecret
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetResourcePolicy
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:ListSecretVersionIds
+                Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+        - PolicyName: rdsProxyAccessRds
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:*
+                Resource: !GetAtt IndexDatabase.DBInstanceArn
+        - PolicyName: rdsProxyDecryptKey
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: "*"
+
+  IndexDatabaseProxy:
+    Type: AWS::RDS::DBProxy
+    DependsOn:
+      - RDSSecurityGroupSelfReferencing
+    Properties:
+      DebugLogging: true
+      DBProxyName: index-proxy
+      EngineFamily: POSTGRESQL
+      # IdleClientTimeout: 120
+      RequireTLS: true
+      RoleArn:
+        !GetAtt IndexDatabaseProxyRole.Arn
+      Auth:
+        - AuthScheme: SECRETS
+          SecretArn: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+          IAMAuth: DISABLED
+      VpcSecurityGroupIds:
+        - !Ref LambdaSecurityGroup
+        - !Ref RDSSecurityGroup
+      VpcSubnetIds:
+        - !Ref privateLambdaSubnet1
+        - !Ref privateLambdaSubnet2
+        - !Ref privateDBSubnet1
+        - !Ref privateDBSubnet2
+  ProxyTargetGroup:
+    Type: AWS::RDS::DBProxyTargetGroup
+    Properties:
+      DBProxyName: !Ref IndexDatabaseProxy
+      DBInstanceIdentifiers:
+        - !Sub ${AWS::StackName}-index
+      TargetGroupName: default
+      ConnectionPoolConfigurationInfo:
+          MaxConnectionsPercent: 100
+          MaxIdleConnectionsPercent: 50
+          ConnectionBorrowTimeout: 120
+
   # Database alarms
   RDSLowStorageAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -609,6 +685,7 @@ Resources:
     Properties:
       MemorySize: 128
       CodeUri: ../../query/lambda
+      Tracing: Active
       Events:
         ApiEvent:
           Type: Api
@@ -626,8 +703,8 @@ Resources:
       Environment:
         Variables:
           KY_QUERY_MAXLIMIT: 1000
-          KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabase.Endpoint.Address
-          KY_DATABASE_DEFAULT_PORT: !GetAtt IndexDatabase.Endpoint.Port
+          KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabaseProxy.Endpoint # IndexDatabase.Endpoint.Address
+          KY_DATABASE_DEFAULT_PORT: 5432 # !GetAtt IndexDatabase.Endpoint.Port
           KY_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
           KY_DATABASE_DEFAULT_PASSWORD: "" # Used only in integration tests
           KY_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
@@ -857,6 +934,20 @@ Resources:
         FromPort: 5432
         ToPort: 5432
         SourceSecurityGroupId : !Ref DevOpsInstanceSecurityGroup
+      # For Proxy connection:
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: 0.0.0.0/0
+
+  # For Proxy access, we need a self-referencing ingress rule
+  RDSSecurityGroupSelfReferencing:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref RDSSecurityGroup
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !GetAtt RDSSecurityGroup.GroupId
 
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
