@@ -16,6 +16,9 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 		// Just in case we forgot to define the limit in configuration
 		limit = defaultAppearancesLimit
 	}
+	if limit < query.MinLimit {
+		limit = query.MinLimit
+	}
 
 	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {
 		if limit > int(confLimit) {

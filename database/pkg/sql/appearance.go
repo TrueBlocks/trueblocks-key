@@ -30,11 +30,15 @@ ON CONFLICT DO NOTHING;
 
 func SelectAppearances(appearancesTableName string, addressesTableName string) string {
 	return fmt.Sprintf(`
-SELECT apps.block_number, apps.tx_id
-FROM %[1]s
-JOIN %[2]s apps ON apps.address_id = id
-WHERE address = $1 AND block_number <= $2
-ORDER BY apps.block_number ASC, tx_id ASC
+WITH addrs AS (
+    SELECT id
+    FROM %[1]s
+    WHERE address = $1
+)
+SELECT block_number, tx_id
+FROM %[2]s
+WHERE block_number <= $2 AND address_id = (SELECT id FROM addrs)
+ORDER BY block_number ASC, tx_id ASC
 LIMIT $3
 OFFSET $4;
 `,

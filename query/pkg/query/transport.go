@@ -20,7 +20,10 @@ var ErrWrongNumOfParameters = errors.New("exactly 1 parameter object required")
 const MaxSafePerPage = 10000
 
 // MaxSafePage is the largest sane page number that we would allow users to use
-const MaxSafePage = 100000
+const MaxSafePage = 2458000 // WETH token appearances + some margin
+
+// If limit is too small the DB can take too long to return results
+const MinLimit = 10
 
 type RpcRequest struct {
 	Id     any                `json:"id"`

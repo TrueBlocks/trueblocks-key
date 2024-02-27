@@ -76,6 +76,7 @@ Resources:
       DBSubnetGroupName: !Ref RDSSubnetGroup
       VPCSecurityGroups:
         - !Ref RDSSecurityGroup
+      EnablePerformanceInsights: true
       MonitoringInterval: 10
       MonitoringRoleArn: !GetAtt IndexDatabaseEnhancedMonitoringRole.Arn
       AssociatedRoles:

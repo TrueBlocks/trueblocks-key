@@ -47,12 +47,12 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		}
 	}
 
-	if dbConn == nil {
-		if err = setupDbConnection(); err != nil {
-			log.Println("database connection:", err)
-			err = ErrInternal
-			return
-		}
+	// When working with RDS Proxy we don't "cache" the connection
+	// between lambda invocations, so we need to recreate it each time
+	if err = setupDbConnection(ctx); err != nil {
+		log.Println("database connection:", err)
+		err = ErrInternal
+		return
 	}
 
 	var r any
@@ -66,6 +66,12 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	default:
 		err = fmt.Errorf("unsupported method: %s", rpcRequest.Method)
 	}
+	// When working with RDS Proxy we have to close db connection as soon
+	// as possible
+	if closeErr := dbConn.Close(ctx); closeErr != nil {
+		log.Println("error while closing db connection:", closeErr)
+	}
+
 	if err != nil {
 		log.Println(err)
 
@@ -92,7 +98,7 @@ func loadConfig() (err error) {
 	return
 }
 
-func setupDbConnection() (err error) {
+func setupDbConnection(ctx context.Context) (err error) {
 	var user string
 	var password string
 	secretId := cnf.Database["default"].AwsSecret
@@ -121,11 +127,9 @@ func setupDbConnection() (err error) {
 
 	log.Println(dbConn.String())
 
-	return dbConn.Connect(context.TODO())
+	return dbConn.Connect(ctx)
 }
 
 func main() {
-	defer dbConn.Close(context.TODO())
-
 	lambda.Start(HandleRequest)
 }
