@@ -12,3 +12,4 @@ website/public
 website/.hugo_build.lock
 website/hugo_stats.json
 website/typescript
+test/simulate_session/scenarios

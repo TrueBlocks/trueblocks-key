@@ -17,5 +17,6 @@ use (
 	./scanner/
 	./test/dbtest
 	./test/integration
+	./test/simulate_session
 	./tools/pageid
 )
