@@ -90,7 +90,7 @@ func TestLambdaQueueConsumeRequests(t *testing.T) {
 
 	// Make sure the appearance has been added to the db
 
-	dbAppearances, err = database.FetchAppearances(context.TODO(), dbConn, appearance.Address, uint(appearance.BlockNumber), 1, 0)
+	dbAppearances, err = database.FetchAppearancesFirstPage(context.TODO(), dbConn, appearance.Address, uint(appearance.BlockNumber), 11154177)
 	if err != nil {
 		t.Fatal("fetching appearances from db:", err)
 	}

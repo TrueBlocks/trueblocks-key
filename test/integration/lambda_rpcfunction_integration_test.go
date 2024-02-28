@@ -139,20 +139,20 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Invalid request: invalid page
 
-	request = &query.RpcRequest{
-		Id:     1,
-		Method: "tb_getAppearances",
-		Params: []query.RpcRequestParams{
-			{
-				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-				Page:    -1,
-			},
-		},
-	}
-	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+	// request = &query.RpcRequest{
+	// 	Id:     1,
+	// 	Method: "tb_getAppearances",
+	// 	Params: []query.RpcRequestParams{
+	// 		{
+	// 			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+	// 			PageId:  -1,
+	// 		},
+	// 	},
+	// }
+	// output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
-	t.Logf("result: %+v", response)
-	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
+	// t.Logf("result: %+v", response)
+	// helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
 
 	// Invalid request: invalid PerPage
 
@@ -162,7 +162,6 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		Params: []query.RpcRequestParams{
 			{
 				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-				Page:    10,
 				PerPage: -1,
 			},
 		},
@@ -170,7 +169,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect perPage")
 
 	// Invalid request: params out of range
 
@@ -192,7 +191,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
 
 	t.Logf("result: %+v", response)
-	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect page or perPage")
+	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect perPage")
 
 	// Invalid request: invalid method
 
@@ -275,12 +274,26 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 
 	// Prepate test data
 	appearances := []queueItem.Appearance{
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 1},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 2},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 3},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 4},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 5},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 20},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 19},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 18},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 17},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 16},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 15},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 14},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 13},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 12},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 11},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 10},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 9},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 8},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 7},
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 6},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 5},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 4},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 3},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 2},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 1},
 	}
 	if err = database.InsertAppearanceBatch(context.TODO(), dbConn, appearances); err != nil {
 		t.Fatal("inserting test data:", err)
@@ -290,18 +303,21 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
 	response := &query.RpcResponse[[]database.Appearance]{}
+	perPage := 10
+	maxIters := len(appearances) / perPage
 
 	// Check basic pagination
 
-	for i := 0; i < len(appearances); i++ {
+	var nextPageId *query.PageId
+	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",
 			Params: []query.RpcRequestParams{
 				{
 					Address: appearances[0].Address,
-					PerPage: 1,
-					Page:    i,
+					PerPage: 10,
+					PageId:  nextPageId,
 				},
 			},
 		}
@@ -310,24 +326,35 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		helpers.AssertLambdaSuccessful(t, output)
 		helpers.UnmarshalLambdaOutput(t, output, response)
 
-		if l := len(response.Result.Data); l != 1 {
+		if l := len(response.Result.Data); l != request.Parameters().PerPage {
 			t.Fatal(i, "-- wrong result count:", l)
 		}
 
-		pa := database.Appearance{
-			BlockNumber:      appearances[i].BlockNumber,
-			TransactionIndex: appearances[i].TransactionIndex,
+		pa := make([]database.Appearance, 0, len(response.Result.Data))
+		startIndex := i * perPage
+		endIndex := startIndex + perPage
+		for _, item := range appearances[startIndex:endIndex] {
+			pa = append(pa, database.Appearance{
+				BlockNumber:      item.BlockNumber,
+				TransactionIndex: item.TransactionIndex,
+			})
 		}
-		if r := response.Result.Data; !reflect.DeepEqual(r, []database.Appearance{pa}) {
+		if r := response.Result.Data; !reflect.DeepEqual(r, pa) {
 			t.Fatal(i, "-- wrong result:", r)
 		}
+
+		if i == 0 && response.Result.Meta.PreviousPageId != nil {
+			t.Fatal("first page returned PreviousPageId")
+		}
+
+		nextPageId = response.Meta.NextPageId
 	}
 
 	// Check items
 
+	nextPageId = nil
 	var pagingResults = make([]database.Appearance, 0, len(appearances))
-	perPage := 3
-	for i := 0; i < (len(appearances) / perPage); i++ {
+	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",
@@ -335,7 +362,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 				{
 					Address: appearances[0].Address,
 					PerPage: perPage,
-					Page:    i,
+					PageId:  nextPageId,
 				},
 			},
 		}
@@ -344,10 +371,12 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		helpers.AssertLambdaSuccessful(t, output)
 		helpers.UnmarshalLambdaOutput(t, output, response)
 
-		if l := len(response.Result.Data); l != 3 {
+		if l := len(response.Result.Data); l != perPage {
 			t.Fatal(i, "-- wrong page len:", l)
 		}
 		pagingResults = append(pagingResults, response.Result.Data...)
+
+		nextPageId = response.Meta.NextPageId
 	}
 
 	if l := len(pagingResults); l != len(appearances) {
@@ -355,9 +384,6 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	}
 
 	for index, pa := range pagingResults {
-		// if addr := pa.Address; addr != appearances[index].Address {
-		// 	t.Fatal("wrong address", addr, "expected", appearances[index].Address)
-		// }
 		if bn := pa.BlockNumber; bn != appearances[index].BlockNumber {
 			t.Fatal("wrong block number", bn, "expected", appearances[index].BlockNumber)
 		}
@@ -365,4 +391,40 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			t.Fatal("wrong txid", txid, "expected", appearances[index].TransactionIndex)
 		}
 	}
+
+	// Check the last page pageIds
+
+	nextPageId = nil
+	for i := 0; i < maxIters+1; i++ {
+		request = &query.RpcRequest{
+			Id:     1,
+			Method: "tb_getAppearances",
+			Params: []query.RpcRequestParams{
+				{
+					Address: appearances[0].Address,
+					PerPage: perPage,
+					PageId:  nextPageId,
+				},
+			},
+		}
+		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+		helpers.AssertLambdaSuccessful(t, output)
+
+		if i == maxIters {
+			helpers.UnmarshalLambdaOutput(t, output, response)
+		}
+		nextPageId = response.Result.Meta.NextPageId
+	}
+	if len(response.Result.Data) > 0 {
+		t.Fatal("last page has data:", response.Result.Data)
+	}
+	if l := response.Result.Meta.PreviousPageId; l != nil {
+		t.Fatalf("last page has PreviousPageId: %+v\n", l)
+	}
+	if l := response.Result.Meta.NextPageId; l != nil {
+		t.Fatalf("last page has NextPageId: %+v\n", l)
+	}
+
+	// TODO: add test for lastBlock
 }
