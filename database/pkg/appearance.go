@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/TrueBlocks/trueblocks-key/database/pkg/sql"
@@ -69,6 +70,48 @@ func FetchAppearancesPage(ctx context.Context, c *Connection, nextPage bool, add
 	log.Println("address =", address, "limit =", limit, "lastBlock =", lastBlock, "next?", nextPage)
 
 	results, err = pgx.CollectRows[Appearance](rows, pgx.RowToStructByPos[Appearance])
+
+	return
+}
+
+type AppearancesDatasetBoundaries struct {
+	Latest   Appearance
+	Earliest Appearance
+}
+
+func (a *AppearancesDatasetBoundaries) IsLatest(appearance *Appearance) bool {
+	return appearance.BlockNumber == a.Latest.BlockNumber && appearance.TransactionIndex == a.Latest.TransactionIndex
+}
+
+func (a *AppearancesDatasetBoundaries) IsEarliest(appearance *Appearance) bool {
+	return appearance.BlockNumber == a.Earliest.BlockNumber && appearance.TransactionIndex == a.Earliest.TransactionIndex
+}
+
+func FetchAppearancesDatasetBoundaries(ctx context.Context, c *Connection, address string, lastBlock uint) (boundaries AppearancesDatasetBoundaries, err error) {
+	rows, err := c.conn.Query(
+		ctx,
+		sql.SelectAppearancesDatasetBoundaries(c.AppearancesTableName(), c.AddressesTableName()),
+		pgx.NamedArgs{
+			"address":   address,
+			"lastBlock": lastBlock,
+		},
+	)
+	if err != nil {
+		return
+	}
+
+	raw, err := pgx.CollectRows[Appearance](rows, pgx.RowToStructByPos[Appearance])
+	if err != nil {
+		return
+	}
+
+	if l := len(raw); l != 2 {
+		err = fmt.Errorf("expected boundaries result length == 2, but got %d", l)
+		return
+	}
+
+	boundaries.Latest = raw[0]
+	boundaries.Earliest = raw[1]
 
 	return
 }

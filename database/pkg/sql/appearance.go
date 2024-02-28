@@ -87,6 +87,40 @@ SELECT * FROM (
 	)
 }
 
+func SelectAppearancesDatasetBoundaries(appearancesTableName string, addressesTableName string) string {
+	return fmt.Sprintf(`
+WITH addrs AS (
+    SELECT id
+    FROM %[1]s
+    WHERE address = @address
+), apps_desc AS (
+    SELECT block_number, tx_id
+    FROM %[2]s
+    WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs)
+    ORDER BY block_number DESC, tx_id DESC
+), apps_asc AS (
+    SELECT block_number, tx_id
+    FROM %[2]s
+    WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs)
+    ORDER BY block_number ASC, tx_id ASC
+)
+(
+    SELECT block_number, tx_id
+    FROM apps_desc
+    LIMIT 1
+)
+UNION ALL
+(
+    SELECT block_number, tx_id
+    FROM apps_asc
+    LIMIT 1
+);
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}
+
 func SelectAppearancesCount(appearancesTableName string) string {
 	return fmt.Sprintf(`
 SELECT reltuples::bigint AS estimate

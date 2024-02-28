@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
 var ErrInvalidPageId = errors.New("invalid pageId")
@@ -15,8 +17,11 @@ var ErrPageIdParseError = errors.New("cannot parse pageId")
 type PageId struct {
 	DirectionNextPage bool
 	LastBlock         uint32
-	BlockNumber       uint32
-	TransactionIndex  uint32
+	LastSeen          database.Appearance
+	// BlockNumber       uint32
+	// TransactionIndex  uint32
+	LatestInSet   database.Appearance
+	EarliestInSet database.Appearance
 }
 
 func (p *PageId) MarshalText() (text []byte, err error) {

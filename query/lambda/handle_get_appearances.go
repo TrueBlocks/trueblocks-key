@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
@@ -55,8 +56,8 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 		bn := uint(pageId.LastBlock)
 		lastBlock = &bn
 
-		log.Println("fetching page -- next?", pageId.DirectionNextPage, "blockNum:", pageId.BlockNumber, "tx_id:", pageId.TransactionIndex)
-		items, err = database.FetchAppearancesPage(ctx, dbConn, pageId.DirectionNextPage, rpcRequest.Address(), *lastBlock, uint(limit), uint(pageId.BlockNumber), uint(pageId.TransactionIndex))
+		log.Println("fetching page -- next?", pageId.DirectionNextPage, "last seen:", fmt.Sprint(pageId.LastSeen), "latest in set:", fmt.Sprint(pageId.LatestInSet), "earliest in set:", fmt.Sprint(pageId.EarliestInSet))
+		items, err = database.FetchAppearancesPage(ctx, dbConn, pageId.DirectionNextPage, rpcRequest.Address(), *lastBlock, uint(limit), uint(pageId.LastSeen.BlockNumber), uint(pageId.LastSeen.TransactionIndex))
 	}
 
 	if err != nil {
@@ -65,14 +66,34 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 		return
 	}
 
-	previousPageId, nextPageId := getPageIds(items, *lastBlock)
-	if !firstPage {
-		meta.PreviousPageId = previousPageId
+	hasItems := len(items) > 0
+	var boundaries database.AppearancesDatasetBoundaries
+	if firstPage {
+		if hasItems {
+			boundaries, err = database.FetchAppearancesDatasetBoundaries(ctx, dbConn, rpcRequest.Address(), *lastBlock)
+			if err != nil {
+				log.Println("error while getting boundaries:", err)
+				err = ErrInternal
+				return
+			}
+		}
+	} else {
+		boundaries = database.AppearancesDatasetBoundaries{
+			Latest:   pageId.LatestInSet,
+			Earliest: pageId.EarliestInSet,
+		}
 	}
-	meta.NextPageId = nextPageId
 
-	if nextPageId != nil {
-		log.Println("next page id: next?", nextPageId.DirectionNextPage, "blockNum:", nextPageId.BlockNumber, "tx_id:", nextPageId.TransactionIndex)
+	if hasItems {
+		previousPageId, nextPageId := getPageIds(items, *lastBlock, &boundaries)
+		if !firstPage {
+			meta.PreviousPageId = previousPageId
+		}
+		meta.NextPageId = nextPageId
+
+		if nextPageId != nil {
+			log.Println("next page id: next?", nextPageId.DirectionNextPage, "last seen:", nextPageId.LastSeen, "latest in set:", nextPageId.LatestInSet, "earliest in set:", nextPageId.EarliestInSet)
+		}
 	}
 
 	response = &query.RpcResponse[[]database.Appearance]{
@@ -86,23 +107,31 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	return
 }
 
-func getPageIds(items []database.Appearance, lastBlock uint) (previousPageId *query.PageId, nextPageId *query.PageId) {
+func getPageIds(items []database.Appearance, lastBlock uint, boundaries *database.AppearancesDatasetBoundaries) (previousPageId *query.PageId, nextPageId *query.PageId) {
 	if len(items) == 0 {
 		return
 	}
-	previousPageId = &query.PageId{
-		DirectionNextPage: false,
-		LastBlock:         uint32(lastBlock),
-		BlockNumber:       items[0].BlockNumber,
-		TransactionIndex:  items[0].TransactionIndex,
+
+	if !boundaries.IsLatest(&items[0]) {
+		previousPageId = &query.PageId{
+			DirectionNextPage: false,
+			LastBlock:         uint32(lastBlock),
+			LastSeen:          items[0],
+			LatestInSet:       boundaries.Latest,
+			EarliestInSet:     boundaries.Earliest,
+		}
 	}
 
 	lastCurrentAppearance := items[len(items)-1]
-	nextPageId = &query.PageId{
-		DirectionNextPage: true,
-		LastBlock:         uint32(lastBlock),
-		BlockNumber:       lastCurrentAppearance.BlockNumber,
-		TransactionIndex:  lastCurrentAppearance.TransactionIndex,
+
+	if !boundaries.IsEarliest(&lastCurrentAppearance) {
+		nextPageId = &query.PageId{
+			DirectionNextPage: true,
+			LastBlock:         uint32(lastBlock),
+			LastSeen:          lastCurrentAppearance,
+			LatestInSet:       boundaries.Latest,
+			EarliestInSet:     boundaries.Earliest,
+		}
 	}
 	return
 }

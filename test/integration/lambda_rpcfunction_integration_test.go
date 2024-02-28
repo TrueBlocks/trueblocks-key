@@ -392,10 +392,10 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		}
 	}
 
-	// Check the last page pageIds
+	// Check pageIds
 
 	nextPageId = nil
-	for i := 0; i < maxIters+1; i++ {
+	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
 			Method: "tb_getAppearances",
@@ -408,22 +408,20 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			},
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
-
 		helpers.AssertLambdaSuccessful(t, output)
+		helpers.UnmarshalLambdaOutput(t, output, response)
 
-		if i == maxIters {
-			helpers.UnmarshalLambdaOutput(t, output, response)
+		if i == 0 {
+			if response.Result.Meta.PreviousPageId != nil {
+				t.Fatal("expected no PreviousPageId on the first page")
+			}
+		}
+		if i == maxIters-1 {
+			if response.Result.Meta.NextPageId != nil {
+				t.Fatal("expected no NextPageId on the last page")
+			}
 		}
 		nextPageId = response.Result.Meta.NextPageId
-	}
-	if len(response.Result.Data) > 0 {
-		t.Fatal("last page has data:", response.Result.Data)
-	}
-	if l := response.Result.Meta.PreviousPageId; l != nil {
-		t.Fatalf("last page has PreviousPageId: %+v\n", l)
-	}
-	if l := response.Result.Meta.NextPageId; l != nil {
-		t.Fatalf("last page has NextPageId: %+v\n", l)
 	}
 
 	// TODO: add test for lastBlock

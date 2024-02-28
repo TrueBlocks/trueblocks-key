@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 
+	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 )
 
@@ -109,8 +110,7 @@ func build(directionNext bool, lastBlock uint32, blockNumber uint32, transaction
 	p := query.PageId{
 		DirectionNextPage: directionNext,
 		LastBlock:         lastBlock,
-		BlockNumber:       blockNumber,
-		TransactionIndex:  transactionIndex,
+		LastSeen:          database.Appearance{BlockNumber: blockNumber, TransactionIndex: transactionIndex},
 	}
 	encoded, err := p.MarshalJSON()
 	if err != nil {
