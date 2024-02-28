@@ -23,7 +23,7 @@ var ErrInvalidLastBlockInvalid = errors.New("lastBlock must be a number or strin
 const MaxSafePerPage = 10000
 
 // If limit is too small the DB can take too long to return results
-const MinSafePerPage = 10
+const MinSafePerPage = 5
 
 const LastBlockLatest = "latest"
 
