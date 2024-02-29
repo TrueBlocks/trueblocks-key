@@ -46,6 +46,26 @@ LIMIT @pageSize;
 	)
 }
 
+func SelectAppearancesEarliestPage(appearancesTableName string, addressesTableName string) string {
+	return fmt.Sprintf(`
+SELECT * FROM (
+	WITH addrs AS (
+    	SELECT id
+    	FROM %[1]s
+    	WHERE address = @address
+	)
+	SELECT block_number, tx_id
+	FROM %[2]s
+	WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs)
+	ORDER BY block_number ASC, tx_id ASC
+	LIMIT @pageSize
+) AS x ORDER BY block_number DESC, tx_id DESC;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}
+
 // SelectAppearancesNextPage needs the last appearance from the current page.
 func SelectAppearancesNextPage(appearancesTableName string, addressesTableName string) string {
 	return fmt.Sprintf(`
@@ -80,7 +100,7 @@ SELECT * FROM (
 	WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs) AND (block_number, tx_id) > (@appBlockNumber, @appTransactionIndex)
 	ORDER BY block_number ASC, tx_id ASC
 	LIMIT @pageSize
-) AS x ORDER BY block_number DESC, tx_id ASC;
+) AS x ORDER BY block_number DESC, tx_id DESC;
 `,
 		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),

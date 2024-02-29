@@ -2,7 +2,6 @@ package query
 
 import (
 	"bytes"
-	"errors"
 
 	"encoding/base64"
 	"encoding/binary"
@@ -10,9 +9,6 @@ import (
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
-
-var ErrInvalidPageId = errors.New("invalid pageId")
-var ErrPageIdParseError = errors.New("cannot parse pageId")
 
 type PageId struct {
 	DirectionNextPage bool
@@ -64,4 +60,27 @@ func (p *PageId) UnmarshalJSON(b []byte) (err error) {
 	}
 
 	return p.UnmarshalText(enc)
+}
+
+type PageIdSpecial string
+
+const (
+	PageIdLatest    PageIdSpecial = "latest"
+	PageIdEarliest  PageIdSpecial = "earliest"
+	PageIdNoSpecial PageIdSpecial = ""
+)
+
+func (p *PageIdSpecial) FromBytes(b []byte) bool {
+	value := PageIdSpecial(b)
+	switch value {
+	// case PageIdNoSpecial:
+	// 	fallthrough
+	case PageIdEarliest:
+		fallthrough
+	case PageIdLatest:
+		*p = value
+		return true
+	}
+
+	return false
 }

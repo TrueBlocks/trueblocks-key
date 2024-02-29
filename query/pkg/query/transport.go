@@ -1,6 +1,7 @@
 package query
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -36,7 +37,7 @@ type RpcRequest struct {
 type RpcRequestParams struct {
 	Address   string           `json:"address"`
 	LastBlock *json.RawMessage `json:"lastBlock,omitempty"`
-	PageId    *PageId          `json:"pageId,omitempty"`
+	PageId    json.RawMessage  `json:"pageId,omitempty"`
 	PerPage   int              `json:"perPage"`
 }
 
@@ -77,6 +78,44 @@ func (r *RpcRequest) LastBlockNumber() (*uint, error) {
 	}
 
 	return &blockNumber, nil
+}
+
+func (r *RpcRequest) PageIdValue() (special PageIdSpecial, pageId *PageId, err error) {
+	raw := r.Parameters().PageId
+	// no pageId means "latest"
+	if len(raw) == 0 || string(raw) == "null" || string(raw) == `""` {
+		special = PageIdLatest
+		return
+	}
+	var specialPageId PageIdSpecial
+	if ok := specialPageId.FromBytes(bytes.Trim(raw, `"`)); ok {
+		special = specialPageId
+		return
+	}
+
+	pageId = &PageId{}
+	err = json.Unmarshal(raw, pageId)
+	return
+}
+
+func (r *RpcRequest) SetPageId(specialPageId PageIdSpecial, pageId *PageId) error {
+	var value any
+	if specialPageId != "" {
+		value = specialPageId
+	} else {
+		value = pageId
+	}
+	b, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("setting page id: %w", err)
+	}
+	if len(r.Params) == 0 {
+		return errors.New("cannot assign page id to empty request parameters")
+	}
+
+	raw := json.RawMessage(b)
+	r.Params[0].PageId = raw
+	return nil
 }
 
 func (r *RpcRequest) Validate() error {

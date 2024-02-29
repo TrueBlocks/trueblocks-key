@@ -133,10 +133,12 @@ func getBody(s *scenario.Scenario, nextPageId *query.PageId) (r *bytes.Reader, e
 		Params: []query.RpcRequestParams{
 			{
 				Address: s.Address,
-				PageId:  nextPageId,
 				PerPage: int(s.PerPage),
 			},
 		},
+	}
+	if err = request.SetPageId(query.PageIdNoSpecial, nextPageId); err != nil {
+		return
 	}
 	b, err := json.Marshal(request)
 	if err != nil {

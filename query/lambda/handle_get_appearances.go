@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -44,14 +45,27 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	}
 
 	var items []database.Appearance
-	var firstPage bool
-	pageId := rpcRequest.Parameters().PageId
+	var fetchBoundaries bool
+	specialPageId, pageId, err := rpcRequest.PageIdValue()
+	if err != nil {
+		log.Println("reading page id value:", err)
+		err = errors.New("invalid pageId")
+		return
+	}
 
-	if pageId == nil {
+	switch specialPageId {
+	case query.PageIdLatest, query.PageIdEarliest:
 		log.Println("fetching first page")
-		items, err = database.FetchAppearancesFirstPage(ctx, dbConn, rpcRequest.Address(), *lastBlock, uint(limit))
-		firstPage = true
-	} else {
+		items, err = database.FetchAppearancesFirstPage(
+			ctx,
+			dbConn,
+			specialPageId == query.PageIdEarliest,
+			rpcRequest.Address(),
+			*lastBlock,
+			uint(limit),
+		)
+		fetchBoundaries = true
+	default:
 		// pageId.LastBlock takes precedence before query's lastBlock (it shouldn't be there if the user sends pageId)
 		bn := uint(pageId.LastBlock)
 		lastBlock = &bn
@@ -68,7 +82,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 
 	hasItems := len(items) > 0
 	var boundaries database.AppearancesDatasetBoundaries
-	if firstPage {
+	if fetchBoundaries {
 		if hasItems {
 			boundaries, err = database.FetchAppearancesDatasetBoundaries(ctx, dbConn, rpcRequest.Address(), *lastBlock)
 			if err != nil {
@@ -86,9 +100,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 
 	if hasItems {
 		previousPageId, nextPageId := getPageIds(items, *lastBlock, &boundaries)
-		if !firstPage {
-			meta.PreviousPageId = previousPageId
-		}
+		meta.PreviousPageId = previousPageId
 		meta.NextPageId = nextPageId
 
 		if nextPageId != nil {

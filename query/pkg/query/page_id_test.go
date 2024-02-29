@@ -56,3 +56,64 @@ func TestPageId_UnmarshalJSON(t *testing.T) {
 		t.Fatal("wrong EarliestInSet:", v)
 	}
 }
+
+func TestPageId_Errors(t *testing.T) {
+	var s struct {
+		PageId *PageId `json:"pageId"`
+	}
+	str := `{"pageId": "__invalid__"}`
+
+	err := json.Unmarshal([]byte(str), &s)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	t.Fatal(err)
+}
+
+func TestPageIdSpecial_FromBytes(t *testing.T) {
+	var p PageIdSpecial
+
+	type args struct {
+		b []byte
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  bool
+		value PageIdSpecial
+	}{
+		{
+			name: "invalid value",
+			args: args{b: []byte("invalid")},
+			want: false,
+		},
+		{
+			name: "no value",
+			args: args{b: []byte(PageIdNoSpecial)},
+			want: false,
+		},
+		{
+			name:  "latest",
+			args:  args{b: []byte(PageIdLatest)},
+			want:  true,
+			value: PageIdLatest,
+		},
+		{
+			name:  "earliest",
+			args:  args{b: []byte(PageIdEarliest)},
+			want:  true,
+			value: PageIdEarliest,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := p.FromBytes(tt.args.b)
+			if got != tt.want {
+				t.Errorf("PageIdSpecial.FromBytes() = %v, want %v", got, tt.want)
+			}
+			if p != tt.value {
+				t.Error("wanted value", tt.value, "got", p)
+			}
+		})
+	}
+}

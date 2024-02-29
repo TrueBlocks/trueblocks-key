@@ -17,13 +17,21 @@ type Appearance struct {
 	TransactionIndex uint32 `json:"transactionIndex"`
 }
 
-func FetchAppearancesFirstPage(ctx context.Context, c *Connection, address string, lastBlock uint, limit uint) (results []Appearance, err error) {
+func FetchAppearancesFirstPage(ctx context.Context, c *Connection, earliest bool, address string, lastBlock uint, limit uint) (results []Appearance, err error) {
 	if limit > hardFetchLimit {
 		log.Printf("database/FetchAppearances: limit too large (%d),setting it to %d\n", limit, hardFetchLimit)
 	}
+
+	var sqlString string
+	if earliest {
+		sqlString = sql.SelectAppearancesEarliestPage(c.AppearancesTableName(), c.AddressesTableName())
+	} else {
+		sqlString = sql.SelectAppearancesFirstPage(c.AppearancesTableName(), c.AddressesTableName())
+	}
+
 	rows, err := c.conn.Query(
 		ctx,
-		sql.SelectAppearancesFirstPage(c.AppearancesTableName(), c.AddressesTableName()),
+		sqlString,
 		pgx.NamedArgs{
 			"address":   address,
 			"lastBlock": lastBlock,

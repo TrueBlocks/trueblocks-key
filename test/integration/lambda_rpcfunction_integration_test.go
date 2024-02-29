@@ -5,6 +5,7 @@ package integration_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -284,16 +285,16 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 13},
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 12},
 		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 11},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 10},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 9},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 8},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 7},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 6},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 5},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 4},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 3},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 2},
-		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 4053179, TransactionIndex: 1},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 10},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 9},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 8},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 7},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 6},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 5},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 4},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 3},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 2},
+		{Address: "0x209c4784ab1e8183cf58ca33cb740efbf3fc18ef", BlockNumber: 3001234, TransactionIndex: 1},
 	}
 	if err = database.InsertAppearanceBatch(context.TODO(), dbConn, appearances); err != nil {
 		t.Fatal("inserting test data:", err)
@@ -317,9 +318,13 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 				{
 					Address: appearances[0].Address,
 					PerPage: 10,
-					PageId:  nextPageId,
 				},
 			},
+		}
+		if nextPageId != nil {
+			if err := request.SetPageId(query.PageIdNoSpecial, nextPageId); err != nil {
+				t.Fatal(err)
+			}
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
@@ -362,9 +367,11 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 				{
 					Address: appearances[0].Address,
 					PerPage: perPage,
-					PageId:  nextPageId,
 				},
 			},
+		}
+		if err := request.SetPageId(query.PageIdNoSpecial, nextPageId); err != nil {
+			t.Fatal(err)
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
@@ -403,9 +410,11 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 				{
 					Address: appearances[0].Address,
 					PerPage: perPage,
-					PageId:  nextPageId,
 				},
 			},
+		}
+		if err := request.SetPageId(query.PageIdNoSpecial, nextPageId); err != nil {
+			t.Fatal(err)
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 		helpers.AssertLambdaSuccessful(t, output)
@@ -424,5 +433,143 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		nextPageId = response.Result.Meta.NextPageId
 	}
 
-	// TODO: add test for lastBlock
+	// Check pageId = "" same as pageId = "latest"
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: []query.RpcRequestParams{
+			{
+				Address: appearances[0].Address,
+				PerPage: perPage,
+			},
+		},
+	}
+	if err := request.SetPageId(query.PageIdLatest, nil); err != nil {
+		t.Fatal(err)
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+	helpers.AssertLambdaSuccessful(t, output)
+	helpers.UnmarshalLambdaOutput(t, output, response)
+
+	latestApps := response.Result.Data
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: []query.RpcRequestParams{
+			{
+				Address: appearances[0].Address,
+				PerPage: perPage,
+				PageId:  []byte(""),
+			},
+		},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+	helpers.AssertLambdaSuccessful(t, output)
+	helpers.UnmarshalLambdaOutput(t, output, response)
+
+	if !reflect.DeepEqual(latestApps, response.Result.Data) {
+		t.Fatal("wrong results")
+	}
+
+	// Check going backwards with "earliest"
+
+	var prevPageId *query.PageId
+	pagingResults = make([]database.Appearance, 0, len(appearances))
+	for i := 0; i < maxIters; i++ {
+		request = &query.RpcRequest{
+			Id:     1,
+			Method: "tb_getAppearances",
+			Params: []query.RpcRequestParams{
+				{
+					Address: appearances[0].Address,
+					PerPage: perPage,
+				},
+			},
+		}
+		var pageIdSpecial query.PageIdSpecial
+		var pageId *query.PageId
+		if i == 0 {
+			pageIdSpecial = query.PageIdEarliest
+		} else {
+			pageId = prevPageId
+		}
+		if err := request.SetPageId(pageIdSpecial, pageId); err != nil {
+			t.Fatal(err)
+		}
+		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+		helpers.AssertLambdaSuccessful(t, output)
+		helpers.UnmarshalLambdaOutput(t, output, response)
+
+		if l := len(response.Result.Data); l != perPage {
+			t.Fatal(i, "-- wrong page len:", l)
+		}
+		pagingResults = append(pagingResults, response.Result.Data...)
+
+		prevPageId = response.Meta.PreviousPageId
+	}
+
+	if l := len(pagingResults); l != len(appearances) {
+		t.Fatal("wrong result length", l, "expected", len(appearances))
+	}
+
+	expected := []database.Appearance{
+		{BlockNumber: 3001234, TransactionIndex: 10},
+		{BlockNumber: 3001234, TransactionIndex: 9},
+		{BlockNumber: 3001234, TransactionIndex: 8},
+		{BlockNumber: 3001234, TransactionIndex: 7},
+		{BlockNumber: 3001234, TransactionIndex: 6},
+		{BlockNumber: 3001234, TransactionIndex: 5},
+		{BlockNumber: 3001234, TransactionIndex: 4},
+		{BlockNumber: 3001234, TransactionIndex: 3},
+		{BlockNumber: 3001234, TransactionIndex: 2},
+		{BlockNumber: 3001234, TransactionIndex: 1},
+		{BlockNumber: 4053179, TransactionIndex: 20},
+		{BlockNumber: 4053179, TransactionIndex: 19},
+		{BlockNumber: 4053179, TransactionIndex: 18},
+		{BlockNumber: 4053179, TransactionIndex: 17},
+		{BlockNumber: 4053179, TransactionIndex: 16},
+		{BlockNumber: 4053179, TransactionIndex: 15},
+		{BlockNumber: 4053179, TransactionIndex: 14},
+		{BlockNumber: 4053179, TransactionIndex: 13},
+		{BlockNumber: 4053179, TransactionIndex: 12},
+		{BlockNumber: 4053179, TransactionIndex: 11},
+	}
+
+	if !reflect.DeepEqual(expected, pagingResults) {
+		t.Fatal("wrong results")
+	}
+
+	// lastBlock custom
+
+	customLastBlock := 3001234
+	b, err := json.Marshal(customLastBlock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := json.RawMessage(b)
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+		Params: []query.RpcRequestParams{
+			{
+				Address:   appearances[0].Address,
+				PerPage:   perPage,
+				LastBlock: &raw,
+			},
+		},
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	helpers.UnmarshalLambdaOutput(t, output, response)
+
+	if l := len(response.Result.Data); l != perPage {
+		t.Fatal("wrong page len:", l)
+	}
+	if response.Result.Data[0].BlockNumber != uint32(customLastBlock) {
+		t.Fatal("wrong block number")
+	}
 }
