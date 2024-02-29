@@ -109,7 +109,11 @@ func RunSingle(s *scenario.Scenario, cnf *config.Config, timeout context.Context
 					log.Fatalln("unmarshal body:", err)
 				}
 
-				nextPageId = rpcResponse.Meta.NextPageId
+				if s.GoBackwards {
+					nextPageId = rpcResponse.Meta.PreviousPageId
+				} else {
+					nextPageId = rpcResponse.Meta.NextPageId
+				}
 				// log.Println("got", len(rpcResponse.Data), "appearances, next page?", nextPageId)
 			}
 		}
@@ -137,7 +141,11 @@ func getBody(s *scenario.Scenario, nextPageId *query.PageId) (r *bytes.Reader, e
 			},
 		},
 	}
-	if err = request.SetPageId(query.PageIdNoSpecial, nextPageId); err != nil {
+	pageSpecial := query.PageIdNoSpecial
+	if s.GoBackwards && nextPageId == nil {
+		pageSpecial = query.PageIdEarliest
+	}
+	if err = request.SetPageId(pageSpecial, nextPageId); err != nil {
 		return
 	}
 	b, err := json.Marshal(request)
