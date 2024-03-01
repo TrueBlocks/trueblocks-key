@@ -45,7 +45,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	}
 
 	var items []database.Appearance
-	var fetchBoundaries bool
+	var fetchBounds bool
 	specialPageId, pageId, err := rpcRequest.PageIdValue()
 	if err != nil {
 		log.Println("reading page id value:", err)
@@ -64,7 +64,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 			*lastBlock,
 			uint(limit),
 		)
-		fetchBoundaries = true
+		fetchBounds = true
 	default:
 		// pageId.LastBlock takes precedence before query's lastBlock (it shouldn't be there if the user sends pageId)
 		bn := uint(pageId.LastBlock)
@@ -81,25 +81,25 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	}
 
 	hasItems := len(items) > 0
-	var boundaries database.AppearancesDatasetBoundaries
-	if fetchBoundaries {
+	var bounds database.AppearancesDatasetBounds
+	if fetchBounds {
 		if hasItems {
-			boundaries, err = database.FetchAppearancesDatasetBoundaries(ctx, dbConn, rpcRequest.Address(), *lastBlock)
+			bounds, err = database.FetchAppearancesDatasetBounds(ctx, dbConn, rpcRequest.Address(), *lastBlock)
 			if err != nil {
-				log.Println("error while getting boundaries:", err)
+				log.Println("error while getting bounds:", err)
 				err = ErrInternal
 				return
 			}
 		}
 	} else {
-		boundaries = database.AppearancesDatasetBoundaries{
+		bounds = database.AppearancesDatasetBounds{
 			Latest:   pageId.LatestInSet,
 			Earliest: pageId.EarliestInSet,
 		}
 	}
 
 	if hasItems {
-		previousPageId, nextPageId := getPageIds(items, *lastBlock, &boundaries)
+		previousPageId, nextPageId := getPageIds(items, *lastBlock, &bounds)
 		meta.PreviousPageId = previousPageId
 		meta.NextPageId = nextPageId
 
@@ -119,30 +119,30 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	return
 }
 
-func getPageIds(items []database.Appearance, lastBlock uint, boundaries *database.AppearancesDatasetBoundaries) (previousPageId *query.PageId, nextPageId *query.PageId) {
+func getPageIds(items []database.Appearance, lastBlock uint, bounds *database.AppearancesDatasetBounds) (previousPageId *query.PageId, nextPageId *query.PageId) {
 	if len(items) == 0 {
 		return
 	}
 
-	if !boundaries.IsLatest(&items[0]) {
+	if !bounds.IsLatest(&items[0]) {
 		previousPageId = &query.PageId{
 			DirectionNextPage: false,
 			LastBlock:         uint32(lastBlock),
 			LastSeen:          items[0],
-			LatestInSet:       boundaries.Latest,
-			EarliestInSet:     boundaries.Earliest,
+			LatestInSet:       bounds.Latest,
+			EarliestInSet:     bounds.Earliest,
 		}
 	}
 
 	lastCurrentAppearance := items[len(items)-1]
 
-	if !boundaries.IsEarliest(&lastCurrentAppearance) {
+	if !bounds.IsEarliest(&lastCurrentAppearance) {
 		nextPageId = &query.PageId{
 			DirectionNextPage: true,
 			LastBlock:         uint32(lastBlock),
 			LastSeen:          lastCurrentAppearance,
-			LatestInSet:       boundaries.Latest,
-			EarliestInSet:     boundaries.Earliest,
+			LatestInSet:       bounds.Latest,
+			EarliestInSet:     bounds.Earliest,
 		}
 	}
 	return

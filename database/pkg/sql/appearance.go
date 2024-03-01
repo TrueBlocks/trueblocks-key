@@ -107,7 +107,7 @@ SELECT * FROM (
 	)
 }
 
-func SelectAppearancesDatasetBoundaries(appearancesTableName string, addressesTableName string) string {
+func SelectAppearancesDatasetBounds(appearancesTableName string, addressesTableName string) string {
 	return fmt.Sprintf(`
 WITH addrs AS (
     SELECT id
@@ -147,20 +147,6 @@ SELECT reltuples::bigint AS estimate
 FROM   pg_class
 WHERE  oid = 'public.%[1]s'::regclass;
 `,
-		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
-	)
-}
-
-func SelectAppearancesCountForAddress(appearancesTableName string, addressesTableName string) string {
-	return fmt.Sprintf(`
-WITH addrs AS (
-    SELECT id
-    FROM %[1]s
-    WHERE address = @address
-)
-SELECT count(*) FROM %[2]s WHERE address_id = (SELECT id FROM addrs) AND block_number <= @lastBlock;
-`,
-		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
 	)
 }
