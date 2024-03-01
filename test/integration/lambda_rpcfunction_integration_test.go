@@ -208,15 +208,15 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 	helpers.AssertLambdaProxyError(t, string(output.Payload), "invalid method")
 
-	// Count
+	// Bounds
 
-	countResponse := &query.RpcResponse[*int]{}
+	boundsResponse := &query.RpcResponse[database.AppearancesDatasetBounds]{}
 
 	// Valid request, appearance found
 
 	request = &query.RpcRequest{
 		Id:     1,
-		Method: "tb_getAppearanceCount",
+		Method: "tb_getBounds",
 		Params: []query.RpcRequestParams{
 			{
 				Address: address,
@@ -227,20 +227,31 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	t.Log(string(output.Payload))
 	helpers.AssertLambdaSuccessful(t, output)
-	helpers.UnmarshalLambdaOutput(t, output, countResponse)
+	helpers.UnmarshalLambdaOutput(t, output, boundsResponse)
 
-	if c := countResponse.Result.Data; *c != 1 {
-		t.Fatal("wrong count:", c)
+	expectedBounds := database.AppearancesDatasetBounds{
+		Latest: database.Appearance{
+			BlockNumber:      1,
+			TransactionIndex: 5,
+		},
+		Earliest: database.Appearance{
+			BlockNumber:      1,
+			TransactionIndex: 5,
+		},
+	}
+
+	if b := boundsResponse.Result.Data; !reflect.DeepEqual(b, expectedBounds) {
+		t.Fatalf("wrong bounds: %+v\n", b)
 	}
 
 	// meta
-	if countResponse.Meta == nil {
+	if boundsResponse.Result.Meta == nil {
 		t.Fatal("meta is nil")
 	}
-	if l := countResponse.Meta.LastIndexedBlock; l != 1 {
+	if l := boundsResponse.Result.Meta.LastIndexedBlock; l != 1 {
 		t.Fatal("wrong meta LastIndexedBlock")
 	}
-	if a := countResponse.Meta.Address; a != address {
+	if a := boundsResponse.Result.Meta.Address; a != address {
 		t.Fatal("wrong meta address")
 	}
 

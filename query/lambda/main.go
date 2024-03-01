@@ -59,8 +59,8 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	switch rpcRequest.Method {
 	case query.MethodGetAppearances:
 		r, err = handleGetAppearances(ctx, rpcRequest)
-	case query.MethodGetAppearanceCount:
-		r, err = handleCount(ctx, rpcRequest)
+	case query.MethodGetBounds:
+		r, err = handleBounds(ctx, rpcRequest)
 	case query.MethodLastIndexedBlock:
 		r, err = handleLastIndexedBlock(ctx, rpcRequest)
 	default:

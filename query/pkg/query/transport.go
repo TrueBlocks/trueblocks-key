@@ -120,7 +120,7 @@ func (r *RpcRequest) SetPageId(specialPageId PageIdSpecial, pageId *PageId) erro
 
 func (r *RpcRequest) Validate() error {
 	// Validate method
-	if r.Method != MethodGetAppearances && r.Method != MethodGetAppearanceCount && r.Method != MethodLastIndexedBlock {
+	if r.Method != MethodGetAppearances && r.Method != MethodGetBounds && r.Method != MethodLastIndexedBlock {
 		return ErrInvalidMethod
 	}
 
@@ -172,6 +172,7 @@ type Result[T RpcResponseResult] struct {
 
 type RpcResponseResult interface {
 	[]database.Appearance |
+		database.AppearancesDatasetBounds |
 		*database.Status |
 		*int
 }
