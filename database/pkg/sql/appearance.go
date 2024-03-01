@@ -153,10 +153,12 @@ WHERE  oid = 'public.%[1]s'::regclass;
 
 func SelectAppearancesCountForAddress(appearancesTableName string, addressesTableName string) string {
 	return fmt.Sprintf(`
-SELECT count(*)
-FROM %[1]s
-JOIN %[2]s apps ON apps.address_id = id
-WHERE address = $1 AND block_number <= $2;
+WITH addrs AS (
+    SELECT id
+    FROM %[1]s
+    WHERE address = @address
+)
+SELECT count(*) FROM %[2]s WHERE address_id = (SELECT id FROM addrs) AND block_number <= @lastBlock;
 `,
 		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),

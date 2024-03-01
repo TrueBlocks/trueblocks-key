@@ -128,8 +128,10 @@ func FetchCount(ctx context.Context, c *Connection, address string, latestBlock 
 	rows, err := c.conn.Query(
 		ctx,
 		sql.SelectAppearancesCountForAddress(c.AppearancesTableName(), c.AddressesTableName()),
-		address,
-		latestBlock,
+		pgx.NamedArgs{
+			"address":   address,
+			"lastBlock": latestBlock,
+		},
 	)
 	if err != nil {
 		return
