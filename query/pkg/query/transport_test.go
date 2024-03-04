@@ -30,7 +30,7 @@ func TestRpcRequest_LambdaPayload(t *testing.T) {
 
 func TestRpcRequest_SetPageId(t *testing.T) {
 	p := &PageId{
-		LastSeen: database.Appearance{1000, 1},
+		LastSeen: database.Appearance{BlockNumber: 1000, TransactionIndex: 1},
 	}
 
 	param := RpcGetAppearancesParam{

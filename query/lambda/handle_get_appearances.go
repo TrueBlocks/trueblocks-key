@@ -31,10 +31,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 		return
 	}
 
-	limit, offset := getValidLimits(param)
-	// if limit < query.MinSafePerPage {
-	// 	limit = query.MinSafePerPage
-	// }
+	limit := getValidLimits(param)
 
 	// get status first, so we know max block number
 	meta, err := getMeta(ctx, param.Address)

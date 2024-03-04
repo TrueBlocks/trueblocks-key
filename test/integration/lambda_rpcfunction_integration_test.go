@@ -158,26 +158,26 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Invalid request: invalid PerPage
 
-	request = &query.RpcRequest{
-		Id:     1,
-		Method: "tb_getAppearances",
-	}
-	err = query.SetParams(
-		request,
-		[]query.RpcGetAppearancesParam{
-			{
-				Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
-				PerPage: query.MinSafePerPage - 1,
-			},
-		},
-	)
-	if err != nil {
-		t.Fatal("setting rpc request params:", err)
-	}
-	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+	// request = &query.RpcRequest{
+	// 	Id:     1,
+	// 	Method: "tb_getAppearances",
+	// }
+	// err = query.SetParams(
+	// 	request,
+	// 	[]query.RpcGetAppearancesParam{
+	// 		{
+	// 			Address: "0xf503017d7baf7fbc0fff7492b751025c6a78179b",
+	// 			PerPage: query.MinSafePerPage - 1,
+	// 		},
+	// 	},
+	// )
+	// if err != nil {
+	// 	t.Fatal("setting rpc request params:", err)
+	// }
+	// output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
-	t.Logf("result: %+v", response)
-	helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect perPage")
+	// t.Logf("result: %+v", response)
+	// helpers.AssertLambdaProxyError(t, string(output.Payload), "incorrect perPage")
 
 	// Invalid request: params out of range
 

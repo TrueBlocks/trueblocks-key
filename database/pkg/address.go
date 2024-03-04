@@ -2,23 +2,19 @@ package database
 
 import (
 	"context"
-	"log"
 
 	"github.com/TrueBlocks/trueblocks-key/database/pkg/sql"
 	"github.com/jackc/pgx/v5"
 )
 
-func FetchAddressesInTx(ctx context.Context, c *Connection, blockNumber int, transactionIndex int, limit uint, offset uint) (results []string, err error) {
-	if limit > hardFetchLimit {
-		log.Printf("database/FetchAddressesInTx: limit too large (%d),setting it to %d\n", limit, hardFetchLimit)
-	}
+func FetchAddressesInTx(ctx context.Context, c *Connection, blockNumber int, transactionIndex int) (results []string, err error) {
 	rows, err := c.conn.Query(
 		ctx,
 		sql.SelectAddressesInTx(c.AppearancesTableName(), c.AddressesTableName()),
-		blockNumber,
-		transactionIndex,
-		limit,
-		offset,
+		pgx.NamedArgs{
+			"blockNumber":      blockNumber,
+			"transactionIndex": transactionIndex,
+		},
 	)
 	if err != nil {
 		return

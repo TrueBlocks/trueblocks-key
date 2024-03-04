@@ -1,9 +1,9 @@
 package query
 
-type RpcGetAppearanceCountParam struct {
+type BoundsParam struct {
 	Address string `json:"address"`
 }
 
-func (r *RpcGetAppearanceCountParam) Validate() error {
+func (r *BoundsParam) Validate() error {
 	return validateAddress(r.Address)
 }

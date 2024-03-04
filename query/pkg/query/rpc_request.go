@@ -17,7 +17,7 @@ type NoParam struct{}
 type rpcRequestParams interface {
 	RpcGetAppearancesParam |
 		RpcGetAddressesInParam |
-		RpcGetAppearanceCountParam |
+		BoundsParam |
 		NoParam
 }
 
@@ -25,8 +25,8 @@ func (r *RpcRequest) AppearancesParams() (RpcParams[RpcGetAppearancesParam], err
 	return unmarshalParams[RpcGetAppearancesParam](r)
 }
 
-func (r *RpcRequest) AppearanceCountParams() (RpcParams[RpcGetAppearanceCountParam], error) {
-	return unmarshalParams[RpcGetAppearanceCountParam](r)
+func (r *RpcRequest) BoundsParams() (RpcParams[BoundsParam], error) {
+	return unmarshalParams[BoundsParam](r)
 }
 
 func (r *RpcRequest) AddressesInParam() (RpcParams[RpcGetAddressesInParam], error) {

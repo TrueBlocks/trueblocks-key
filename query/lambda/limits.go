@@ -2,8 +2,8 @@ package main
 
 import "github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 
-func getValidLimits(p query.Paginator) (validLimit uint, validOffset uint) {
-	offset, limit := p.Pagination()
+func getValidLimits(p query.Limiter) (validLimit uint) {
+	limit := p.Limit()
 	if limit == 0 {
 		// Just in case we forgot to define the limit in configuration
 		validLimit = defaultAppearancesLimit
@@ -15,10 +15,9 @@ func getValidLimits(p query.Paginator) (validLimit uint, validOffset uint) {
 		}
 	}
 
-	if offset < 0 {
-		validOffset = 0
+	if validLimit < query.MinSafePerPage {
+		validLimit = query.MinSafePerPage
 	}
-	validOffset = validOffset * validLimit
 
 	return
 }

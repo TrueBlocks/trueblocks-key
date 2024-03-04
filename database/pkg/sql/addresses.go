@@ -11,7 +11,7 @@ func SelectAddressesInTx(appearancesTableName string, addressesTableName string)
 WITH apps AS (
     SELECT address_id
     FROM %[1]s
-    WHERE block_number = $1 AND tx_id = $2
+    WHERE block_number = @blockNumber AND tx_id = @transactionIndex
     ORDER BY block_number DESC, tx_id ASC
 )
 SELECT addrs.address

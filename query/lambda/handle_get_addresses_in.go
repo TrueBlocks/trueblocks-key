@@ -29,8 +29,12 @@ func handleGetAddressesInTx(ctx context.Context, rpcRequest *query.RpcRequest) (
 		return
 	}
 
-	limit, offset := getValidLimits(param)
-	addrs, err := database.FetchAddressesInTx(ctx, dbConn, int(param.BlockNumber), int(param.TransactionIndex), limit, offset)
+	addrs, err := database.FetchAddressesInTx(
+		ctx,
+		dbConn,
+		int(param.BlockNumber),
+		int(param.TransactionIndex),
+	)
 
 	response = &query.RpcResponse[[]string]{
 		JsonRpc: "2.0",
