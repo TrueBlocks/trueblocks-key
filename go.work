@@ -1,6 +1,4 @@
-go 1.22
-
-toolchain go1.22.0
+go 1.22.0
 
 use (
 	.
@@ -19,4 +17,6 @@ use (
 	./scanner/
 	./test/dbtest
 	./test/integration
+	./test/simulate_session
+	./tools/pageid
 )

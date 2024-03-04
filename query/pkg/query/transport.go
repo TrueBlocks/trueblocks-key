@@ -1,10 +1,12 @@
 package query
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -13,14 +15,18 @@ import (
 
 var ErrInvalidMethod = errors.New("invalid method")
 var ErrAddressIncorrect = errors.New("incorrect address")
-var ErrIncorrectPagePerPage = errors.New("incorrect page or perPage")
+var ErrIncorrectPerPage = errors.New("incorrect perPage")
 var ErrWrongNumOfParameters = errors.New("exactly 1 parameter object required")
+var ErrInvalidLastBlockSpecial = errors.New("if lastBlock is a string, it has to be 'latest'")
+var ErrInvalidLastBlockInvalid = errors.New("lastBlock must be a number or string")
 
 // MaxSafePerPage is the largest sane value of PerPage that we would allow users to use
 const MaxSafePerPage = 10000
 
-// MaxSafePage is the largest sane page number that we would allow users to use
-const MaxSafePage = 100000
+// If limit is too small the DB can take too long to return results
+const MinSafePerPage = 5
+
+const LastBlockLatest = "latest"
 
 type RpcRequest struct {
 	Id     any                `json:"id"`
@@ -29,9 +35,10 @@ type RpcRequest struct {
 }
 
 type RpcRequestParams struct {
-	Address string `json:"address"`
-	Page    int    `json:"page"`
-	PerPage int    `json:"perPage"`
+	Address   string           `json:"address"`
+	LastBlock *json.RawMessage `json:"lastBlock,omitempty"`
+	PageId    json.RawMessage  `json:"pageId,omitempty"`
+	PerPage   int              `json:"perPage"`
 }
 
 func (r *RpcRequest) Parameters() RpcRequestParams {
@@ -42,9 +49,78 @@ func (r *RpcRequest) Address() string {
 	return strings.ToLower(r.Params[0].Address)
 }
 
+// LastBlock returns nil for latest block, block number otherwise
+func (r *RpcRequest) LastBlockNumber() (*uint, error) {
+	params := r.Parameters()
+
+	if params.LastBlock == nil {
+		return nil, nil
+	}
+
+	var special string
+	err := json.Unmarshal(*params.LastBlock, &special)
+	if err != nil {
+		log.Println("last block is not special because of error:", err)
+	} else {
+		// it is special
+		if special == LastBlockLatest {
+			return nil, nil
+		} else {
+			// it's invalid
+			return nil, ErrInvalidLastBlockSpecial
+		}
+	}
+
+	// Try a number
+	var blockNumber uint
+	if err := json.Unmarshal(*params.LastBlock, &blockNumber); err != nil {
+		return nil, ErrInvalidLastBlockInvalid
+	}
+
+	return &blockNumber, nil
+}
+
+func (r *RpcRequest) PageIdValue() (special PageIdSpecial, pageId *PageId, err error) {
+	raw := r.Parameters().PageId
+	// no pageId means "latest"
+	if len(raw) == 0 || string(raw) == "null" || string(raw) == `""` {
+		special = PageIdLatest
+		return
+	}
+	var specialPageId PageIdSpecial
+	if ok := specialPageId.FromBytes(bytes.Trim(raw, `"`)); ok {
+		special = specialPageId
+		return
+	}
+
+	pageId = &PageId{}
+	err = json.Unmarshal(raw, pageId)
+	return
+}
+
+func (r *RpcRequest) SetPageId(specialPageId PageIdSpecial, pageId *PageId) error {
+	var value any
+	if specialPageId != "" {
+		value = specialPageId
+	} else {
+		value = pageId
+	}
+	b, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("setting page id: %w", err)
+	}
+	if len(r.Params) == 0 {
+		return errors.New("cannot assign page id to empty request parameters")
+	}
+
+	raw := json.RawMessage(b)
+	r.Params[0].PageId = raw
+	return nil
+}
+
 func (r *RpcRequest) Validate() error {
 	// Validate method
-	if r.Method != MethodGetAppearances && r.Method != MethodGetAppearanceCount && r.Method != MethodLastIndexedBlock {
+	if r.Method != MethodGetAppearances && r.Method != MethodGetBounds && r.Method != MethodLastIndexedBlock {
 		return ErrInvalidMethod
 	}
 
@@ -68,12 +144,8 @@ func (r *RpcRequest) Validate() error {
 	}
 
 	// Validate pagination
-	if r.Parameters().Page < 0 || r.Parameters().PerPage < 0 {
-		return ErrIncorrectPagePerPage
-	}
-
-	if r.Parameters().Page > MaxSafePage || r.Parameters().PerPage > MaxSafePerPage {
-		return ErrIncorrectPagePerPage
+	if r.Parameters().PerPage < 0 || r.Parameters().PerPage > MaxSafePerPage {
+		return ErrIncorrectPerPage
 	}
 
 	return nil
@@ -100,11 +172,14 @@ type Result[T RpcResponseResult] struct {
 
 type RpcResponseResult interface {
 	[]database.Appearance |
+		database.AppearancesDatasetBounds |
 		*database.Status |
 		*int
 }
 
 type Meta struct {
-	LastIndexedBlock uint   `json:"lastIndexedBlock"`
-	Address          string `json:"address,omitempty"`
+	LastIndexedBlock uint    `json:"lastIndexedBlock"`
+	Address          string  `json:"address,omitempty"`
+	PreviousPageId   *PageId `json:"previousPageId"`
+	NextPageId       *PageId `json:"nextPageId"`
 }
