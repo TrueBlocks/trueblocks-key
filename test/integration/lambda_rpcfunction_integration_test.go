@@ -320,7 +320,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 
 	// Check basic pagination
 
-	var nextPageId *query.PageId
+	var previousPageId *query.PageId
 	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
@@ -332,8 +332,8 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 				},
 			},
 		}
-		if nextPageId != nil {
-			if err := request.SetPageId(query.PageIdNoSpecial, nextPageId); err != nil {
+		if previousPageId != nil {
+			if err := request.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -359,16 +359,16 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			t.Fatal(i, "-- wrong result:", r)
 		}
 
-		if i == 0 && response.Result.Meta.PreviousPageId != nil {
-			t.Fatal("first page returned PreviousPageId")
+		if i == 0 && response.Result.Meta.NextPageId != nil {
+			t.Fatal("first page returned NextPageId")
 		}
 
-		nextPageId = response.Meta.NextPageId
+		previousPageId = response.Meta.PreviousPageId
 	}
 
 	// Check items
 
-	nextPageId = nil
+	previousPageId = nil
 	var pagingResults = make([]database.Appearance, 0, len(appearances))
 	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
@@ -381,7 +381,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 				},
 			},
 		}
-		if err := request.SetPageId(query.PageIdNoSpecial, nextPageId); err != nil {
+		if err := request.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
 			t.Fatal(err)
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -394,7 +394,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		}
 		pagingResults = append(pagingResults, response.Result.Data...)
 
-		nextPageId = response.Meta.NextPageId
+		previousPageId = response.Meta.PreviousPageId
 	}
 
 	if l := len(pagingResults); l != len(appearances) {
@@ -412,7 +412,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 
 	// Check pageIds
 
-	nextPageId = nil
+	previousPageId = nil
 	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
@@ -424,7 +424,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 				},
 			},
 		}
-		if err := request.SetPageId(query.PageIdNoSpecial, nextPageId); err != nil {
+		if err := request.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
 			t.Fatal(err)
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
@@ -432,16 +432,16 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		helpers.UnmarshalLambdaOutput(t, output, response)
 
 		if i == 0 {
-			if response.Result.Meta.PreviousPageId != nil {
-				t.Fatal("expected no PreviousPageId on the first page")
+			if response.Result.Meta.NextPageId != nil {
+				t.Fatal("expected no NextPageId on the first page")
 			}
 		}
 		if i == maxIters-1 {
-			if response.Result.Meta.NextPageId != nil {
-				t.Fatal("expected no NextPageId on the last page")
+			if response.Result.Meta.PreviousPageId != nil {
+				t.Fatal("expected no PreviousPageId on the last page")
 			}
 		}
-		nextPageId = response.Result.Meta.NextPageId
+		previousPageId = response.Result.Meta.PreviousPageId
 	}
 
 	// Check pageId = "" same as pageId = "latest"
@@ -486,7 +486,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 
 	// Check going backwards with "earliest"
 
-	var prevPageId *query.PageId
+	var nextPageId *query.PageId
 	pagingResults = make([]database.Appearance, 0, len(appearances))
 	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
@@ -504,7 +504,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		if i == 0 {
 			pageIdSpecial = query.PageIdEarliest
 		} else {
-			pageId = prevPageId
+			pageId = nextPageId
 		}
 		if err := request.SetPageId(pageIdSpecial, pageId); err != nil {
 			t.Fatal(err)
@@ -519,7 +519,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		}
 		pagingResults = append(pagingResults, response.Result.Data...)
 
-		prevPageId = response.Meta.PreviousPageId
+		nextPageId = response.Meta.NextPageId
 	}
 
 	if l := len(pagingResults); l != len(appearances) {

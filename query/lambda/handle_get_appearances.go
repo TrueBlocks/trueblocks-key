@@ -125,7 +125,7 @@ func getPageIds(items []database.Appearance, lastBlock uint, bounds *database.Ap
 	}
 
 	if !bounds.IsLatest(&items[0]) {
-		previousPageId = &query.PageId{
+		nextPageId = &query.PageId{
 			DirectionNextPage: false,
 			LastBlock:         uint32(lastBlock),
 			LastSeen:          items[0],
@@ -137,7 +137,7 @@ func getPageIds(items []database.Appearance, lastBlock uint, bounds *database.Ap
 	lastCurrentAppearance := items[len(items)-1]
 
 	if !bounds.IsEarliest(&lastCurrentAppearance) {
-		nextPageId = &query.PageId{
+		previousPageId = &query.PageId{
 			DirectionNextPage: true,
 			LastBlock:         uint32(lastBlock),
 			LastSeen:          lastCurrentAppearance,
