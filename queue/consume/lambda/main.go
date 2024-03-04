@@ -19,11 +19,10 @@ var maxBatchSize = 500
 var dbConn *database.Connection
 
 func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
-	if dbConn == nil {
-		if err = setupDbConnection(ctx); err != nil {
-			return
-		}
+	if err = setupDbConnection(ctx); err != nil {
+		return
 	}
+	defer dbConn.Close(context.TODO())
 
 	recordCount := len(sqsEvent.Records)
 	appearances := make([]queueItem.Appearance, 0, recordCount)
@@ -60,11 +59,6 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 			err = fmt.Errorf("unsupported message type: %s", recordType)
 		}
 	}
-
-	// batchSize := recordCount
-	// if batchSize > maxBatchSize {
-	// 	batchSize = maxBatchSize
-	// }
 
 	log.Println("Creating database items")
 
@@ -125,7 +119,5 @@ func setupDbConnection(ctx context.Context) (err error) {
 }
 
 func main() {
-	defer dbConn.Close(context.TODO())
-
 	lambda.Start(HandleRequest)
 }

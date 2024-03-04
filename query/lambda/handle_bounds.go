@@ -9,8 +9,8 @@ import (
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 )
 
-func handleCount(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[*int], err error) {
-	rpcParams, err := rpcRequest.AppearanceCountParams()
+func handleBounds(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[database.AppearancesDatasetBounds], err error) {
+	rpcParams, err := rpcRequest.BoundsParams()
 	if err != nil {
 		err = NewRpcError(err, http.StatusBadRequest, "invalid JSON")
 		return
@@ -31,18 +31,23 @@ func handleCount(ctx context.Context, rpcRequest *query.RpcRequest) (response *q
 		return
 	}
 
-	count, err := database.FetchCount(ctx, dbConn, param.Address, meta.LastIndexedBlock)
+	bounds, err := database.FetchAppearancesDatasetBounds(
+		ctx,
+		dbConn,
+		param.Address,
+		meta.LastIndexedBlock,
+	)
 	if err != nil {
 		log.Println("database query (count):", err)
 		err = ErrInternal
 		return
 	}
 
-	response = &query.RpcResponse[*int]{
+	response = &query.RpcResponse[database.AppearancesDatasetBounds]{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
-		Result: query.Result[*int]{
-			Data: &count,
+		Result: query.Result[database.AppearancesDatasetBounds]{
+			Data: bounds,
 			Meta: meta,
 		},
 	}
