@@ -278,7 +278,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	statusResponse := &query.RpcResponse[*database.Status]{}
 
-	// Valid request, appearance found
+	// Valid request
 
 	request = &query.RpcRequest{
 		Id:     1,
@@ -292,6 +292,77 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	if l := statusResponse.Result.Meta.LastIndexedBlock; l != 1 {
 		t.Fatal("wrong max indexed block:", l)
+	}
+
+	// AddressesInTx
+
+	getAddressesInTxResponse := &query.RpcResponse[[]string]{}
+
+	// Valid request
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAddressesInTransaction",
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAddressesInParam{
+			{
+				BlockNumber:      1,
+				TransactionIndex: 5,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	t.Log(string(output.Payload))
+	helpers.UnmarshalLambdaOutput(t, output, getAddressesInTxResponse)
+
+	expectedAddressesInTransaction := []string{
+		"0x0000000000000281526004018083600019166000",
+	}
+
+	if d := getAddressesInTxResponse.Result.Data; !reflect.DeepEqual(d, expectedAddressesInTransaction) {
+		t.Fatalf("wrong result: %+v", d)
+	}
+
+	// AddressesInBlock
+
+	getAddressesInBlockResponse := &query.RpcResponse[[]string]{}
+
+	// Valid request
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAddressesInBlock",
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAddressesInParam{
+			{
+				BlockNumber: 1,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	t.Log(string(output.Payload))
+	helpers.UnmarshalLambdaOutput(t, output, getAddressesInBlockResponse)
+
+	expectedAddressesInTransaction = []string{
+		"0x0000000000000281526004018083600019166000",
+	}
+
+	if d := getAddressesInBlockResponse.Result.Data; !reflect.DeepEqual(d, expectedAddressesInTransaction) {
+		t.Fatalf("wrong result: %+v", d)
 	}
 }
 
