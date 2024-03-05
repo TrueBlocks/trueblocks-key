@@ -28,15 +28,113 @@ ON CONFLICT DO NOTHING;
 	)
 }
 
-func SelectAppearances(appearancesTableName string, addressesTableName string) string {
+func SelectAppearancesFirstPage(appearancesTableName string, addressesTableName string) string {
 	return fmt.Sprintf(`
-SELECT apps.block_number, apps.tx_id
-FROM %[1]s
-JOIN %[2]s apps ON apps.address_id = id
-WHERE address = $1
-ORDER BY apps.block_number ASC, tx_id ASC
-LIMIT $2
-OFFSET $3;
+WITH addrs AS (
+    SELECT id
+    FROM %[1]s
+    WHERE address = @address
+)
+SELECT block_number, tx_id
+FROM %[2]s
+WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs)
+ORDER BY block_number DESC, tx_id DESC
+LIMIT @pageSize;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}
+
+func SelectAppearancesEarliestPage(appearancesTableName string, addressesTableName string) string {
+	return fmt.Sprintf(`
+SELECT * FROM (
+	WITH addrs AS (
+    	SELECT id
+    	FROM %[1]s
+    	WHERE address = @address
+	)
+	SELECT block_number, tx_id
+	FROM %[2]s
+	WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs)
+	ORDER BY block_number ASC, tx_id ASC
+	LIMIT @pageSize
+) AS x ORDER BY block_number DESC, tx_id DESC;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}
+
+// SelectAppearancesNextPage needs the last appearance from the current page.
+func SelectAppearancesNextPage(appearancesTableName string, addressesTableName string) string {
+	return fmt.Sprintf(`
+WITH addrs AS (
+    SELECT id
+    FROM %[1]s
+    WHERE address = @address
+)
+SELECT block_number, tx_id
+FROM %[2]s
+WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs) AND (block_number, tx_id) < (@appBlockNumber, @appTransactionIndex)
+ORDER BY block_number DESC, tx_id DESC
+LIMIT @pageSize;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}
+
+// SelectAppearancesPreviousPage needs the first appearance from the current page.
+// It inverts ordering to read the previous page
+func SelectAppearancesPreviousPage(appearancesTableName string, addressesTableName string) string {
+	return fmt.Sprintf(`
+SELECT * FROM (
+	WITH addrs AS (
+    	SELECT id
+    	FROM %[1]s
+    	WHERE address = @address
+	)
+	SELECT block_number, tx_id
+	FROM %[2]s
+	WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs) AND (block_number, tx_id) > (@appBlockNumber, @appTransactionIndex)
+	ORDER BY block_number ASC, tx_id ASC
+	LIMIT @pageSize
+) AS x ORDER BY block_number DESC, tx_id DESC;
+`,
+		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
+		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
+	)
+}
+
+func SelectAppearancesDatasetBounds(appearancesTableName string, addressesTableName string) string {
+	return fmt.Sprintf(`
+WITH addrs AS (
+    SELECT id
+    FROM %[1]s
+    WHERE address = @address
+), apps_desc AS (
+    SELECT block_number, tx_id
+    FROM %[2]s
+    WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs)
+    ORDER BY block_number DESC, tx_id DESC
+), apps_asc AS (
+    SELECT block_number, tx_id
+    FROM %[2]s
+    WHERE block_number <= @lastBlock AND address_id = (SELECT id FROM addrs)
+    ORDER BY block_number ASC, tx_id ASC
+)
+(
+    SELECT block_number, tx_id
+    FROM apps_desc
+    LIMIT 1
+)
+UNION ALL
+(
+    SELECT block_number, tx_id
+    FROM apps_asc
+    LIMIT 1
+);
 `,
 		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
@@ -49,27 +147,6 @@ SELECT reltuples::bigint AS estimate
 FROM   pg_class
 WHERE  oid = 'public.%[1]s'::regclass;
 `,
-		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
-	)
-}
-
-func SelectAppearancesMaxBlockNumber(appearancesTableName string) string {
-	return fmt.Sprintf(`
-SELECT max(block_number)
-FROM   %[1]s;
-`,
-		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
-	)
-}
-
-func SelectAppearancesCountForAddress(appearancesTableName string, addressesTableName string) string {
-	return fmt.Sprintf(`
-SELECT count(*)
-FROM %[1]s
-JOIN %[2]s apps ON apps.address_id = id
-WHERE address = $1;
-`,
-		pgx.Identifier.Sanitize(pgx.Identifier{addressesTableName}),
 		pgx.Identifier.Sanitize(pgx.Identifier{appearancesTableName}),
 	)
 }

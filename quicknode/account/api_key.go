@@ -93,5 +93,10 @@ func loadTestApiKeys() []types.ApiKey {
 			Value:   aws.String("int3gr4ti0n"),
 			Enabled: true,
 		},
+		{
+			Name:    aws.String("IntegrationTestPlan2"),
+			Value:   aws.String("int3gr4ti0n2"),
+			Enabled: true,
+		},
 	}
 }

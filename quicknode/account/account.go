@@ -180,6 +180,7 @@ func (a *Account) SetFromAccountData(ad *AccountData) {
 	a.HttpUrl = ad.HttpUrl
 	a.Chain = ad.Chain
 	a.Network = ad.Network
+	a.Test = ad.Test
 }
 
 func (a *Account) DeactivateEndpoint(endpointId string) (found bool) {

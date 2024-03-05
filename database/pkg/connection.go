@@ -26,7 +26,15 @@ func (c *Connection) Connect(ctx context.Context) (err error) {
 	if c.batchSize == 0 {
 		c.batchSize = 5000
 	}
-	c.conn, err = pgx.Connect(ctx, c.dsn())
+	connConfig, err := pgx.ParseConfig(c.dsn())
+	if err != nil {
+		return fmt.Errorf("connection.Connect: parsing db config: %w", err)
+	}
+	// TODO: enabling this can protect us from RDS Proxy pinning, but it has downsides.
+	// TODO: Is it needed?
+	connConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+	// c.conn, err = pgx.Connect(ctx, c.dsn())
+	c.conn, err = pgx.ConnectConfig(ctx, connConfig)
 	if err != nil {
 		return fmt.Errorf("connection.Connect: %w", err)
 	}
