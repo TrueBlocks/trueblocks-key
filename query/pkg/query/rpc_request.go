@@ -7,7 +7,7 @@ import (
 )
 
 type RpcRequest struct {
-	Id     int             `json:"id"`
+	Id     any             `json:"id"`
 	Method string          `json:"method"`
 	Params json.RawMessage `json:"params"`
 }
