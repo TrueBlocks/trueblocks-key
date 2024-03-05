@@ -1,12 +1,16 @@
 package main
 
-import "github.com/TrueBlocks/trueblocks-key/query/pkg/query"
+import (
+	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
+)
 
 func getValidLimits(p query.Limiter) (validLimit uint) {
 	limit := p.Limit()
 	if limit == 0 {
 		// Just in case we forgot to define the limit in configuration
 		validLimit = defaultAppearancesLimit
+	} else {
+		validLimit = limit
 	}
 
 	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {

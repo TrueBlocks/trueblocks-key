@@ -407,6 +407,11 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			Address: appearances[0].Address,
 			PerPage: 10,
 		}
+		if previousPageId != nil {
+			if err := param.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
+				t.Fatal(err)
+			}
+		}
 		err = query.SetParams(
 			request,
 			[]query.RpcGetAppearancesParam{
@@ -415,11 +420,6 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		)
 		if err != nil {
 			t.Fatal("setting rpc request params:", err)
-		}
-		if previousPageId != nil {
-			if err := param.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
-				t.Fatal(err)
-			}
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
@@ -463,15 +463,15 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			Address: appearances[0].Address,
 			PerPage: uint(perPage),
 		}
+		if err := param.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
+			t.Fatal(err)
+		}
 		err = query.SetParams(
 			request,
 			[]query.RpcGetAppearancesParam{param},
 		)
 		if err != nil {
 			t.Fatal("setting rpc request params:", err)
-		}
-		if err := param.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
-			t.Fatal(err)
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
@@ -511,15 +511,15 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			Address: appearances[0].Address,
 			PerPage: perPage,
 		}
+		if err := param.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
+			t.Fatal(err)
+		}
 		err = query.SetParams(
 			request,
 			[]query.RpcGetAppearancesParam{param},
 		)
 		if err != nil {
 			t.Fatal("setting rpc request params:", err)
-		}
-		if err := param.SetPageId(query.PageIdNoSpecial, previousPageId); err != nil {
-			t.Fatal(err)
 		}
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 		helpers.AssertLambdaSuccessful(t, output)
@@ -548,15 +548,15 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		Address: appearances[0].Address,
 		PerPage: perPage,
 	}
+	if err := param.SetPageId(query.PageIdLatest, nil); err != nil {
+		t.Fatal(err)
+	}
 	err = query.SetParams(
 		request,
 		[]query.RpcGetAppearancesParam{param},
 	)
 	if err != nil {
 		t.Fatal("setting rpc request params:", err)
-	}
-	if err := param.SetPageId(query.PageIdLatest, nil); err != nil {
-		t.Fatal(err)
 	}
 	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 	helpers.AssertLambdaSuccessful(t, output)
@@ -601,14 +601,6 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			Address: appearances[0].Address,
 			PerPage: perPage,
 		}
-		err = query.SetParams(
-			request,
-			[]query.RpcGetAppearancesParam{param},
-		)
-		if err != nil {
-			t.Fatal("setting rpc request params:", err)
-		}
-
 		var pageIdSpecial query.PageIdSpecial
 		var pageId *query.PageId
 		if i == 0 {
@@ -619,6 +611,15 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		if err := param.SetPageId(pageIdSpecial, pageId); err != nil {
 			t.Fatal(err)
 		}
+
+		err = query.SetParams(
+			request,
+			[]query.RpcGetAppearancesParam{param},
+		)
+		if err != nil {
+			t.Fatal("setting rpc request params:", err)
+		}
+
 		output = helpers.InvokeLambda(t, client, "RpcFunction", request)
 
 		helpers.AssertLambdaSuccessful(t, output)

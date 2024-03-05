@@ -65,7 +65,9 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	case query.MethodLastIndexedBlock:
 		r, err = handleLastIndexedBlock(ctx, rpcRequest)
 	case query.MethodGetAddressesInTx:
-		r, err = handleGetAddressesInTx(ctx, rpcRequest)
+		r, err = handleGetAddressesIn(ctx, rpcRequest, true)
+	case query.MethodGetAddressesInBlock:
+		r, err = handleGetAddressesIn(ctx, rpcRequest, false)
 	default:
 		err = fmt.Errorf("unsupported method: %s", rpcRequest.Method)
 		err = NewRpcError(err, http.StatusBadRequest, err.Error())

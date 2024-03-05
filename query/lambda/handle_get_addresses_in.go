@@ -8,7 +8,7 @@ import (
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 )
 
-func handleGetAddressesInTx(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[[]string], err error) {
+func handleGetAddressesIn(ctx context.Context, rpcRequest *query.RpcRequest, inTx bool) (response *query.RpcResponse[[]string], err error) {
 	rpcParams, err := rpcRequest.AddressesInParam()
 	if err != nil {
 		err = NewRpcError(err, http.StatusBadRequest, "invalid JSON")
@@ -29,12 +29,21 @@ func handleGetAddressesInTx(ctx context.Context, rpcRequest *query.RpcRequest) (
 		return
 	}
 
-	addrs, err := database.FetchAddressesInTx(
-		ctx,
-		dbConn,
-		int(param.BlockNumber),
-		int(param.TransactionIndex),
-	)
+	var addrs []string
+	if inTx {
+		addrs, err = database.FetchAddressesInTx(
+			ctx,
+			dbConn,
+			int(param.BlockNumber),
+			int(param.TransactionIndex),
+		)
+	} else {
+		addrs, err = database.FetchAddressesInBlock(
+			ctx,
+			dbConn,
+			int(param.BlockNumber),
+		)
+	}
 
 	response = &query.RpcResponse[[]string]{
 		JsonRpc: "2.0",

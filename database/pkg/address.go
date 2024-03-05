@@ -24,3 +24,20 @@ func FetchAddressesInTx(ctx context.Context, c *Connection, blockNumber int, tra
 
 	return
 }
+
+func FetchAddressesInBlock(ctx context.Context, c *Connection, blockNumber int) (results []string, err error) {
+	rows, err := c.conn.Query(
+		ctx,
+		sql.SelectAddressesInBlock(c.AppearancesTableName(), c.AddressesTableName()),
+		pgx.NamedArgs{
+			"blockNumber": blockNumber,
+		},
+	)
+	if err != nil {
+		return
+	}
+
+	results, err = pgx.CollectRows[string](rows, pgx.RowTo[string])
+
+	return
+}
