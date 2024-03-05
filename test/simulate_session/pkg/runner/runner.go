@@ -134,18 +134,23 @@ func RunSingle(s *scenario.Scenario, cnf *config.Config, timeout context.Context
 func getBody(s *scenario.Scenario, nextPageId *query.PageId) (r *bytes.Reader, err error) {
 	request := &query.RpcRequest{
 		Method: query.MethodGetAppearances,
-		Params: []query.RpcRequestParams{
-			{
-				Address: s.Address,
-				PerPage: int(s.PerPage),
-			},
-		},
+	}
+	param := query.RpcGetAppearancesParam{
+		Address: s.Address,
+		PerPage: s.PerPage,
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAppearancesParam{param},
+	)
+	if err != nil {
+		return
 	}
 	pageSpecial := query.PageIdNoSpecial
 	if s.GoBackwards && nextPageId == nil {
 		pageSpecial = query.PageIdEarliest
 	}
-	if err = request.SetPageId(pageSpecial, nextPageId); err != nil {
+	if err = param.SetPageId(pageSpecial, nextPageId); err != nil {
 		return
 	}
 	b, err := json.Marshal(request)

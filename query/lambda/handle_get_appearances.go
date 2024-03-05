@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
@@ -13,28 +14,32 @@ import (
 const defaultAppearancesLimit = 100
 
 func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[[]database.Appearance], err error) {
-	limit := rpcRequest.Parameters().PerPage
-	if limit == 0 {
-		// Just in case we forgot to define the limit in configuration
-		limit = defaultAppearancesLimit
+	rpcParams, err := rpcRequest.AppearancesParams()
+	if err != nil {
+		err = NewRpcError(err, http.StatusBadRequest, "invalid JSON")
+		return
 	}
-	if limit < query.MinSafePerPage {
-		limit = query.MinSafePerPage
+	if err = rpcParams.Validate(); err != nil {
+		err = NewRpcError(err, http.StatusBadRequest, err.Error())
+		// Validate() always returns public errors
+		return
 	}
 
-	if confLimit := cnf.Query.MaxLimit; confLimit > 0 {
-		if limit > int(confLimit) {
-			limit = int(confLimit)
-		}
+	param := rpcParams.Get()
+	if err = param.Validate(); err != nil {
+		err = NewRpcError(err, http.StatusBadRequest, err.Error())
+		return
 	}
+
+	limit := getValidLimits(param)
 
 	// get status first, so we know max block number
-	meta, err := getMeta(ctx, rpcRequest.Address())
+	meta, err := getMeta(ctx, param.Address)
 	if err != nil {
 		return
 	}
 
-	lastBlock, err := rpcRequest.LastBlockNumber()
+	lastBlock, err := param.LastBlockNumber()
 	if err != nil {
 		log.Println("last block error:", err)
 		return
@@ -46,7 +51,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 
 	var items []database.Appearance
 	var fetchBounds bool
-	specialPageId, pageId, err := rpcRequest.PageIdValue()
+	specialPageId, pageId, err := param.PageIdValue()
 	if err != nil {
 		log.Println("reading page id value:", err)
 		err = errors.New("invalid pageId")
@@ -60,7 +65,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 			ctx,
 			dbConn,
 			specialPageId == query.PageIdEarliest,
-			rpcRequest.Address(),
+			param.Address,
 			*lastBlock,
 			uint(limit),
 		)
@@ -71,7 +76,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 		lastBlock = &bn
 
 		log.Println("fetching page -- next?", pageId.DirectionNextPage, "last seen:", fmt.Sprint(pageId.LastSeen), "latest in set:", fmt.Sprint(pageId.LatestInSet), "earliest in set:", fmt.Sprint(pageId.EarliestInSet))
-		items, err = database.FetchAppearancesPage(ctx, dbConn, pageId.DirectionNextPage, rpcRequest.Address(), *lastBlock, uint(limit), uint(pageId.LastSeen.BlockNumber), uint(pageId.LastSeen.TransactionIndex))
+		items, err = database.FetchAppearancesPage(ctx, dbConn, pageId.DirectionNextPage, param.Address, *lastBlock, uint(limit), uint(pageId.LastSeen.BlockNumber), uint(pageId.LastSeen.TransactionIndex))
 	}
 
 	if err != nil {
@@ -84,7 +89,7 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	var bounds database.AppearancesDatasetBounds
 	if fetchBounds {
 		if hasItems {
-			bounds, err = database.FetchAppearancesDatasetBounds(ctx, dbConn, rpcRequest.Address(), *lastBlock)
+			bounds, err = database.FetchAppearancesDatasetBounds(ctx, dbConn, param.Address, *lastBlock)
 			if err != nil {
 				log.Println("error while getting bounds:", err)
 				err = ErrInternal
