@@ -1,19 +1,11 @@
 package query
 
 import (
-	"bytes"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"log"
-	"strconv"
-	"strings"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
 
-var ErrInvalidMethod = errors.New("invalid method")
 var ErrAddressIncorrect = errors.New("incorrect address")
 var ErrIncorrectPerPage = errors.New("incorrect perPage")
 var ErrWrongNumOfParameters = errors.New("exactly 1 parameter object required")
@@ -28,135 +20,8 @@ const MinSafePerPage = 5
 
 const LastBlockLatest = "latest"
 
-type RpcRequest struct {
-	Id     any                `json:"id"`
-	Method string             `json:"method"`
-	Params []RpcRequestParams `json:"params"`
-}
-
-type RpcRequestParams struct {
-	Address   string           `json:"address"`
-	LastBlock *json.RawMessage `json:"lastBlock,omitempty"`
-	PageId    json.RawMessage  `json:"pageId,omitempty"`
-	PerPage   int              `json:"perPage"`
-}
-
-func (r *RpcRequest) Parameters() RpcRequestParams {
-	return r.Params[0]
-}
-
-func (r *RpcRequest) Address() string {
-	return strings.ToLower(r.Params[0].Address)
-}
-
-// LastBlock returns nil for latest block, block number otherwise
-func (r *RpcRequest) LastBlockNumber() (*uint, error) {
-	params := r.Parameters()
-
-	if params.LastBlock == nil {
-		return nil, nil
-	}
-
-	var special string
-	err := json.Unmarshal(*params.LastBlock, &special)
-	if err != nil {
-		log.Println("last block is not special because of error:", err)
-	} else {
-		// it is special
-		if special == LastBlockLatest {
-			return nil, nil
-		} else {
-			// it's invalid
-			return nil, ErrInvalidLastBlockSpecial
-		}
-	}
-
-	// Try a number
-	var blockNumber uint
-	if err := json.Unmarshal(*params.LastBlock, &blockNumber); err != nil {
-		return nil, ErrInvalidLastBlockInvalid
-	}
-
-	return &blockNumber, nil
-}
-
-func (r *RpcRequest) PageIdValue() (special PageIdSpecial, pageId *PageId, err error) {
-	raw := r.Parameters().PageId
-	// no pageId means "latest"
-	if len(raw) == 0 || string(raw) == "null" || string(raw) == `""` {
-		special = PageIdLatest
-		return
-	}
-	var specialPageId PageIdSpecial
-	if ok := specialPageId.FromBytes(bytes.Trim(raw, `"`)); ok {
-		special = specialPageId
-		return
-	}
-
-	pageId = &PageId{}
-	err = json.Unmarshal(raw, pageId)
-	return
-}
-
-func (r *RpcRequest) SetPageId(specialPageId PageIdSpecial, pageId *PageId) error {
-	var value any
-	if specialPageId != "" {
-		value = specialPageId
-	} else {
-		value = pageId
-	}
-	b, err := json.Marshal(value)
-	if err != nil {
-		return fmt.Errorf("setting page id: %w", err)
-	}
-	if len(r.Params) == 0 {
-		return errors.New("cannot assign page id to empty request parameters")
-	}
-
-	raw := json.RawMessage(b)
-	r.Params[0].PageId = raw
-	return nil
-}
-
-func (r *RpcRequest) Validate() error {
-	// Validate method
-	if r.Method != MethodGetAppearances && r.Method != MethodGetBounds && r.Method != MethodLastIndexedBlock {
-		return ErrInvalidMethod
-	}
-
-	if r.Method == MethodLastIndexedBlock {
-		return nil
-	}
-
-	if len(r.Params) != 1 {
-		return ErrWrongNumOfParameters
-	}
-
-	// Validate address
-	if len(r.Parameters().Address) != 42 {
-		return ErrAddressIncorrect
-	}
-	if r.Parameters().Address[:2] != "0x" {
-		return ErrAddressIncorrect
-	}
-	if _, err := hex.DecodeString(r.Parameters().Address[2:]); err != nil {
-		return ErrAddressIncorrect
-	}
-
-	// Validate pagination
-	if r.Parameters().PerPage < 0 || r.Parameters().PerPage > MaxSafePerPage {
-		return ErrIncorrectPerPage
-	}
-
-	return nil
-}
-
-func (r *RpcRequest) LambdaPayload() (string, error) {
-	encoded, err := json.Marshal(r)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf(`{"body": %s}`, strconv.Quote(string(encoded))), nil
+type Validator interface {
+	Validate() error
 }
 
 type RpcResponse[T RpcResponseResult] struct {
@@ -172,6 +37,7 @@ type Result[T RpcResponseResult] struct {
 
 type RpcResponseResult interface {
 	[]database.Appearance |
+		[]string |
 		database.AppearancesDatasetBounds |
 		*database.Status |
 		*int
@@ -182,4 +48,10 @@ type Meta struct {
 	Address          string  `json:"address,omitempty"`
 	PreviousPageId   *PageId `json:"previousPageId"`
 	NextPageId       *PageId `json:"nextPageId"`
+}
+
+type RpcAddressesResponse struct {
+	JsonRpc string   `json:"jsonrpc"`
+	Id      int      `json:"id"`
+	Result  []string `json:"result"`
 }

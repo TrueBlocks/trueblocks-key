@@ -10,14 +10,13 @@ func TestRpcRequest_LambdaPayload(t *testing.T) {
 	r := &RpcRequest{
 		Id:     1,
 		Method: "test_method",
-		Params: []RpcRequestParams{
-			{
-				Address: "0x0000000000000281526004018083600019166000",
-				PageId:  nil,
-				PerPage: 16,
-			},
-		},
 	}
+	SetParams(r, []RpcGetAppearancesParam{
+		{
+			Address: "0x0000000000000281526004018083600019166000",
+			PerPage: 16,
+		},
+	})
 
 	result, err := r.LambdaPayload()
 	if err != nil {
@@ -30,24 +29,18 @@ func TestRpcRequest_LambdaPayload(t *testing.T) {
 }
 
 func TestRpcRequest_SetPageId(t *testing.T) {
-	r := &RpcRequest{}
 	p := &PageId{
-		LastSeen: database.Appearance{1000, 1},
+		LastSeen: database.Appearance{BlockNumber: 1000, TransactionIndex: 1},
 	}
 
-	if err := r.SetPageId(PageIdNoSpecial, p); err == nil {
-		t.Fatal("expected err")
+	param := RpcGetAppearancesParam{
+		Address: "0x0000000000000281526004018083600019166000",
 	}
 
-	r.Params = []RpcRequestParams{
-		{
-			Address: "0x0000000000000281526004018083600019166000",
-		},
-	}
-	if err := r.SetPageId(PageIdNoSpecial, p); err != nil {
+	if err := param.SetPageId(PageIdNoSpecial, p); err != nil {
 		t.Fatal(err)
 	}
-	_, pageId, err := r.PageIdValue()
+	_, pageId, err := param.PageIdValue()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,10 +53,10 @@ func TestRpcRequest_SetPageId(t *testing.T) {
 
 	// Special
 
-	if err := r.SetPageId(PageIdEarliest, nil); err != nil {
+	if err := param.SetPageId(PageIdEarliest, nil); err != nil {
 		t.Fatal(err)
 	}
-	special, _, err := r.PageIdValue()
+	special, pageId, err := param.PageIdValue()
 	if err != nil {
 		t.Fatal(err)
 	}
