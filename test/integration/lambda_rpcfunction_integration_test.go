@@ -35,7 +35,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	defer helpers.KillSamOnPanic()
 
 	// Prepate test data
-	address := "0x0000000000000281526004018083600019166000"
+	address := "0x74DF56727D04F6f30c9f52D6CCC1eBfb6C93F687"
 	appearance := &database.Appearance{
 		BlockNumber:      1,
 		TransactionIndex: 5,
@@ -90,8 +90,9 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if l := response.Meta.LastIndexedBlock; l != 1 {
 		t.Fatal("wrong meta LastIndexedBlock")
 	}
+	// Meta returns address used in query, so it won't be lower cased here
 	if a := response.Meta.Address; a != address {
-		t.Fatal("wrong meta address")
+		t.Fatal("wrong meta address", a)
 	}
 
 	// Valid request, no appearance found
@@ -186,7 +187,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	outOfIntRange.SetString(fmt.Sprint(int((^uint(0))>>1)), 10)
 	// Now make it out of range
 	outOfIntRange.Add(outOfIntRange, big.NewInt(1))
-	rp := rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"tb_getAppearances\",\"params\":{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}}"}`, outOfIntRange.String()))
+	rp := rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"tb_getAppearances\",\"params\":{\"address\":\"0x74df56727d04f6f30c9f52d6ccc1ebfb6c93f687\",\"page\":8,\"perPage\":%s}}"}`, outOfIntRange.String()))
 	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
 
 	t.Logf("result: %+v", response)
@@ -195,7 +196,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	// Invalid request: insane number as parameter
 
 	insane := big.NewInt(1 << 60)
-	rp = rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"tb_getAppearances\",\"params\":[{\"address\":\"0x0000000000000281526004018083600019166000\",\"page\":8,\"perPage\":%s}]}"}`, insane.String()))
+	rp = rawPayload(fmt.Sprintf(`{"body": "{\"id\":1,\"method\":\"tb_getAppearances\",\"params\":[{\"address\":\"0x74df56727d04f6f30c9f52d6ccc1ebfb6c93f687\",\"page\":8,\"perPage\":%s}]}"}`, insane.String()))
 	output = helpers.InvokeLambda(t, client, "RpcFunction", rp)
 
 	t.Logf("result: %+v", response)
@@ -323,7 +324,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	helpers.UnmarshalLambdaOutput(t, output, getAddressesInTxResponse)
 
 	expectedAddressesInTransaction := []string{
-		"0x0000000000000281526004018083600019166000",
+		"0x74df56727d04f6f30c9f52d6ccc1ebfb6c93f687",
 	}
 
 	if d := getAddressesInTxResponse.Result.Data; !reflect.DeepEqual(d, expectedAddressesInTransaction) {
@@ -358,7 +359,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	helpers.UnmarshalLambdaOutput(t, output, getAddressesInBlockResponse)
 
 	expectedAddressesInTransaction = []string{
-		"0x0000000000000281526004018083600019166000",
+		"0x74df56727d04f6f30c9f52d6ccc1ebfb6c93f687",
 	}
 
 	if d := getAddressesInBlockResponse.Result.Data; !reflect.DeepEqual(d, expectedAddressesInTransaction) {
