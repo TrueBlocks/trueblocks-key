@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/TrueBlocks/trueblocks-key/database/pkg/sql"
 	queueItem "github.com/TrueBlocks/trueblocks-key/queue/consume/pkg/item"
@@ -33,7 +34,7 @@ func FetchAppearancesFirstPage(ctx context.Context, c *Connection, earliest bool
 		ctx,
 		sqlString,
 		pgx.NamedArgs{
-			"address":   address,
+			"address":   strings.ToLower(address),
 			"lastBlock": lastBlock,
 			"pageSize":  limit,
 		},
@@ -42,7 +43,7 @@ func FetchAppearancesFirstPage(ctx context.Context, c *Connection, earliest bool
 		return
 	}
 
-	log.Println("address =", address, "limit =", limit, "lastBlock =", lastBlock)
+	log.Println("address =", strings.ToLower(address), "limit =", limit, "lastBlock =", lastBlock)
 
 	results, err = pgx.CollectRows[Appearance](rows, pgx.RowToStructByPos[Appearance])
 
@@ -64,7 +65,7 @@ func FetchAppearancesPage(ctx context.Context, c *Connection, nextPage bool, add
 		ctx,
 		sqlString,
 		pgx.NamedArgs{
-			"address":             address,
+			"address":             strings.ToLower(address),
 			"lastBlock":           lastBlock,
 			"pageSize":            limit,
 			"appBlockNumber":      appBlockNumber,
@@ -75,7 +76,7 @@ func FetchAppearancesPage(ctx context.Context, c *Connection, nextPage bool, add
 		return
 	}
 
-	log.Println("address =", address, "limit =", limit, "lastBlock =", lastBlock, "next?", nextPage)
+	log.Println("address =", strings.ToLower(address), "limit =", limit, "lastBlock =", lastBlock, "next?", nextPage)
 
 	results, err = pgx.CollectRows[Appearance](rows, pgx.RowToStructByPos[Appearance])
 
@@ -100,7 +101,7 @@ func FetchAppearancesDatasetBounds(ctx context.Context, c *Connection, address s
 		ctx,
 		sql.SelectAppearancesDatasetBounds(c.AppearancesTableName(), c.AddressesTableName()),
 		pgx.NamedArgs{
-			"address":   address,
+			"address":   strings.ToLower(address),
 			"lastBlock": lastBlock,
 		},
 	)
@@ -130,7 +131,7 @@ func InsertAppearanceBatch(ctx context.Context, c *Connection, apps []queueItem.
 	for _, app := range apps {
 		batch.Queue(
 			sql.InsertAppearance(c.AppearancesTableName(), c.AddressesTableName()),
-			app.Address,
+			strings.ToLower(app.Address),
 			app.BlockNumber,
 			app.TransactionIndex,
 		)
@@ -142,7 +143,7 @@ func InsertAppearanceBatch(ctx context.Context, c *Connection, apps []queueItem.
 func (a *Appearance) Insert(ctx context.Context, c *Connection, address string) (err error) {
 	_, err = c.conn.Exec(ctx,
 		sql.InsertAppearance(c.AppearancesTableName(), c.AddressesTableName()),
-		address,
+		strings.ToLower(address),
 		a.BlockNumber,
 		a.TransactionIndex,
 	)
