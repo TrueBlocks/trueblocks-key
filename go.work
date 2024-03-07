@@ -19,4 +19,5 @@ use (
 	./test/integration
 	./test/simulate_session
 	./tools/pageid
+	./tools/stack_policy
 )
