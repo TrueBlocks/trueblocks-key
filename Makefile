@@ -45,3 +45,14 @@ deploy:
 	@echo "Building and deploying StackSet"
 	sam build --config-env production --template deployment/sam/stackset.yml
 	sam deploy --config-env production --profile key-stackset-deployer --region us-east-1
+
+set-stack-policy:
+# Sets stack policy to one that prevents database removal and replacement
+# The stack has to be deployed and you need to set correct user with
+# AWS_PROFILE= env variable when calling this job
+	$(info Using user $(AWS_PROFILE))
+	$(info If you run into errors, make sure the above user is correct)
+	export AWS_PROFILE
+	go build -o bin/stack_policy ./tools/stack_policy
+	@echo Setting policy
+	bin/stack_policy --stack-name StackSet-key-prod-f6024a86-e5dc-4b96-b88e-6b6890b53f04
