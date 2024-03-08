@@ -22,5 +22,9 @@ Resources:
         - DeploymentTargets:
             OrganizationalUnitIds:
             - ou-tlap-1pemr15f
+            AccountFilterType: INTERSECTION
+            Accounts:
+              - 088400149162 # Production
+              # - 339712865207 # Staging
           Regions:
             - !Ref AWS::Region
