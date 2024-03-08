@@ -3,6 +3,14 @@ Transform: AWS::Serverless-2016-10-31
 Description: AWS SAM template with a simple API definition
 
 Parameters:
+  Environment:
+    Description: Environment type
+    Default: staging
+    Type: String
+    AllowedValues:
+      - production
+      - staging
+    ConstraintDescription: must specify production or staging
   RDSMasterUserName:
     Type: String
     Default: key_admin
@@ -27,6 +35,7 @@ Parameters:
 
 Conditions:
   IsLocal: !Equals [123456789012, !Ref AWS::AccountId]
+  IsProduction: !Equals [!Ref Environment, production]
 
 # Global values that are applied to all applicable resources in this template
 Globals:
@@ -65,10 +74,10 @@ Resources:
       # Turn off only when uploading datasets:
       AutoMinorVersionUpgrade: true
       DBInstanceIdentifier: !Sub ${AWS::StackName}-index
-      DBInstanceClass: db.t4g.xlarge # db.t4g.medium # db.t3.micro
+      DBInstanceClass: !If [IsProduction, db.t4g.xlarge, db.t4g.medium]
       DBParameterGroupName: !Ref IndexDatabaseParameterGroup
       Engine: postgres
-      AllocatedStorage: "1500"
+      AllocatedStorage: !If [IsProduction, "1500", "900"]
       StorageType: "gp3"
       DBName: !Ref RDSDBName
       MasterUsername: !Ref RDSMasterUserName
@@ -195,6 +204,7 @@ Resources:
   # Database alarms
   RDSLowStorageAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
     Properties:
       AlarmName: RDS Low Storage Alarm
       AlarmDescription: This alarm is triggered when RDS storage is lower than or equal to 10GB
@@ -215,6 +225,7 @@ Resources:
 
   RDSLowMemoryAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
     Properties:
       AlarmName: RDS Low Memory Alarm
       AlarmDescription: This alarm is triggered when RDS memory is lower than or equal to 1GB
@@ -235,6 +246,7 @@ Resources:
 
   RDSHighCPUAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
     Properties:
       AlarmName: RDS High CPU Alarm
       AlarmDescription: This alarm is triggered when RDS CPU usage is greater than or equal to 70%
@@ -380,6 +392,7 @@ Resources:
 
   AppearancesQueueStuckMessageAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
     Properties:
       AlarmName: Appearances Queue Message Stuck
       AlarmDescription: Alarms if the SQS Queue has messages in it for too long
@@ -400,6 +413,7 @@ Resources:
 
   AppearancesQueueNoMessagesAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
     Properties:
       AlarmName: Appearances Queue No Messages
       AlarmDescription: Alarms if the SQS Queue is not receiving new messages
@@ -424,6 +438,7 @@ Resources:
 
   AlarmNotification:
     Type: AWS::SNS::Topic
+    Condition: IsProduction
     Properties:
       Subscription:
         - Protocol: "email"

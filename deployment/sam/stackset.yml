@@ -1,6 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Deploy stack set
 
+Parameters:
+  Environment:
+    Description: Environment type
+    Default: staging
+    Type: String
+    AllowedValues:
+      - production
+      - staging
+    ConstraintDescription: must specify production or staging
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+
+# Account ids:
+# - 088400149162 Production
+# - 339712865207 Staging
+
 Resources:
   KeyStackSet:
     Type: AWS::CloudFormation::StackSet
@@ -22,9 +38,12 @@ Resources:
         - DeploymentTargets:
             OrganizationalUnitIds:
             - ou-tlap-1pemr15f
+            # Intersection means that we will only deploy to the account listed in Accounts
             AccountFilterType: INTERSECTION
             Accounts:
-              - 088400149162 # Production
-              # - 339712865207 # Staging
+              - !If [IsProduction, 088400149162, 339712865207]
           Regions:
             - !Ref AWS::Region
+      Parameters:
+       - ParameterKey: Environment
+         ParameterValue: !Ref Environment
