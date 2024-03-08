@@ -34,11 +34,17 @@ func buildPolicy(dbLogicalId string) string {
 	return fmt.Sprintf(`
 {
   "Statement" : [
-    {
+	{
       "Effect" : "Allow",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "Resource" : "*"
+    },
+    {
+      "Effect" : "Deny",
       "Action" : ["Update:Replace", "Update:Delete"],
       "Principal": "*",
-      "NotResource" : "LogicalResourceId/%[1]s"
+      "Resource" : "LogicalResourceId/%[1]s"
     }
   ]
 }`,
