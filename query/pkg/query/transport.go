@@ -13,7 +13,7 @@ var ErrInvalidLastBlockSpecial = errors.New("if lastBlock is a string, it has to
 var ErrInvalidLastBlockInvalid = errors.New("lastBlock must be a number or string")
 
 // MaxSafePerPage is the largest sane value of PerPage that we would allow users to use
-const MaxSafePerPage = 10000
+const MaxSafePerPage = 1000
 
 // If limit is too small the DB can take too long to return results
 const MinSafePerPage = 5
