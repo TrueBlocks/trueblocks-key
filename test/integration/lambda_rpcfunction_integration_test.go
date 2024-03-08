@@ -771,4 +771,27 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	if response.Result.Data[0].BlockNumber != uint32(customLastBlock) {
 		t.Fatal("wrong block number")
 	}
+
+	// Check max records
+
+	request = &query.RpcRequest{
+		Id:     1,
+		Method: "tb_getAppearances",
+	}
+	param = query.RpcGetAppearancesParam{
+		Address: appearances[0].Address,
+		PerPage: 1001,
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAppearancesParam{
+			param,
+		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
+	}
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaProxyError(t, string(output.Payload), query.ErrIncorrectPerPage.Error())
 }
