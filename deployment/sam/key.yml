@@ -69,6 +69,7 @@ Resources:
       - RDSSecurityGroup
       - RDSSubnetGroup
     Properties:
+      DBSnapshotIdentifier: !If [IsProduction, !Ref AWS::NoValue, "arn:aws:rds:us-east-1:088400149162:snapshot:shared-2024-03-14t11-38-27"]
       # Setting BackupRetentionPeriod to 0 DISABLES BACKUPS
       BackupRetentionPeriod: 4
       # Turn off only when uploading datasets:
@@ -77,15 +78,15 @@ Resources:
       DBInstanceClass: !If [IsProduction, db.t4g.xlarge, db.t4g.medium]
       DBParameterGroupName: !Ref IndexDatabaseParameterGroup
       Engine: postgres
-      AllocatedStorage: !If [IsProduction, "1500", "900"]
+      AllocatedStorage: "1500"
       StorageType: "gp3"
-      DBName: !Ref RDSDBName
-      MasterUsername: !Ref RDSMasterUserName
+      DBName: !If [IsProduction, !Ref RDSDBName, !Ref AWS::NoValue]
+      MasterUsername: !If [IsProduction, !Ref RDSMasterUserName, !Ref AWS::NoValue]
       ManageMasterUserPassword: true
       DBSubnetGroupName: !Ref RDSSubnetGroup
       VPCSecurityGroups:
         - !Ref RDSSecurityGroup
-      EnablePerformanceInsights: true
+      EnablePerformanceInsights: !If [IsProduction, true, !Ref AWS::NoValue]
       MonitoringInterval: 10
       MonitoringRoleArn: !GetAtt IndexDatabaseEnhancedMonitoringRole.Arn
       AssociatedRoles:
@@ -317,6 +318,7 @@ Resources:
 
   AppearancesQueueConsume:
     Type: AWS::Serverless::Function
+    Condition: IsProduction
     DependsOn:
       - IndexDatabase
       - AppearancesQueue
@@ -1058,7 +1060,7 @@ Resources:
   DevOpsDbUploadBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: key-devops-db-upload
+      BucketName: !Join ["-", [ "key-devops-db-upload", !Ref Environment]]
 
   # DevOps EC2 instance and resources it needs
 

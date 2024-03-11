@@ -29,4 +29,4 @@ profile = "key-stackset-deployer"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 image_repositories = []
-parameter_overrides = "Environment=staging"
+parameter_overrides = "Environment=staging RDSDBName=key_staging_index AppearancesQueueConsumeMaxConcurrency=2 QnApiStageName=staging QnStandardPlanSlug=staging-qn-standard UsersQnTableName=key-staging-users-qn"
