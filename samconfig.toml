@@ -18,3 +18,15 @@ profile = "key-stackset-deployer"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 image_repositories = []
+parameter_overrides = "Environment=production"
+
+[staging.deploy.parameters]
+stack_name = "key-staging"
+resolve_s3 = true
+s3_prefix = "key-staging"
+region = "us-east-1"
+profile = "key-stackset-deployer"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+image_repositories = []
+parameter_overrides = "Environment=staging RDSDBName=key_staging_index AppearancesQueueConsumeMaxConcurrency=2 QnApiStageName=staging QnStandardPlanSlug=staging-qn-standard UsersQnTableName=key-staging-users-qn"

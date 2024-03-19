@@ -18,5 +18,8 @@ use (
 	./test/dbtest
 	./test/integration
 	./test/simulate_session
+	./tools/db_tunnel
 	./tools/pageid
+	./tools/snapshot
+	./tools/stack_policy
 )
