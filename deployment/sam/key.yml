@@ -32,6 +32,12 @@ Parameters:
   QnStandardPlanSlug:
     Type: String
     Default: qn-standard
+  DcUsersTableName:
+    Type: String
+    Default: key-prod-direct-customers
+  DcApiStageName:
+    Type: String
+    Default: prod
 
 Conditions:
   IsLocal: !Equals [123456789012, !Ref AWS::AccountId]
@@ -1201,3 +1207,207 @@ Resources:
           OwnerUid: "7987987"
           Permissions: "0755"
         Path: "/efs"
+
+  ###
+  # Direct customers
+  ###
+
+  ### DynamoDB
+  DcUsers:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: EndpointId
+        Type: String
+      TableName: !Sub ${AWS::StackName}-${DcUsersTableName}
+
+  ###
+  # DC API
+  ###
+
+  DcApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn:
+      - DcApi
+    Properties:
+      LogGroupName: !Join
+        - '-'
+        - - !Ref DcApi
+          - access-logs
+
+  DcApi:
+    Type: AWS::Serverless::Api
+    DependsOn:
+      - DcAuthorizer
+    Properties:
+      StageName: !Ref DcApiStageName
+      ApiKeySourceType: AUTHORIZER
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+      AccessLogSetting:
+        DestinationArn: !GetAtt DcApiLogGroup.Arn
+        Format: $context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
+      Models:
+        RpcRequest:
+          type: object
+          required:
+            - method
+            - params
+          Properties:
+            jsonrpc:
+              type: string
+            id:
+              type: number
+            method:
+              type: string
+            params:
+              type: array
+              items:
+                address:
+                  type: string
+                  required: true
+                page:
+                  type: number
+                perPage:
+                  type: number
+      Auth:
+        # Authorizer
+        DefaultAuthorizer: LambdaAuthorizer
+        Authorizers:
+          LambdaAuthorizer:
+            # This setup uses default auth caching of 300 sec = 5 h
+            FunctionPayloadType: REQUEST
+            FunctionArn: !GetAtt DcAuthorizer.Arn
+            Identity:
+              Context:
+                - resourceId # TODO: not sure if correct
+
+  # CloudWatch logging policies
+
+  # Specifies the IAM role that API Gateway uses to write API logs to Amazon CloudWatch Logs
+  DcApiLoggingRoleArn:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt DcApiCloudWatchRole.Arn
+
+  # IAM Role with 'AmazonAPIGatewayPushToCloudWatchLogs' managed policy
+  DcApiCloudWatchRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Path: /
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+
+  # Override the default MISSING_AUTHENTICATION_TOKEN to be concise with QnApi
+  DvGatewayResponseMissingAuthToken:
+    Type: 'AWS::ApiGateway::GatewayResponse'
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+      ResponseType: MISSING_AUTHENTICATION_TOKEN
+      RestApiId: !Ref DcApi
+      StatusCode: "401"
+
+  # DC Authorizer
+  DcAuthorizer:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      MemorySize: 128
+      CodeUri: ../../direct_customers/authorizer/lambda
+      Environment:
+        Variables:
+          KY_DIRECTCUSTOMERS_TABLENAME: !Sub ${AWS::StackName}-${DcUsersTableName}
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+        - AmazonDynamoDBReadOnlyAccess
+
+  # ### RPC route
+  DcRpcFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      MemorySize: 128
+      CodeUri: ../../query/lambda
+      Tracing: Active
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{endpointId}
+            Method: post
+            RequestModel:
+              Model: RpcRequest
+              Required: true
+              ValidateBody: true
+            Auth:
+              ApiKeyRequired: true
+            RestApiId:
+              Ref: DcApi
+      Environment:
+        Variables:
+          KY_QUERY_MAXLIMIT: 1000
+          KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabaseProxy.Endpoint
+          KY_DATABASE_DEFAULT_PORT: 5432
+          KY_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          KY_DATABASE_DEFAULT_PASSWORD: ""
+          KY_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+          KY_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
+      VpcConfig: # For accessing RDS instance
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref privateLambdaSubnet1
+          - !Ref privateLambdaSubnet2
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetResourcePolicy
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+                - secretsmanager:ListSecretVersionIds
+              Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+
+  ### DC plans
+
+  UsagePlanDcTest:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - DcApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref DcApi
+          Stage: !Ref DcApiStageName
+      Description: Test plan
+      Throttle:
+            BurstLimit: 50
+            RateLimit: 50
+      UsagePlanName: dc-test-1
+  ApiKeyDcTest:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn:
+      - UsagePlanDcTest
+    Properties:
+      Name: dc-test-1
+      Enabled: true
+  LinkUsagePlanApiKeyDcTest:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKeyDcTest
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanDcTest

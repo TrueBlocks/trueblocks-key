@@ -6,6 +6,8 @@ use (
 	./config
 	./database
 	./dbadmin
+	./direct_customers/authorizer/lambda
+	./direct_customers/endpoint
 	./extract
 	./query
 	./queue/consume

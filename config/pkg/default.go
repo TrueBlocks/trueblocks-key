@@ -5,6 +5,7 @@ var defaultConfig = map[string]any{
 	"Chains.Allowed": map[string][]string{
 		"ethereum": {"mainnet"},
 	},
-	"Convert.BatchSize":      100,
-	"Convert.MaxConnections": 20,
+	"Convert.BatchSize":         100,
+	"Convert.MaxConnections":    20,
+	"DirectCustomers.TableName": "key-prod-direct-customers",
 }
