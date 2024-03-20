@@ -3,6 +3,7 @@ package endpoint
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	qnaccount "github.com/TrueBlocks/trueblocks-key/quicknode/account"
@@ -10,8 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/google/uuid"
+	petname "github.com/dustinkirkland/golang-petname"
 )
+
+func init() {
+	petname.NonDeterministicMode()
+}
 
 type Endpoint struct {
 	Endpoint string           `json:"endpointId"`
@@ -22,19 +27,17 @@ type Endpoint struct {
 	// Deleted  *time.Time `json:"deleted"`
 }
 
-func NewEndpoint(clientId string) (e *Endpoint, err error) {
-	u, err := uuid.NewV7()
-	if err != nil {
-		return
-	}
-	created := time.Now()
+func NewEndpoint(clientId string) *Endpoint {
+	generatedPetname := petname.Generate(3, "-")
 
-	e = &Endpoint{
-		Endpoint: u.String(),
+	created := time.Now()
+	log.Println("new endpoint:", generatedPetname)
+
+	return &Endpoint{
+		Endpoint: generatedPetname,
 		ClientId: clientId,
 		Created:  &created,
 	}
-	return
 }
 
 func Find(ctx context.Context, dynamoClient *dynamodb.Client, tableName string, endpointId string) (e *Endpoint, err error) {

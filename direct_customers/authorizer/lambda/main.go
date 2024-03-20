@@ -46,8 +46,8 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 
 	// check account credentials
 	endpointId := event.PathParameters["endpointId"]
-	if len(endpointId) < 36 {
-		log.Println("invalid endpointId: too short for UUIDv7")
+	if len(endpointId) < 10 {
+		log.Println("invalid endpointId: too short")
 		err = errUnauthorized
 		return
 	}
