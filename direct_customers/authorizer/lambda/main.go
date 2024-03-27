@@ -59,9 +59,8 @@ func HandleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		return
 	}
 
-	// TODO: this NEEDS to fetch the plan
 	// PrincipalID is something that uniquely identifies the account
-	result.PrincipalID = endpoint.ClientId
+	result.PrincipalID = endpoint.Email
 	result.UsageIdentifierKey = endpoint.ApiKey.Value
 	result.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
 		Version: "2012-10-17",

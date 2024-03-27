@@ -61,7 +61,14 @@ type convertGroup struct {
 }
 
 type directCustomersGroup struct {
-	TableName string
+	TableName         string
+	EmailIndexName    string
+	PoolId            string
+	PoolClientId      string
+	PoolClientSecret  string
+	PoolDomain        string
+	ApiCallbackUrl    string
+	DefaultApiKeyName string
 }
 
 var cached *ConfigFile

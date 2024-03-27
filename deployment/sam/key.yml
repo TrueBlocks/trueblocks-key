@@ -1214,12 +1214,30 @@ Resources:
 
   ### DynamoDB
   DcUsers:
-    Type: AWS::Serverless::SimpleTable
+    Type: AWS::DynamoDB::Table
     Properties:
-      PrimaryKey:
-        Name: EndpointId
-        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 0
+        WriteCapacityUnits: 0
+      KeySchema:
+        - AttributeName: EndpointId
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: EndpointId
+          AttributeType: S
+        - AttributeName: Email
+          AttributeType: S
       TableName: !Sub ${AWS::StackName}-${DcUsersTableName}
+      GlobalSecondaryIndexes:
+        - IndexName: email-index
+          KeySchema:
+            - AttributeName: Email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 0
+            WriteCapacityUnits: 0
 
   ###
   # DC API
@@ -1242,6 +1260,10 @@ Resources:
     Properties:
       StageName: !Ref DcApiStageName
       ApiKeySourceType: AUTHORIZER
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
@@ -1333,7 +1355,7 @@ Resources:
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - AmazonDynamoDBReadOnlyAccess
 
-  # ### RPC route
+  # DC RPC route
   DcRpcFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -1383,6 +1405,49 @@ Resources:
                 - secretsmanager:ListSecretVersionIds
               Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
 
+  # DC Dashboard route
+  DcApiDashboard:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - DcUserPool
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      MemorySize: 128
+      CodeUri: ../../direct_customers/dashboard/lambda
+      Tracing: Active
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /auth
+            Method: post
+            Auth:
+              # ApiKeyRequired: false
+              Authorizer: NONE
+            RestApiId:
+              Ref: DcApi
+      Environment:
+        Variables:
+          KY_DIRECTCUSTOMERS_TABLENAME: !Sub ${AWS::StackName}-${DcUsersTableName}
+          KY_DIRECTCUSTOMERS_EMAILINDEXNAME: email-index
+          KY_DIRECTCUSTOMERS_POOLID: !Ref DcUserPool
+          KY_DIRECTCUSTOMERS_POOLCLIENTID: !Ref DcUserPoolClient
+          KY_DIRECTCUSTOMERS_POOLCLIENTSECRET: !GetAtt DcUserPoolClient.ClientSecret
+          KY_DIRECTCUSTOMERS_POOLDOMAIN: !Sub key-${Environment}
+          KY_DIRECTCUSTOMERS_APICALLBACKURL: !Join ['', ['https://', !GetAtt DcFrontendBucket.DomainName, '/frontend/dashboard/index.html']]
+      Policies:
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:BatchGetItem
+                - dynamodb:Scan
+                - dynamodb:Query
+                - dynamodb:ConditionCheckItem
+              Resource: "*"
+
   ### DC plans
 
   UsagePlanDcTest:
@@ -1411,3 +1476,122 @@ Resources:
       KeyId: !Ref ApiKeyDcTest
       KeyType: API_KEY
       UsagePlanId: !Ref UsagePlanDcTest
+
+  ### Front-end hosting bucket
+  DcFrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # If you change bucket name here, remember to update it in Makefile
+      BucketName: !Sub key-${Environment}-dc-frontend
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  DcFrontendBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      PolicyDocument:
+        Id: DcFrontendBucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref DcFrontendBucket
+                - /*
+      Bucket: !Ref DcFrontendBucket
+
+  ### DC Cognito user pool
+
+  DcUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: !If [IsProduction, false, false]
+      UserPoolName: !Sub key-${Environment}-dc-user-pool
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: company
+          AttributeDataType: String
+          Mutable: true
+
+  DcUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref DcUserPool
+      CallbackURLs:
+        - !Join ['', ['https://', !GetAtt DcFrontendBucket.DomainName, '/frontend/dashboard/index.html']]
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+      SupportedIdentityProviders:
+        - COGNITO
+      GenerateSecret: true
+
+  DcUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub key-${Environment}
+      UserPoolId: !Ref DcUserPool
+
+  # DC Post Confirmation trigger
+  DcPoolPostConfirmationTrigger:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      MemorySize: 128
+      CodeUri: ../../direct_customers/post_confirmation/lambda
+      Tracing: Active
+      Events:
+        CognitoEvent:
+          Type: Cognito
+          Properties:
+            Trigger: PreSignUp
+            UserPool: !Ref DcUserPool
+      Environment:
+        Variables:
+          KY_DIRECTCUSTOMERS_TABLENAME: !Sub ${AWS::StackName}-${DcUsersTableName}
+          KY_DIRECTCUSTOMERS_DEFAULTAPIKEYNAME: dc-test-1
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:BatchGetItem
+                - dynamodb:Scan
+                - dynamodb:Query
+                - dynamodb:ConditionCheckItem
+                - dynamodb:UpdateItem
+                - apigateway:*
+              Resource: "*"
+
+  DcLambdaTriggerRole:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      Principal: cognito-idp.amazonaws.com
+      FunctionName: !GetAtt DcPoolPostConfirmationTrigger.Arn
+      SourceArn: !GetAtt DcUserPool.Arn

@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	petname "github.com/dustinkirkland/golang-petname"
 )
 
@@ -20,7 +21,7 @@ func init() {
 
 type Endpoint struct {
 	Endpoint string           `json:"endpointId"`
-	ClientId string           `json:"clientId"`
+	Email    string           `json:"email"`
 	ApiKey   qnaccount.ApiKey `json:"apiKey"`
 	// Enabled  bool       `json:"enabled"`
 	Created *time.Time `json:"created"`
@@ -35,18 +36,15 @@ func NewEndpoint(clientId string) *Endpoint {
 
 	return &Endpoint{
 		Endpoint: generatedPetname,
-		ClientId: clientId,
+		Email:    clientId,
 		Created:  &created,
 	}
 }
 
 func Find(ctx context.Context, dynamoClient *dynamodb.Client, tableName string, endpointId string) (e *Endpoint, err error) {
-	encodedEndpointId, err := attributevalue.Marshal(endpointId)
+	key, err := encodeEndpointId(endpointId)
 	if err != nil {
 		return
-	}
-	key := map[string]types.AttributeValue{
-		"EndpointId": encodedEndpointId,
 	}
 
 	record, err := dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
@@ -60,6 +58,50 @@ func Find(ctx context.Context, dynamoClient *dynamodb.Client, tableName string, 
 	e = &Endpoint{}
 	if err = attributevalue.UnmarshalMap(record.Item, e); err != nil {
 		err = fmt.Errorf("unmarshalling endpoint: %w", err)
+	}
+	return
+}
+
+func (e *Endpoint) Save(ctx context.Context, dynamoClient *dynamodb.Client, tableName string) (err error) {
+	key, err := encodeEndpointId(e.Endpoint)
+	if err != nil {
+		return
+	}
+
+	_, err = dynamoClient.UpdateItem(
+		ctx,
+		&dynamodb.UpdateItemInput{
+			TableName:        aws.String(tableName),
+			Key:              key,
+			UpdateExpression: aws.String("SET Email = :email, apiKey = :apiKey"),
+			ExpressionAttributeValues: map[string]dynamodbTypes.AttributeValue{
+				":email": &dynamodbTypes.AttributeValueMemberS{
+					Value: e.Email,
+				},
+				":apiKey": &dynamodbTypes.AttributeValueMemberM{
+					Value: map[string]dynamodbTypes.AttributeValue{
+						"Name": &dynamodbTypes.AttributeValueMemberS{
+							Value: e.ApiKey.Name,
+						},
+						"Value": &dynamodbTypes.AttributeValueMemberS{
+							Value: e.ApiKey.Value,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	return
+}
+
+func encodeEndpointId(endpointId string) (key map[string]types.AttributeValue, err error) {
+	encodedEndpointId, err := attributevalue.Marshal(endpointId)
+	if err != nil {
+		return
+	}
+	key = map[string]types.AttributeValue{
+		"EndpointId": encodedEndpointId,
 	}
 	return
 }
