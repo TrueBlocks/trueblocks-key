@@ -14,13 +14,14 @@ import (
 const prefix = "KY_"
 
 type ConfigFile struct {
-	Version     string
-	Chains      chainsGroup
-	Database    map[string]databaseGroup
-	Sqs         sqsGroup
-	Query       queryGroup
-	QnProvision qnProvisionGroup `koanf:"qnprovision"`
-	Convert     convertGroup
+	Version         string
+	Chains          chainsGroup
+	Database        map[string]databaseGroup
+	Sqs             sqsGroup
+	Query           queryGroup
+	QnProvision     qnProvisionGroup `koanf:"qnprovision"`
+	Convert         convertGroup
+	DirectCustomers directCustomersGroup `koanf:"directcustomers"`
 }
 
 type chainsGroup struct {
@@ -57,6 +58,17 @@ type qnProvisionGroup struct {
 type convertGroup struct {
 	BatchSize      int
 	MaxConnections int
+}
+
+type directCustomersGroup struct {
+	TableName         string
+	EmailIndexName    string
+	PoolId            string
+	PoolClientId      string
+	PoolClientSecret  string
+	PoolDomain        string
+	ApiCallbackUrl    string
+	DefaultApiKeyName string
 }
 
 var cached *ConfigFile
