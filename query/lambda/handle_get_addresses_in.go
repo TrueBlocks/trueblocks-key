@@ -29,19 +29,25 @@ func handleGetAddressesIn(ctx context.Context, rpcRequest *query.RpcRequest, inT
 		return
 	}
 
+	blockNumber, err := param.BlockNumberUint()
+	if err != nil {
+		err = NewRpcError(err, http.StatusBadRequest, "invalid block number")
+		return
+	}
+
 	var addrs []string
 	if inTx {
 		addrs, err = database.FetchAddressesInTx(
 			ctx,
 			dbConn,
-			int(param.BlockNumber),
+			int(blockNumber),
 			int(param.TransactionIndex),
 		)
 	} else {
 		addrs, err = database.FetchAddressesInBlock(
 			ctx,
 			dbConn,
-			int(param.BlockNumber),
+			int(blockNumber),
 		)
 	}
 

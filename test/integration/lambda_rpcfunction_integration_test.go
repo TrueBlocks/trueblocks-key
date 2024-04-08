@@ -43,11 +43,12 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if err = appearance.Insert(context.TODO(), dbConn, address); err != nil {
 		t.Fatal("inserting test data:", err)
 	}
+	appearanceBlockNumber := "1"
 
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcResponse[[]database.Appearance]{}
+	response := &query.RpcResponse[[]database.PublicAppearance]{}
 
 	// Valid request, appearance found
 
@@ -76,7 +77,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if l := len(response.Result.Data); l != 1 {
 		t.Fatal("wrong result count:", l)
 	}
-	if bn := response.Result.Data[0].BlockNumber; bn != appearance.BlockNumber {
+	if bn := response.Result.Data[0].BlockNumber; bn != appearanceBlockNumber {
 		t.Fatal("wrong block number:", bn)
 	}
 	if txid := response.Result.Data[0].TransactionIndex; txid != appearance.TransactionIndex {
@@ -224,7 +225,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Bounds
 
-	boundsResponse := &query.RpcResponse[database.AppearancesDatasetBounds]{}
+	boundsResponse := &query.RpcResponse[database.PublicAppearancesDatasetBounds]{}
 
 	// Valid request, appearance found
 
@@ -309,7 +310,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		request,
 		[]query.RpcGetAddressesInParam{
 			{
-				BlockNumber:      1,
+				BlockNumber:      "1",
 				TransactionIndex: 5,
 			},
 		},
@@ -345,7 +346,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		request,
 		[]query.RpcGetAddressesInParam{
 			{
-				BlockNumber: 1,
+				BlockNumber: "1",
 			},
 		},
 	)
@@ -403,7 +404,7 @@ func TestLambdaRpcFunctionAddressInRequests(t *testing.T) {
 		request,
 		[]query.RpcGetAddressesInParam{
 			{
-				BlockNumber:      4053179,
+				BlockNumber:      "4053179",
 				TransactionIndex: 1,
 			},
 		},
@@ -463,7 +464,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcResponse[[]database.Appearance]{}
+	response := &query.RpcResponse[[]database.PublicAppearance]{}
 	perPage := uint(10)
 	maxIters := len(appearances) / int(perPage)
 
@@ -525,7 +526,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	// Check items
 
 	previousPageId = nil
-	var pagingResults = make([]database.Appearance, 0, len(appearances))
+	var pagingResults = make([]database.PublicAppearance, 0, len(appearances))
 	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
@@ -563,7 +564,11 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	}
 
 	for index, pa := range pagingResults {
-		if bn := pa.BlockNumber; bn != appearances[index].BlockNumber {
+		app, err := pa.Appearance()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bn := app.BlockNumber; bn != appearances[index].BlockNumber {
 			t.Fatal("wrong block number", bn, "expected", appearances[index].BlockNumber)
 		}
 		if txid := pa.TransactionIndex; txid != appearances[index].TransactionIndex {
@@ -663,7 +668,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	// Check going backwards with "earliest"
 
 	var nextPageId *query.PageId
-	pagingResults = make([]database.Appearance, 0, len(appearances))
+	pagingResults = make([]database.PublicAppearance, 0, len(appearances))
 	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
@@ -768,7 +773,11 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	if l := len(response.Result.Data); uint(l) != perPage {
 		t.Fatal("wrong page len:", l)
 	}
-	if response.Result.Data[0].BlockNumber != uint32(customLastBlock) {
+	app, err := response.Result.Data[0].Appearance()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if app.BlockNumber != uint32(customLastBlock) {
 		t.Fatal("wrong block number")
 	}
 

@@ -36,9 +36,9 @@ type Result[T RpcResponseResult] struct {
 }
 
 type RpcResponseResult interface {
-	[]database.Appearance |
+	[]database.PublicAppearance |
 		[]string |
-		database.AppearancesDatasetBounds |
+		database.PublicAppearancesDatasetBounds |
 		*database.Status |
 		*int
 }

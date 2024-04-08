@@ -9,7 +9,7 @@ import (
 	"github.com/TrueBlocks/trueblocks-key/query/pkg/query"
 )
 
-func handleBounds(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[database.AppearancesDatasetBounds], err error) {
+func handleBounds(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[database.PublicAppearancesDatasetBounds], err error) {
 	rpcParams, err := rpcRequest.BoundsParams()
 	if err != nil {
 		err = NewRpcError(err, http.StatusBadRequest, "invalid JSON")
@@ -43,11 +43,13 @@ func handleBounds(ctx context.Context, rpcRequest *query.RpcRequest) (response *
 		return
 	}
 
-	response = &query.RpcResponse[database.AppearancesDatasetBounds]{
+	publicBounds := database.PublicBounds(&bounds)
+
+	response = &query.RpcResponse[database.PublicAppearancesDatasetBounds]{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
-		Result: query.Result[database.AppearancesDatasetBounds]{
-			Data: bounds,
+		Result: query.Result[database.PublicAppearancesDatasetBounds]{
+			Data: *publicBounds,
 			Meta: meta,
 		},
 	}
