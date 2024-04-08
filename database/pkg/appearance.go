@@ -166,13 +166,13 @@ func (a *Appearance) Insert(ctx context.Context, c *Connection, address string) 
 
 type PublicAppearance struct {
 	BlockNumber      string `json:"blockNumber"`
-	TransactionIndex uint32 `json:"transactionIndex"`
+	TransactionIndex string `json:"transactionIndex"`
 }
 
 func AppearanceToPublic(a *Appearance) *PublicAppearance {
 	return &PublicAppearance{
 		BlockNumber:      strconv.FormatUint(uint64(a.BlockNumber), 10),
-		TransactionIndex: a.TransactionIndex,
+		TransactionIndex: strconv.FormatUint(uint64(a.TransactionIndex), 10),
 	}
 }
 
@@ -185,14 +185,17 @@ func AppearanceSliceToPublicSlice(slice []Appearance) []PublicAppearance {
 }
 
 func (p *PublicAppearance) Appearance() (appearance *Appearance, err error) {
-	appearance = &Appearance{
-		TransactionIndex: p.TransactionIndex,
-	}
+	appearance = &Appearance{}
 
 	blockNumber, err := strconv.ParseUint(p.BlockNumber, 0, 32)
 	if err != nil {
 		return
 	}
+	transactionIndex, err := strconv.ParseUint(p.TransactionIndex, 0, 32)
+	if err != nil {
+		return
+	}
 	appearance.BlockNumber = uint32(blockNumber)
+	appearance.TransactionIndex = uint32(transactionIndex)
 	return
 }

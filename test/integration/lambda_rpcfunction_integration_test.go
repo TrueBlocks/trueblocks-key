@@ -45,6 +45,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		t.Fatal("inserting test data:", err)
 	}
 	appearanceBlockNumber := "1"
+	appearanceTransactionIndex := "5"
 
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
@@ -81,7 +82,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if bn := response.Result.Data[0].BlockNumber; bn != appearanceBlockNumber {
 		t.Fatal("wrong block number:", bn)
 	}
-	if txid := response.Result.Data[0].TransactionIndex; txid != appearance.TransactionIndex {
+	if txid := response.Result.Data[0].TransactionIndex; txid != appearanceTransactionIndex {
 		t.Fatal("wrong txid:", txid)
 	}
 
@@ -254,11 +255,11 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	expectedBounds := database.PublicAppearancesDatasetBounds{
 		Latest: database.PublicAppearance{
 			BlockNumber:      "1",
-			TransactionIndex: 5,
+			TransactionIndex: "5",
 		},
 		Earliest: database.PublicAppearance{
 			BlockNumber:      "1",
-			TransactionIndex: 5,
+			TransactionIndex: "5",
 		},
 	}
 
@@ -312,7 +313,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		[]query.RpcGetAddressesInParam{
 			{
 				BlockNumber:      "1",
-				TransactionIndex: 5,
+				TransactionIndex: "5",
 			},
 		},
 	)
@@ -406,7 +407,7 @@ func TestLambdaRpcFunctionAddressInRequests(t *testing.T) {
 		[]query.RpcGetAddressesInParam{
 			{
 				BlockNumber:      "4053179",
-				TransactionIndex: 1,
+				TransactionIndex: "1",
 			},
 		},
 	)
@@ -437,7 +438,7 @@ func TestLambdaRpcFunctionAddressInRequests(t *testing.T) {
 		[]query.RpcGetAddressesInParam{
 			{
 				BlockNumber:      "0x3DD8BB",
-				TransactionIndex: 1,
+				TransactionIndex: "1",
 			},
 		},
 	)
@@ -539,10 +540,9 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		startIndex := uint(i) * perPage
 		endIndex := startIndex + perPage
 		for _, item := range appearances[startIndex:endIndex] {
-			bn := strconv.FormatUint(uint64(item.BlockNumber), 10)
 			pa = append(pa, database.PublicAppearance{
-				BlockNumber:      bn,
-				TransactionIndex: item.TransactionIndex,
+				BlockNumber:      strconv.FormatUint(uint64(item.BlockNumber), 10),
+				TransactionIndex: strconv.FormatUint(uint64(item.TransactionIndex), 10),
 			})
 		}
 		if r := response.Result.Data; !reflect.DeepEqual(r, pa) {
@@ -604,7 +604,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		if bn := app.BlockNumber; bn != appearances[index].BlockNumber {
 			t.Fatal("wrong block number", bn, "expected", appearances[index].BlockNumber)
 		}
-		if txid := pa.TransactionIndex; txid != appearances[index].TransactionIndex {
+		if txid := app.TransactionIndex; txid != appearances[index].TransactionIndex {
 			t.Fatal("wrong txid", txid, "expected", appearances[index].TransactionIndex)
 		}
 	}
@@ -748,26 +748,26 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	}
 
 	expected := []database.PublicAppearance{
-		{BlockNumber: "3001234", TransactionIndex: 10},
-		{BlockNumber: "3001234", TransactionIndex: 9},
-		{BlockNumber: "3001234", TransactionIndex: 8},
-		{BlockNumber: "3001234", TransactionIndex: 7},
-		{BlockNumber: "3001234", TransactionIndex: 6},
-		{BlockNumber: "3001234", TransactionIndex: 5},
-		{BlockNumber: "3001234", TransactionIndex: 4},
-		{BlockNumber: "3001234", TransactionIndex: 3},
-		{BlockNumber: "3001234", TransactionIndex: 2},
-		{BlockNumber: "3001234", TransactionIndex: 1},
-		{BlockNumber: "4053179", TransactionIndex: 20},
-		{BlockNumber: "4053179", TransactionIndex: 19},
-		{BlockNumber: "4053179", TransactionIndex: 18},
-		{BlockNumber: "4053179", TransactionIndex: 17},
-		{BlockNumber: "4053179", TransactionIndex: 16},
-		{BlockNumber: "4053179", TransactionIndex: 15},
-		{BlockNumber: "4053179", TransactionIndex: 14},
-		{BlockNumber: "4053179", TransactionIndex: 13},
-		{BlockNumber: "4053179", TransactionIndex: 12},
-		{BlockNumber: "4053179", TransactionIndex: 11},
+		{BlockNumber: "3001234", TransactionIndex: "10"},
+		{BlockNumber: "3001234", TransactionIndex: "9"},
+		{BlockNumber: "3001234", TransactionIndex: "8"},
+		{BlockNumber: "3001234", TransactionIndex: "7"},
+		{BlockNumber: "3001234", TransactionIndex: "6"},
+		{BlockNumber: "3001234", TransactionIndex: "5"},
+		{BlockNumber: "3001234", TransactionIndex: "4"},
+		{BlockNumber: "3001234", TransactionIndex: "3"},
+		{BlockNumber: "3001234", TransactionIndex: "2"},
+		{BlockNumber: "3001234", TransactionIndex: "1"},
+		{BlockNumber: "4053179", TransactionIndex: "20"},
+		{BlockNumber: "4053179", TransactionIndex: "19"},
+		{BlockNumber: "4053179", TransactionIndex: "18"},
+		{BlockNumber: "4053179", TransactionIndex: "17"},
+		{BlockNumber: "4053179", TransactionIndex: "16"},
+		{BlockNumber: "4053179", TransactionIndex: "15"},
+		{BlockNumber: "4053179", TransactionIndex: "14"},
+		{BlockNumber: "4053179", TransactionIndex: "13"},
+		{BlockNumber: "4053179", TransactionIndex: "12"},
+		{BlockNumber: "4053179", TransactionIndex: "11"},
 	}
 
 	if !reflect.DeepEqual(expected, pagingResults) {
