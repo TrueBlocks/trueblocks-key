@@ -89,7 +89,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if response.Meta == nil {
 		t.Fatal("meta is nil")
 	}
-	if l := response.Meta.LastIndexedBlock; l != 1 {
+	if l := response.Meta.LastIndexedBlock; l != "1" {
 		t.Fatal("wrong meta LastIndexedBlock")
 	}
 	// Meta returns address used in query, so it won't be lower cased here
@@ -270,7 +270,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if boundsResponse.Result.Meta == nil {
 		t.Fatal("meta is nil")
 	}
-	if l := boundsResponse.Result.Meta.LastIndexedBlock; l != 1 {
+	if l := boundsResponse.Result.Meta.LastIndexedBlock; l != "1" {
 		t.Fatal("wrong meta LastIndexedBlock")
 	}
 	if a := boundsResponse.Result.Meta.Address; a != address {
@@ -293,7 +293,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	t.Log(string(output.Payload))
 	helpers.UnmarshalLambdaOutput(t, output, statusResponse)
 
-	if l := statusResponse.Result.Meta.LastIndexedBlock; l != 1 {
+	if l := statusResponse.Result.Meta.LastIndexedBlock; l != "1" {
 		t.Fatal("wrong max indexed block:", l)
 	}
 
@@ -424,6 +424,37 @@ func TestLambdaRpcFunctionAddressInRequests(t *testing.T) {
 
 	if l := len(response.Data); l != 2 {
 		t.Fatal("wrong length:", l)
+	}
+
+	// Hex block number
+
+	hexResponse := &query.RpcResponse[[]string]{}
+	request = &query.RpcRequest{
+		Method: "tb_getAddressesInTransaction",
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAddressesInParam{
+			{
+				BlockNumber:      "0x3DD8BB",
+				TransactionIndex: 1,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
+	}
+
+	// Valid request, appearances found
+
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	t.Log(string(output.Payload))
+	helpers.UnmarshalLambdaOutput(t, output, hexResponse)
+
+	if !reflect.DeepEqual(response, hexResponse) {
+		t.Fatal("wrong response:", hexResponse)
 	}
 }
 

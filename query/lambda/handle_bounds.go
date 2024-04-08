@@ -35,7 +35,7 @@ func handleBounds(ctx context.Context, rpcRequest *query.RpcRequest) (response *
 		ctx,
 		dbConn,
 		param.Address,
-		meta.LastIndexedBlock,
+		meta.LastIndexedBlockUint(),
 	)
 	if err != nil {
 		log.Println("database query (count):", err)

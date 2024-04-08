@@ -46,7 +46,8 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	}
 	if lastBlock == nil {
 		// nil means "latest"
-		lastBlock = &meta.LastIndexedBlock
+		lbn := meta.LastIndexedBlockUint()
+		lastBlock = &lbn
 	}
 
 	var items []database.Appearance
