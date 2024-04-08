@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strconv"
 	"testing"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
@@ -250,13 +251,13 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	helpers.AssertLambdaSuccessful(t, output)
 	helpers.UnmarshalLambdaOutput(t, output, boundsResponse)
 
-	expectedBounds := database.AppearancesDatasetBounds{
-		Latest: database.Appearance{
-			BlockNumber:      1,
+	expectedBounds := database.PublicAppearancesDatasetBounds{
+		Latest: database.PublicAppearance{
+			BlockNumber:      "1",
 			TransactionIndex: 5,
 		},
-		Earliest: database.Appearance{
-			BlockNumber:      1,
+		Earliest: database.PublicAppearance{
+			BlockNumber:      "1",
 			TransactionIndex: 5,
 		},
 	}
@@ -398,7 +399,7 @@ func TestLambdaRpcFunctionAddressInRequests(t *testing.T) {
 	// Adresses in tx
 
 	request = &query.RpcRequest{
-		Method: "tb_getAddressesInTx",
+		Method: "tb_getAddressesInTransaction",
 	}
 	err = query.SetParams(
 		request,
@@ -503,12 +504,13 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			t.Fatal(i, "-- wrong result count:", l)
 		}
 
-		pa := make([]database.Appearance, 0, len(response.Result.Data))
+		pa := make([]database.PublicAppearance, 0, len(response.Result.Data))
 		startIndex := uint(i) * perPage
 		endIndex := startIndex + perPage
 		for _, item := range appearances[startIndex:endIndex] {
-			pa = append(pa, database.Appearance{
-				BlockNumber:      item.BlockNumber,
+			bn := strconv.FormatUint(uint64(item.BlockNumber), 10)
+			pa = append(pa, database.PublicAppearance{
+				BlockNumber:      bn,
 				TransactionIndex: item.TransactionIndex,
 			})
 		}
@@ -714,27 +716,27 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		t.Fatal("wrong result length", l, "expected", len(appearances))
 	}
 
-	expected := []database.Appearance{
-		{BlockNumber: 3001234, TransactionIndex: 10},
-		{BlockNumber: 3001234, TransactionIndex: 9},
-		{BlockNumber: 3001234, TransactionIndex: 8},
-		{BlockNumber: 3001234, TransactionIndex: 7},
-		{BlockNumber: 3001234, TransactionIndex: 6},
-		{BlockNumber: 3001234, TransactionIndex: 5},
-		{BlockNumber: 3001234, TransactionIndex: 4},
-		{BlockNumber: 3001234, TransactionIndex: 3},
-		{BlockNumber: 3001234, TransactionIndex: 2},
-		{BlockNumber: 3001234, TransactionIndex: 1},
-		{BlockNumber: 4053179, TransactionIndex: 20},
-		{BlockNumber: 4053179, TransactionIndex: 19},
-		{BlockNumber: 4053179, TransactionIndex: 18},
-		{BlockNumber: 4053179, TransactionIndex: 17},
-		{BlockNumber: 4053179, TransactionIndex: 16},
-		{BlockNumber: 4053179, TransactionIndex: 15},
-		{BlockNumber: 4053179, TransactionIndex: 14},
-		{BlockNumber: 4053179, TransactionIndex: 13},
-		{BlockNumber: 4053179, TransactionIndex: 12},
-		{BlockNumber: 4053179, TransactionIndex: 11},
+	expected := []database.PublicAppearance{
+		{BlockNumber: "3001234", TransactionIndex: 10},
+		{BlockNumber: "3001234", TransactionIndex: 9},
+		{BlockNumber: "3001234", TransactionIndex: 8},
+		{BlockNumber: "3001234", TransactionIndex: 7},
+		{BlockNumber: "3001234", TransactionIndex: 6},
+		{BlockNumber: "3001234", TransactionIndex: 5},
+		{BlockNumber: "3001234", TransactionIndex: 4},
+		{BlockNumber: "3001234", TransactionIndex: 3},
+		{BlockNumber: "3001234", TransactionIndex: 2},
+		{BlockNumber: "3001234", TransactionIndex: 1},
+		{BlockNumber: "4053179", TransactionIndex: 20},
+		{BlockNumber: "4053179", TransactionIndex: 19},
+		{BlockNumber: "4053179", TransactionIndex: 18},
+		{BlockNumber: "4053179", TransactionIndex: 17},
+		{BlockNumber: "4053179", TransactionIndex: 16},
+		{BlockNumber: "4053179", TransactionIndex: 15},
+		{BlockNumber: "4053179", TransactionIndex: 14},
+		{BlockNumber: "4053179", TransactionIndex: 13},
+		{BlockNumber: "4053179", TransactionIndex: 12},
+		{BlockNumber: "4053179", TransactionIndex: 11},
 	}
 
 	if !reflect.DeepEqual(expected, pagingResults) {
