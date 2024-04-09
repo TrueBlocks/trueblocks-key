@@ -1217,8 +1217,8 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       ProvisionedThroughput:
-        ReadCapacityUnits: 0
-        WriteCapacityUnits: 0
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
       KeySchema:
         - AttributeName: EndpointId
           KeyType: HASH
@@ -1236,8 +1236,8 @@ Resources:
           Projection:
             ProjectionType: ALL
           ProvisionedThroughput:
-            ReadCapacityUnits: 0
-            WriteCapacityUnits: 0
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
 
   ###
   # DC API
@@ -1482,7 +1482,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       # If you change bucket name here, remember to update it in Makefile
-      BucketName: !Sub key-${Environment}-dc-frontend
+      BucketName: !Sub key-${Environment}-dc-frontend-2
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false

@@ -78,5 +78,5 @@ dc-frontend-production: dc-frontend
 
 dc-frontend:
 	echo "export const ENV='${DC_ENV}';" > /tmp/env.js
-	aws --profile ${DC_USER} s3 cp --recursive direct_customers/frontend s3://key-${DC_ENV}-dc-frontend/frontend
-	aws --profile ${DC_USER} s3 cp /tmp/env.js s3://key-${DC_ENV}-dc-frontend/frontend
+	aws --profile ${DC_USER} s3 cp --recursive direct_customers/frontend s3://key-${DC_ENV}-dc-frontend-2/frontend
+	aws --profile ${DC_USER} s3 cp /tmp/env.js s3://key-${DC_ENV}-dc-frontend-2/frontend

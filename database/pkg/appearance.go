@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/TrueBlocks/trueblocks-key/database/pkg/sql"
@@ -125,6 +126,18 @@ func FetchAppearancesDatasetBounds(ctx context.Context, c *Connection, address s
 	return
 }
 
+type PublicAppearancesDatasetBounds struct {
+	Latest   PublicAppearance `json:"latest"`
+	Earliest PublicAppearance `json:"earliest"`
+}
+
+func PublicBounds(bounds *AppearancesDatasetBounds) *PublicAppearancesDatasetBounds {
+	return &PublicAppearancesDatasetBounds{
+		Latest:   *AppearanceToPublic(&bounds.Latest),
+		Earliest: *AppearanceToPublic(&bounds.Earliest),
+	}
+}
+
 func InsertAppearanceBatch(ctx context.Context, c *Connection, apps []queueItem.Appearance) (err error) {
 	batch := &pgx.Batch{}
 
@@ -148,5 +161,41 @@ func (a *Appearance) Insert(ctx context.Context, c *Connection, address string) 
 		a.TransactionIndex,
 	)
 
+	return
+}
+
+type PublicAppearance struct {
+	BlockNumber      string `json:"blockNumber"`
+	TransactionIndex string `json:"transactionIndex"`
+}
+
+func AppearanceToPublic(a *Appearance) *PublicAppearance {
+	return &PublicAppearance{
+		BlockNumber:      strconv.FormatUint(uint64(a.BlockNumber), 10),
+		TransactionIndex: strconv.FormatUint(uint64(a.TransactionIndex), 10),
+	}
+}
+
+func AppearanceSliceToPublicSlice(slice []Appearance) []PublicAppearance {
+	result := make([]PublicAppearance, 0, len(slice))
+	for _, appearance := range slice {
+		result = append(result, *AppearanceToPublic(&appearance))
+	}
+	return result
+}
+
+func (p *PublicAppearance) Appearance() (appearance *Appearance, err error) {
+	appearance = &Appearance{}
+
+	blockNumber, err := strconv.ParseUint(p.BlockNumber, 0, 32)
+	if err != nil {
+		return
+	}
+	transactionIndex, err := strconv.ParseUint(p.TransactionIndex, 0, 32)
+	if err != nil {
+		return
+	}
+	appearance.BlockNumber = uint32(blockNumber)
+	appearance.TransactionIndex = uint32(transactionIndex)
 	return
 }
