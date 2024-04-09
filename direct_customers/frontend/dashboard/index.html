@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KΞY Dashboard</title>
+    <style>
+        html {
+            font-size: 10px;
+        }
+
+        body {
+            font-size: 1.6rem;
+            font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            max-width: 80rem;
+            margin: auto;
+        }
+
+        main {
+            margin-top: 4rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+        }
+        .header img {
+            height: 10rem;
+        }
+
+        .top-bar {
+            display: flex;
+            width: 60%;
+            align-items: center;
+        }
+
+        .top-bar ul {
+            display: flex;
+            justify-content: space-evenly;
+            flex-grow: 1;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        a {
+            color: #651f83;
+            text-decoration: none;
+            border-bottom: 1px solid #651f83;
+        }
+
+        .login {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: .4rem;
+        }
+
+        button,
+        .button {
+            padding: .2rem .4rem;
+            background: black;
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            display: block;
+            text-shadow: -1px -1px rgba(0, 0, 0, .4);
+            border-radius: .4rem;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:active,
+        .button:active {
+            transform: scale(.98);
+        }
+
+        .code-block {
+            display: flex;
+            width: 100%;
+            background: #e0e0e0;
+            padding: .8rem;
+            border-radius: .4rem;
+        }
+
+        .code-block button {
+            background: transparent;
+            color: black;
+        }
+
+        .code-block code {
+            flex-grow: 1;
+        }
+
+        .icon {
+            width: 1.6rem;
+            height: 1.6rem;
+        }
+
+        #loading {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-size: 3.2rem;
+        }
+
+        .error {
+            border: 1px solid rgb(196, 54, 54);
+            padding: .8rem;
+            margin-bottom: .8rem;
+        }
+
+        .hidden,
+        #loading.hidden {
+            display: none;
+        }
+    </style>
+    <script src="./env.js"></script>
+</head>
+<body>
+
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" id="icon-copy" width="16" height="16" fill="currentColor" class="bi bi-copy"
+            viewBox="0 0 16 16">
+            <path fill-rule="evenodd"
+                d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
+        </svg>
+    </svg>
+
+    <div class="header">
+        <div class="top-bar">
+            <img src="./logo_small.png" alt="KEY logo">
+            <ul>
+                <li>
+                    <a href="https://key.trueblocks.io/docs/appearance" target="_blank">API Docs</a>
+                </li>
+                <li>
+                    <a href="https://key.trueblocks.io" target="_blank">Key Website</a>
+                </li>
+                <li>
+                    <a href="https://trueblocks.io" target="_blank">TrueBlocks</a>
+                </li>
+            </ul>
+        </div>
+        <div class="login hidden" data-js="loginbox">
+            <span class="email" data-insert="email">
+                email@example.com
+            </span>
+            <a href="" class="button" data-js="logout">Sign out</a>
+        </div>
+    </div>
+
+    <main>
+
+        <div class="error" data-js="error" hidden>
+            Error <span data-insert="statusCode"></span>: <span data-insert="error"></span>
+        </div>
+
+        <div id="root">
+            <div id="loading" data-js="loading">
+                <span>
+                    Please wait
+                </span>
+            </div>
+        </div>
+
+    </main>
+
+    <template id="dashboard">
+        <div class="endpoint">
+            <h1>Hello, <span data-insert="username"></span></h1>
+            <div>Your endpoint is:</div>
+            <div class="code-block">
+                <button data-js="copy">
+                    <svg class="icon">
+                        <use href="#icon-copy"></use>
+                    </svg>
+                </button>
+                <code>https://rpc.key.trueblocks.io/<span data-insert="endpoint">some-endpoint-value</span></code>
+            </div>
+        </div>
+<!--
+        <span data-insert="email"></span>
+        <p>
+            Your endpoint is: <span data-insert="endpoint"></span>
+        </p> -->
+    </template>
+
+    <script type="module" src="./app.js"></script>
+
+</body>
+</html>

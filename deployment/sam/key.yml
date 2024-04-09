@@ -32,6 +32,12 @@ Parameters:
   QnStandardPlanSlug:
     Type: String
     Default: qn-standard
+  DcUsersTableName:
+    Type: String
+    Default: key-prod-direct-customers
+  DcApiStageName:
+    Type: String
+    Default: prod
 
 Conditions:
   IsLocal: !Equals [123456789012, !Ref AWS::AccountId]
@@ -1201,3 +1207,391 @@ Resources:
           OwnerUid: "7987987"
           Permissions: "0755"
         Path: "/efs"
+
+  ###
+  # Direct customers
+  ###
+
+  ### DynamoDB
+  DcUsers:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      KeySchema:
+        - AttributeName: EndpointId
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: EndpointId
+          AttributeType: S
+        - AttributeName: Email
+          AttributeType: S
+      TableName: !Sub ${AWS::StackName}-${DcUsersTableName}
+      GlobalSecondaryIndexes:
+        - IndexName: email-index
+          KeySchema:
+            - AttributeName: Email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+
+  ###
+  # DC API
+  ###
+
+  DcApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn:
+      - DcApi
+    Properties:
+      LogGroupName: !Join
+        - '-'
+        - - !Ref DcApi
+          - access-logs
+
+  DcApi:
+    Type: AWS::Serverless::Api
+    DependsOn:
+      - DcAuthorizer
+    Properties:
+      StageName: !Ref DcApiStageName
+      ApiKeySourceType: AUTHORIZER
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+      AccessLogSetting:
+        DestinationArn: !GetAtt DcApiLogGroup.Arn
+        Format: $context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
+      Models:
+        RpcRequest:
+          type: object
+          required:
+            - method
+            - params
+          Properties:
+            jsonrpc:
+              type: string
+            id:
+              type: number
+            method:
+              type: string
+            params:
+              type: array
+              items:
+                address:
+                  type: string
+                  required: true
+                page:
+                  type: number
+                perPage:
+                  type: number
+      Auth:
+        # Authorizer
+        DefaultAuthorizer: LambdaAuthorizer
+        Authorizers:
+          LambdaAuthorizer:
+            # This setup uses default auth caching of 300 sec = 5 h
+            FunctionPayloadType: REQUEST
+            FunctionArn: !GetAtt DcAuthorizer.Arn
+            Identity:
+              Context:
+                - resourceId # TODO: not sure if correct
+
+  # CloudWatch logging policies
+
+  # Specifies the IAM role that API Gateway uses to write API logs to Amazon CloudWatch Logs
+  DcApiLoggingRoleArn:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt DcApiCloudWatchRole.Arn
+
+  # IAM Role with 'AmazonAPIGatewayPushToCloudWatchLogs' managed policy
+  DcApiCloudWatchRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Path: /
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+
+  # Override the default MISSING_AUTHENTICATION_TOKEN to be concise with QnApi
+  DvGatewayResponseMissingAuthToken:
+    Type: 'AWS::ApiGateway::GatewayResponse'
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+      ResponseType: MISSING_AUTHENTICATION_TOKEN
+      RestApiId: !Ref DcApi
+      StatusCode: "401"
+
+  # DC Authorizer
+  DcAuthorizer:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      MemorySize: 128
+      CodeUri: ../../direct_customers/authorizer/lambda
+      Environment:
+        Variables:
+          KY_DIRECTCUSTOMERS_TABLENAME: !Sub ${AWS::StackName}-${DcUsersTableName}
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+        - AmazonDynamoDBReadOnlyAccess
+
+  # DC RPC route
+  DcRpcFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      MemorySize: 128
+      CodeUri: ../../query/lambda
+      Tracing: Active
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{endpointId}
+            Method: post
+            RequestModel:
+              Model: RpcRequest
+              Required: true
+              ValidateBody: true
+            Auth:
+              ApiKeyRequired: true
+            RestApiId:
+              Ref: DcApi
+      Environment:
+        Variables:
+          KY_QUERY_MAXLIMIT: 1000
+          KY_DATABASE_DEFAULT_HOST: !GetAtt IndexDatabaseProxy.Endpoint
+          KY_DATABASE_DEFAULT_PORT: 5432
+          KY_DATABASE_DEFAULT_USER: !Ref RDSMasterUserName
+          KY_DATABASE_DEFAULT_PASSWORD: ""
+          KY_DATABASE_DEFAULT_AWSSECRET: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+          KY_DATABASE_DEFAULT_DATABASE: !Ref RDSDBName
+      VpcConfig: # For accessing RDS instance
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref privateLambdaSubnet1
+          - !Ref privateLambdaSubnet2
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetResourcePolicy
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+                - secretsmanager:ListSecretVersionIds
+              Resource: !GetAtt IndexDatabase.MasterUserSecret.SecretArn
+
+  # DC Dashboard route
+  DcApiDashboard:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - DcUserPool
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      MemorySize: 128
+      CodeUri: ../../direct_customers/dashboard/lambda
+      Tracing: Active
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /auth
+            Method: post
+            Auth:
+              # ApiKeyRequired: false
+              Authorizer: NONE
+            RestApiId:
+              Ref: DcApi
+      Environment:
+        Variables:
+          KY_DIRECTCUSTOMERS_TABLENAME: !Sub ${AWS::StackName}-${DcUsersTableName}
+          KY_DIRECTCUSTOMERS_EMAILINDEXNAME: email-index
+          KY_DIRECTCUSTOMERS_POOLID: !Ref DcUserPool
+          KY_DIRECTCUSTOMERS_POOLCLIENTID: !Ref DcUserPoolClient
+          KY_DIRECTCUSTOMERS_POOLCLIENTSECRET: !GetAtt DcUserPoolClient.ClientSecret
+          KY_DIRECTCUSTOMERS_POOLDOMAIN: !Sub key-${Environment}
+          KY_DIRECTCUSTOMERS_APICALLBACKURL: !Join ['', ['https://', !GetAtt DcFrontendBucket.DomainName, '/frontend/dashboard/index.html']]
+      Policies:
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:BatchGetItem
+                - dynamodb:Scan
+                - dynamodb:Query
+                - dynamodb:ConditionCheckItem
+              Resource: "*"
+
+  ### DC plans
+
+  UsagePlanDcTest:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - DcApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref DcApi
+          Stage: !Ref DcApiStageName
+      Description: Test plan
+      Throttle:
+            BurstLimit: 50
+            RateLimit: 50
+      UsagePlanName: dc-test-1
+  ApiKeyDcTest:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn:
+      - UsagePlanDcTest
+    Properties:
+      Name: dc-test-1
+      Enabled: true
+  LinkUsagePlanApiKeyDcTest:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKeyDcTest
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanDcTest
+
+  ### Front-end hosting bucket
+  DcFrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # If you change bucket name here, remember to update it in Makefile
+      BucketName: !Sub key-${Environment}-dc-frontend-2
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  DcFrontendBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      PolicyDocument:
+        Id: DcFrontendBucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref DcFrontendBucket
+                - /*
+      Bucket: !Ref DcFrontendBucket
+
+  ### DC Cognito user pool
+
+  DcUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: !If [IsProduction, false, false]
+      UserPoolName: !Sub key-${Environment}-dc-user-pool
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: company
+          AttributeDataType: String
+          Mutable: true
+
+  DcUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref DcUserPool
+      CallbackURLs:
+        - !Join ['', ['https://', !GetAtt DcFrontendBucket.DomainName, '/frontend/dashboard/index.html']]
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+      SupportedIdentityProviders:
+        - COGNITO
+      GenerateSecret: true
+
+  DcUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub key-${Environment}
+      UserPoolId: !Ref DcUserPool
+
+  # DC Post Confirmation trigger
+  DcPoolPostConfirmationTrigger:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      MemorySize: 128
+      CodeUri: ../../direct_customers/post_confirmation/lambda
+      Tracing: Active
+      Events:
+        CognitoEvent:
+          Type: Cognito
+          Properties:
+            Trigger: PreSignUp
+            UserPool: !Ref DcUserPool
+      Environment:
+        Variables:
+          KY_DIRECTCUSTOMERS_TABLENAME: !Sub ${AWS::StackName}-${DcUsersTableName}
+          KY_DIRECTCUSTOMERS_DEFAULTAPIKEYNAME: dc-test-1
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:BatchGetItem
+                - dynamodb:Scan
+                - dynamodb:Query
+                - dynamodb:ConditionCheckItem
+                - dynamodb:UpdateItem
+                - apigateway:*
+              Resource: "*"
+
+  DcLambdaTriggerRole:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      Principal: cognito-idp.amazonaws.com
+      FunctionName: !GetAtt DcPoolPostConfirmationTrigger.Arn
+      SourceArn: !GetAtt DcUserPool.Arn

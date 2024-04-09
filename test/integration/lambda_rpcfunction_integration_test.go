@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strconv"
 	"testing"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
@@ -43,11 +44,13 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if err = appearance.Insert(context.TODO(), dbConn, address); err != nil {
 		t.Fatal("inserting test data:", err)
 	}
+	appearanceBlockNumber := "1"
+	appearanceTransactionIndex := "5"
 
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcResponse[[]database.Appearance]{}
+	response := &query.RpcResponse[[]database.PublicAppearance]{}
 
 	// Valid request, appearance found
 
@@ -76,10 +79,10 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if l := len(response.Result.Data); l != 1 {
 		t.Fatal("wrong result count:", l)
 	}
-	if bn := response.Result.Data[0].BlockNumber; bn != appearance.BlockNumber {
+	if bn := response.Result.Data[0].BlockNumber; bn != appearanceBlockNumber {
 		t.Fatal("wrong block number:", bn)
 	}
-	if txid := response.Result.Data[0].TransactionIndex; txid != appearance.TransactionIndex {
+	if txid := response.Result.Data[0].TransactionIndex; txid != appearanceTransactionIndex {
 		t.Fatal("wrong txid:", txid)
 	}
 
@@ -87,7 +90,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if response.Meta == nil {
 		t.Fatal("meta is nil")
 	}
-	if l := response.Meta.LastIndexedBlock; l != 1 {
+	if l := response.Meta.LastIndexedBlock; l != "1" {
 		t.Fatal("wrong meta LastIndexedBlock")
 	}
 	// Meta returns address used in query, so it won't be lower cased here
@@ -224,7 +227,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 
 	// Bounds
 
-	boundsResponse := &query.RpcResponse[database.AppearancesDatasetBounds]{}
+	boundsResponse := &query.RpcResponse[database.PublicAppearancesDatasetBounds]{}
 
 	// Valid request, appearance found
 
@@ -249,14 +252,14 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	helpers.AssertLambdaSuccessful(t, output)
 	helpers.UnmarshalLambdaOutput(t, output, boundsResponse)
 
-	expectedBounds := database.AppearancesDatasetBounds{
-		Latest: database.Appearance{
-			BlockNumber:      1,
-			TransactionIndex: 5,
+	expectedBounds := database.PublicAppearancesDatasetBounds{
+		Latest: database.PublicAppearance{
+			BlockNumber:      "1",
+			TransactionIndex: "5",
 		},
-		Earliest: database.Appearance{
-			BlockNumber:      1,
-			TransactionIndex: 5,
+		Earliest: database.PublicAppearance{
+			BlockNumber:      "1",
+			TransactionIndex: "5",
 		},
 	}
 
@@ -268,7 +271,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	if boundsResponse.Result.Meta == nil {
 		t.Fatal("meta is nil")
 	}
-	if l := boundsResponse.Result.Meta.LastIndexedBlock; l != 1 {
+	if l := boundsResponse.Result.Meta.LastIndexedBlock; l != "1" {
 		t.Fatal("wrong meta LastIndexedBlock")
 	}
 	if a := boundsResponse.Result.Meta.Address; a != address {
@@ -291,7 +294,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 	t.Log(string(output.Payload))
 	helpers.UnmarshalLambdaOutput(t, output, statusResponse)
 
-	if l := statusResponse.Result.Meta.LastIndexedBlock; l != 1 {
+	if l := statusResponse.Result.Meta.LastIndexedBlock; l != "1" {
 		t.Fatal("wrong max indexed block:", l)
 	}
 
@@ -309,8 +312,8 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		request,
 		[]query.RpcGetAddressesInParam{
 			{
-				BlockNumber:      1,
-				TransactionIndex: 5,
+				BlockNumber:      "1",
+				TransactionIndex: "5",
 			},
 		},
 	)
@@ -345,7 +348,7 @@ func TestLambdaRpcFunctionRequests(t *testing.T) {
 		request,
 		[]query.RpcGetAddressesInParam{
 			{
-				BlockNumber: 1,
+				BlockNumber: "1",
 			},
 		},
 	)
@@ -397,14 +400,14 @@ func TestLambdaRpcFunctionAddressInRequests(t *testing.T) {
 	// Adresses in tx
 
 	request = &query.RpcRequest{
-		Method: "tb_getAddressesInTx",
+		Method: "tb_getAddressesInTransaction",
 	}
 	err = query.SetParams(
 		request,
 		[]query.RpcGetAddressesInParam{
 			{
-				BlockNumber:      4053179,
-				TransactionIndex: 1,
+				BlockNumber:      "4053179",
+				TransactionIndex: "1",
 			},
 		},
 	)
@@ -422,6 +425,37 @@ func TestLambdaRpcFunctionAddressInRequests(t *testing.T) {
 
 	if l := len(response.Data); l != 2 {
 		t.Fatal("wrong length:", l)
+	}
+
+	// Hex block number
+
+	hexResponse := &query.RpcResponse[[]string]{}
+	request = &query.RpcRequest{
+		Method: "tb_getAddressesInTransaction",
+	}
+	err = query.SetParams(
+		request,
+		[]query.RpcGetAddressesInParam{
+			{
+				BlockNumber:      "0x3DD8BB",
+				TransactionIndex: "1",
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal("setting rpc request params:", err)
+	}
+
+	// Valid request, appearances found
+
+	output = helpers.InvokeLambda(t, client, "RpcFunction", request)
+
+	helpers.AssertLambdaSuccessful(t, output)
+	t.Log(string(output.Payload))
+	helpers.UnmarshalLambdaOutput(t, output, hexResponse)
+
+	if !reflect.DeepEqual(response, hexResponse) {
+		t.Fatal("wrong response:", hexResponse)
 	}
 }
 
@@ -463,7 +497,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	client := helpers.NewLambdaClient(t)
 	var request *query.RpcRequest
 	var output *lambda.InvokeOutput
-	response := &query.RpcResponse[[]database.Appearance]{}
+	response := &query.RpcResponse[[]database.PublicAppearance]{}
 	perPage := uint(10)
 	maxIters := len(appearances) / int(perPage)
 
@@ -502,13 +536,13 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 			t.Fatal(i, "-- wrong result count:", l)
 		}
 
-		pa := make([]database.Appearance, 0, len(response.Result.Data))
+		pa := make([]database.PublicAppearance, 0, len(response.Result.Data))
 		startIndex := uint(i) * perPage
 		endIndex := startIndex + perPage
 		for _, item := range appearances[startIndex:endIndex] {
-			pa = append(pa, database.Appearance{
-				BlockNumber:      item.BlockNumber,
-				TransactionIndex: item.TransactionIndex,
+			pa = append(pa, database.PublicAppearance{
+				BlockNumber:      strconv.FormatUint(uint64(item.BlockNumber), 10),
+				TransactionIndex: strconv.FormatUint(uint64(item.TransactionIndex), 10),
 			})
 		}
 		if r := response.Result.Data; !reflect.DeepEqual(r, pa) {
@@ -525,7 +559,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	// Check items
 
 	previousPageId = nil
-	var pagingResults = make([]database.Appearance, 0, len(appearances))
+	var pagingResults = make([]database.PublicAppearance, 0, len(appearances))
 	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
@@ -563,10 +597,14 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	}
 
 	for index, pa := range pagingResults {
-		if bn := pa.BlockNumber; bn != appearances[index].BlockNumber {
+		app, err := pa.Appearance()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bn := app.BlockNumber; bn != appearances[index].BlockNumber {
 			t.Fatal("wrong block number", bn, "expected", appearances[index].BlockNumber)
 		}
-		if txid := pa.TransactionIndex; txid != appearances[index].TransactionIndex {
+		if txid := app.TransactionIndex; txid != appearances[index].TransactionIndex {
 			t.Fatal("wrong txid", txid, "expected", appearances[index].TransactionIndex)
 		}
 	}
@@ -663,7 +701,7 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	// Check going backwards with "earliest"
 
 	var nextPageId *query.PageId
-	pagingResults = make([]database.Appearance, 0, len(appearances))
+	pagingResults = make([]database.PublicAppearance, 0, len(appearances))
 	for i := 0; i < maxIters; i++ {
 		request = &query.RpcRequest{
 			Id:     1,
@@ -709,27 +747,27 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 		t.Fatal("wrong result length", l, "expected", len(appearances))
 	}
 
-	expected := []database.Appearance{
-		{BlockNumber: 3001234, TransactionIndex: 10},
-		{BlockNumber: 3001234, TransactionIndex: 9},
-		{BlockNumber: 3001234, TransactionIndex: 8},
-		{BlockNumber: 3001234, TransactionIndex: 7},
-		{BlockNumber: 3001234, TransactionIndex: 6},
-		{BlockNumber: 3001234, TransactionIndex: 5},
-		{BlockNumber: 3001234, TransactionIndex: 4},
-		{BlockNumber: 3001234, TransactionIndex: 3},
-		{BlockNumber: 3001234, TransactionIndex: 2},
-		{BlockNumber: 3001234, TransactionIndex: 1},
-		{BlockNumber: 4053179, TransactionIndex: 20},
-		{BlockNumber: 4053179, TransactionIndex: 19},
-		{BlockNumber: 4053179, TransactionIndex: 18},
-		{BlockNumber: 4053179, TransactionIndex: 17},
-		{BlockNumber: 4053179, TransactionIndex: 16},
-		{BlockNumber: 4053179, TransactionIndex: 15},
-		{BlockNumber: 4053179, TransactionIndex: 14},
-		{BlockNumber: 4053179, TransactionIndex: 13},
-		{BlockNumber: 4053179, TransactionIndex: 12},
-		{BlockNumber: 4053179, TransactionIndex: 11},
+	expected := []database.PublicAppearance{
+		{BlockNumber: "3001234", TransactionIndex: "10"},
+		{BlockNumber: "3001234", TransactionIndex: "9"},
+		{BlockNumber: "3001234", TransactionIndex: "8"},
+		{BlockNumber: "3001234", TransactionIndex: "7"},
+		{BlockNumber: "3001234", TransactionIndex: "6"},
+		{BlockNumber: "3001234", TransactionIndex: "5"},
+		{BlockNumber: "3001234", TransactionIndex: "4"},
+		{BlockNumber: "3001234", TransactionIndex: "3"},
+		{BlockNumber: "3001234", TransactionIndex: "2"},
+		{BlockNumber: "3001234", TransactionIndex: "1"},
+		{BlockNumber: "4053179", TransactionIndex: "20"},
+		{BlockNumber: "4053179", TransactionIndex: "19"},
+		{BlockNumber: "4053179", TransactionIndex: "18"},
+		{BlockNumber: "4053179", TransactionIndex: "17"},
+		{BlockNumber: "4053179", TransactionIndex: "16"},
+		{BlockNumber: "4053179", TransactionIndex: "15"},
+		{BlockNumber: "4053179", TransactionIndex: "14"},
+		{BlockNumber: "4053179", TransactionIndex: "13"},
+		{BlockNumber: "4053179", TransactionIndex: "12"},
+		{BlockNumber: "4053179", TransactionIndex: "11"},
 	}
 
 	if !reflect.DeepEqual(expected, pagingResults) {
@@ -768,7 +806,11 @@ func TestLambdaRpcFunctionPagination(t *testing.T) {
 	if l := len(response.Result.Data); uint(l) != perPage {
 		t.Fatal("wrong page len:", l)
 	}
-	if response.Result.Data[0].BlockNumber != uint32(customLastBlock) {
+	app, err := response.Result.Data[0].Appearance()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if app.BlockNumber != uint32(customLastBlock) {
 		t.Fatal("wrong block number")
 	}
 

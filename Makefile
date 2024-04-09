@@ -64,3 +64,19 @@ set-stack-policy:
 	go build -o bin/stack_policy ./tools/stack_policy
 	@echo Setting policy
 	bin/stack_policy --stack-name StackSet-key-prod-f6024a86-e5dc-4b96-b88e-6b6890b53f04
+
+# Deploy Direct Customers frontend
+DC_ENV = staging
+DC_USER = key-staging-sso
+dc-frontend-staging: export DC_ENV = staging
+dc-frontent-staging: export DC_USER = key-staging-sso
+dc-frontend-staging: dc-frontend
+
+dc-frontend-production: export DC_ENV = production
+dc-frontent-production: export DC_USER = key-production-sso
+dc-frontend-production: dc-frontend
+
+dc-frontend:
+	echo "export const ENV='${DC_ENV}';" > /tmp/env.js
+	aws --profile ${DC_USER} s3 cp --recursive direct_customers/frontend s3://key-${DC_ENV}-dc-frontend-2/frontend
+	aws --profile ${DC_USER} s3 cp /tmp/env.js s3://key-${DC_ENV}-dc-frontend-2/frontend

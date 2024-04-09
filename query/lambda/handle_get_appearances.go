@@ -13,7 +13,7 @@ import (
 
 const defaultAppearancesLimit = 100
 
-func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[[]database.Appearance], err error) {
+func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (response *query.RpcResponse[[]database.PublicAppearance], err error) {
 	rpcParams, err := rpcRequest.AppearancesParams()
 	if err != nil {
 		err = NewRpcError(err, http.StatusBadRequest, "invalid JSON")
@@ -46,7 +46,8 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 	}
 	if lastBlock == nil {
 		// nil means "latest"
-		lastBlock = &meta.LastIndexedBlock
+		lbn := meta.LastIndexedBlockUint()
+		lastBlock = &lbn
 	}
 
 	var items []database.Appearance
@@ -113,11 +114,13 @@ func handleGetAppearances(ctx context.Context, rpcRequest *query.RpcRequest) (re
 		}
 	}
 
-	response = &query.RpcResponse[[]database.Appearance]{
+	publicApps := database.AppearanceSliceToPublicSlice(items)
+
+	response = &query.RpcResponse[[]database.PublicAppearance]{
 		JsonRpc: "2.0",
 		Id:      rpcRequest.Id,
-		Result: query.Result[[]database.Appearance]{
-			Data: items,
+		Result: query.Result[[]database.PublicAppearance]{
+			Data: publicApps,
 			Meta: meta,
 		},
 	}

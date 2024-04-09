@@ -23,8 +23,8 @@ func getMeta(ctx context.Context, address string) (m *query.Meta, err error) {
 	}
 
 	m = &query.Meta{
-		LastIndexedBlock: status.LastIndexedBlock,
-		Address:          address,
+		Address: address,
 	}
+	m.SetLastIndexedBlock(status.LastIndexedBlock)
 	return
 }

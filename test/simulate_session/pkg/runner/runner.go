@@ -93,7 +93,7 @@ func RunSingle(s *scenario.Scenario, cnf *config.Config, timeout context.Context
 				Duration: elapsed,
 			}
 
-			rpcResponse := new(query.RpcResponse[[]database.Appearance])
+			rpcResponse := new(query.RpcResponse[[]database.PublicAppearance])
 			respBody, err := io.ReadAll(resp.Body)
 			if err != nil {
 				log.Fatalln("reading body:", err)

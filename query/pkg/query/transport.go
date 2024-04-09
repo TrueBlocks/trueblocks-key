@@ -2,6 +2,7 @@ package query
 
 import (
 	"errors"
+	"strconv"
 
 	database "github.com/TrueBlocks/trueblocks-key/database/pkg"
 )
@@ -36,18 +37,29 @@ type Result[T RpcResponseResult] struct {
 }
 
 type RpcResponseResult interface {
-	[]database.Appearance |
+	[]database.PublicAppearance |
 		[]string |
-		database.AppearancesDatasetBounds |
+		database.PublicAppearancesDatasetBounds |
 		*database.Status |
 		*int
 }
 
 type Meta struct {
-	LastIndexedBlock uint    `json:"lastIndexedBlock"`
+	LastIndexedBlock string  `json:"lastIndexedBlock"`
 	Address          string  `json:"address,omitempty"`
 	PreviousPageId   *PageId `json:"previousPageId"`
 	NextPageId       *PageId `json:"nextPageId"`
+
+	lastIndexedBlock uint
+}
+
+func (m *Meta) SetLastIndexedBlock(blockNumber uint) {
+	m.LastIndexedBlock = strconv.FormatUint(uint64(blockNumber), 10)
+	m.lastIndexedBlock = blockNumber
+}
+
+func (m *Meta) LastIndexedBlockUint() uint {
+	return m.lastIndexedBlock
 }
 
 type RpcAddressesResponse struct {
