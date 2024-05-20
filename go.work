@@ -1,4 +1,4 @@
-go 1.22.0
+go 1.22.3
 
 use (
 	.
@@ -23,6 +23,7 @@ use (
 	./test/integration
 	./test/simulate_session
 	./tools/db_tunnel
+	./tools/mktestuser
 	./tools/pageid
 	./tools/snapshot
 	./tools/stack_policy

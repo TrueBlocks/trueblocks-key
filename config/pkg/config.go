@@ -22,6 +22,7 @@ type ConfigFile struct {
 	QnProvision     qnProvisionGroup `koanf:"qnprovision"`
 	Convert         convertGroup
 	DirectCustomers directCustomersGroup `koanf:"directcustomers"`
+	Misc            miscGroup
 }
 
 type chainsGroup struct {
@@ -69,6 +70,10 @@ type directCustomersGroup struct {
 	PoolDomain        string
 	ApiCallbackUrl    string
 	DefaultApiKeyName string
+}
+
+type miscGroup struct {
+	DirecCustomersApiUrl string
 }
 
 var cached *ConfigFile
