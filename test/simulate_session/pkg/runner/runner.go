@@ -110,9 +110,9 @@ func RunSingle(s *scenario.Scenario, cnf *config.Config, timeout context.Context
 				}
 
 				if s.GoBackwards {
-					nextPageId = rpcResponse.Meta.PreviousPageId
-				} else {
 					nextPageId = rpcResponse.Meta.NextPageId
+				} else {
+					nextPageId = rpcResponse.Meta.PreviousPageId
 				}
 				// log.Println("got", len(rpcResponse.Data), "appearances, next page?", nextPageId)
 			}
