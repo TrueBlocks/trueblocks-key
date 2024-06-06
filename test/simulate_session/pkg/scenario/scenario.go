@@ -10,4 +10,5 @@ type Scenario struct {
 	Address     string      `toml:"address"`
 	PerPage     uint        `toml:"perPage"`
 	GoBackwards bool        `toml:"go_backwards"`
+	DirectUser  string      `toml:"directUser"`
 }

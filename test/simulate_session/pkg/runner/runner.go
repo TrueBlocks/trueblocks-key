@@ -64,7 +64,11 @@ func RunSingle(s *scenario.Scenario, cnf *config.Config, timeout context.Context
 		if err != nil {
 			log.Fatalln("getBody:", err)
 		}
-		req, err := http.NewRequestWithContext(timeout, http.MethodPost, cnf.BaseUrl, body)
+		url := cnf.BaseUrl
+		if s.DirectUser != "" {
+			url += "/" + s.DirectUser
+		}
+		req, err := http.NewRequestWithContext(timeout, http.MethodPost, url, body)
 		if err != nil {
 			log.Fatalln("new request error:", err)
 		}
